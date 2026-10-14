@@ -12,7 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedConnectionsRouteImport } from './routes/_authenticated/connections'
+import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedPerformanceRouteImport } from './routes/_authenticated/performance'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSignalsRouteImport } from './routes/_authenticated/signals'
 import { Route as AuthenticatedStrategiesRouteImport } from './routes/_authenticated/strategies'
 
@@ -30,12 +33,28 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedConnectionsRoute =
+  AuthenticatedConnectionsRouteImport.update({
+    id: '/connections',
+    path: '/connections',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPerformanceRoute =
   AuthenticatedPerformanceRouteImport.update({
     id: '/performance',
     path: '/performance',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSignalsRoute = AuthenticatedSignalsRouteImport.update({
   id: '/signals',
   path: '/signals',
@@ -50,13 +69,19 @@ const AuthenticatedStrategiesRoute = AuthenticatedStrategiesRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/connections': typeof AuthenticatedConnectionsRoute
+  '/orders': typeof AuthenticatedOrdersRoute
   '/performance': typeof AuthenticatedPerformanceRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/signals': typeof AuthenticatedSignalsRoute
   '/strategies': typeof AuthenticatedStrategiesRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/connections': typeof AuthenticatedConnectionsRoute
+  '/orders': typeof AuthenticatedOrdersRoute
   '/performance': typeof AuthenticatedPerformanceRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/signals': typeof AuthenticatedSignalsRoute
   '/strategies': typeof AuthenticatedStrategiesRoute
   '/': typeof AuthenticatedIndexRoute
@@ -65,21 +90,43 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/connections': typeof AuthenticatedConnectionsRoute
+  '/_authenticated/orders': typeof AuthenticatedOrdersRoute
   '/_authenticated/performance': typeof AuthenticatedPerformanceRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/signals': typeof AuthenticatedSignalsRoute
   '/_authenticated/strategies': typeof AuthenticatedStrategiesRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/performance' | '/signals' | '/strategies'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/connections'
+    | '/orders'
+    | '/performance'
+    | '/settings'
+    | '/signals'
+    | '/strategies'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/performance' | '/signals' | '/strategies' | '/'
+  to:
+    | '/auth'
+    | '/connections'
+    | '/orders'
+    | '/performance'
+    | '/settings'
+    | '/signals'
+    | '/strategies'
+    | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/connections'
+    | '/_authenticated/orders'
     | '/_authenticated/performance'
+    | '/_authenticated/settings'
     | '/_authenticated/signals'
     | '/_authenticated/strategies'
     | '/_authenticated/'
@@ -113,11 +160,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/connections': {
+      id: '/_authenticated/connections'
+      path: '/connections'
+      fullPath: '/connections'
+      preLoaderRoute: typeof AuthenticatedConnectionsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/orders': {
+      id: '/_authenticated/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof AuthenticatedOrdersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/performance': {
       id: '/_authenticated/performance'
       path: '/performance'
       fullPath: '/performance'
       preLoaderRoute: typeof AuthenticatedPerformanceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/signals': {
@@ -138,14 +206,20 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedConnectionsRoute: typeof AuthenticatedConnectionsRoute
+  AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
   AuthenticatedPerformanceRoute: typeof AuthenticatedPerformanceRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSignalsRoute: typeof AuthenticatedSignalsRoute
   AuthenticatedStrategiesRoute: typeof AuthenticatedStrategiesRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedConnectionsRoute: AuthenticatedConnectionsRoute,
+  AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
   AuthenticatedPerformanceRoute: AuthenticatedPerformanceRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSignalsRoute: AuthenticatedSignalsRoute,
   AuthenticatedStrategiesRoute: AuthenticatedStrategiesRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
