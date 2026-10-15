@@ -107,9 +107,9 @@ function SettingsPage() {
   function addTicker() {
     const parts = ticker.toUpperCase().split(/[\s,]+/).filter(Boolean);
     const bad = parts.filter((p) => !/^[A-Z]{1,5}$/.test(p));
-    if (bad.length) return toast.error(`Invalid ticker: ${bad.join(", ")}`);
+    if (bad.length) { toast.error(`Invalid ticker: ${bad.join(", ")}`); return; }
     const next = Array.from(new Set([...f!.watchlist, ...parts]));
-    if (next.length > 50) return toast.error("Max 50 tickers");
+    if (next.length > 50) { toast.error("Max 50 tickers"); return; }
     set("watchlist", next);
     setTicker("");
   }

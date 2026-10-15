@@ -60,7 +60,7 @@ function AuthPage() {
   }
 
   async function magic() {
-    if (!email) return toast.error("Enter your email first");
+    if (!email) { toast.error("Enter your email first"); return; }
     setBusy(true);
     const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
     setBusy(false);
