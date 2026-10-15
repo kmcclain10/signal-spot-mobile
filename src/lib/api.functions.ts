@@ -131,8 +131,11 @@ export const setDefaultConnection = createServerFn({ method: "POST" })
     const c = await loadConn(context.userId, data.id);
     if (!getProviderDef(c.provider).capabilities.includes(data.kind)) throw new Error(`This provider can't be a ${data.kind} default`);
     const col = data.kind === "data" ? "is_default_data" : "is_default_broker";
-    await db.from("connections").update({ [col]: false }).eq("user_id", context.userId);
-    const { error } = await db.from("connections").update({ [col]: true }).eq("id", data.id).eq("user_id", context.userId);
+    const off = (data.kind === "data" ? { is_default_data: false } : { is_default_broker: false }) as any;
+    const on = (data.kind === "data" ? { is_default_data: true } : { is_default_broker: true }) as any;
+    void col;
+    await db.from("connections").update(off).eq("user_id", context.userId);
+    const { error } = await db.from("connections").update(on).eq("id", data.id).eq("user_id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
