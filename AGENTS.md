@@ -8,3 +8,4 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+- TypeScript runs with strict on but index-signature/unchecked-index/exact-optional flags off; trading payloads are loose JSON from brokers and the engine.
