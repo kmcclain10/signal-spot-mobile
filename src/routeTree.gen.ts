@@ -18,6 +18,7 @@ import { Route as AuthenticatedPerformanceRouteImport } from './routes/_authenti
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSignalsRouteImport } from './routes/_authenticated/signals'
 import { Route as AuthenticatedStrategiesRouteImport } from './routes/_authenticated/strategies'
+import { Route as ApiPublicJobsScanRouteImport } from './routes/api/public/jobs/scan'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -65,6 +66,11 @@ const AuthenticatedStrategiesRoute = AuthenticatedStrategiesRouteImport.update({
   path: '/strategies',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicJobsScanRoute = ApiPublicJobsScanRouteImport.update({
+  id: '/api/public/jobs/scan',
+  path: '/api/public/jobs/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/signals': typeof AuthenticatedSignalsRoute
   '/strategies': typeof AuthenticatedStrategiesRoute
+  '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/signals': typeof AuthenticatedSignalsRoute
   '/strategies': typeof AuthenticatedStrategiesRoute
   '/': typeof AuthenticatedIndexRoute
+  '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/_authenticated/signals': typeof AuthenticatedSignalsRoute
   '/_authenticated/strategies': typeof AuthenticatedStrategiesRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signals'
     | '/strategies'
+    | '/api/public/jobs/scan'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/signals'
     | '/strategies'
     | '/'
+    | '/api/public/jobs/scan'
   id:
     | '__root__'
     | '/_authenticated'
@@ -130,11 +141,13 @@ export interface FileRouteTypes {
     | '/_authenticated/signals'
     | '/_authenticated/strategies'
     | '/_authenticated/'
+    | '/api/public/jobs/scan'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicJobsScanRoute: typeof ApiPublicJobsScanRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -202,6 +215,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStrategiesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/jobs/scan': {
+      id: '/api/public/jobs/scan'
+      path: '/api/public/jobs/scan'
+      fullPath: '/api/public/jobs/scan'
+      preLoaderRoute: typeof ApiPublicJobsScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -231,6 +251,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicJobsScanRoute: ApiPublicJobsScanRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
