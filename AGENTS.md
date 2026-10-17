@@ -9,3 +9,5 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 - TypeScript runs with strict on but index-signature/unchecked-index/exact-optional flags off; trading payloads are loose JSON from brokers and the engine.
+- Keep supplied IWM math isolated in src/lib/iwmWindowStrategy.ts; callers guard invalid or empty inputs without changing calculations.
+- IWM automation uses managed TanStack callbacks and service-only atomic lease/checkpoint RPCs; persist order intents with broker client IDs before submissions to avoid duplicate exposure after interruption.
