@@ -116,6 +116,356 @@ export type Database = {
         }
         Relationships: []
       }
+      iwm_bank_events: {
+        Row: {
+          amount_banked: number
+          banked_total: number
+          created_at: string
+          id: string
+          new_cycle: number
+          restart_balance: number
+          user_id: string
+        }
+        Insert: {
+          amount_banked: number
+          banked_total: number
+          created_at?: string
+          id?: string
+          new_cycle: number
+          restart_balance: number
+          user_id: string
+        }
+        Update: {
+          amount_banked?: number
+          banked_total?: number
+          created_at?: string
+          id?: string
+          new_cycle?: number
+          restart_balance?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      iwm_daily_reports: {
+        Row: {
+          banked_today: number
+          banked_total: number
+          day: string
+          ending_bankroll: number
+          id: string
+          losses: number
+          pnl: number
+          trades: number
+          user_id: string
+          win_rate: number
+          wins: number
+        }
+        Insert: {
+          banked_today: number
+          banked_total: number
+          day: string
+          ending_bankroll: number
+          id?: string
+          losses: number
+          pnl: number
+          trades: number
+          user_id: string
+          win_rate: number
+          wins: number
+        }
+        Update: {
+          banked_today?: number
+          banked_total?: number
+          day?: string
+          ending_bankroll?: number
+          id?: string
+          losses?: number
+          pnl?: number
+          trades?: number
+          user_id?: string
+          win_rate?: number
+          wins?: number
+        }
+        Relationships: []
+      }
+      iwm_protection_events: {
+        Row: {
+          created_at: string
+          floor_locked_pct: number
+          id: string
+          peak_gain_pct: number
+          premium: number
+          trade_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          floor_locked_pct: number
+          id?: string
+          peak_gain_pct: number
+          premium: number
+          trade_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          floor_locked_pct?: number
+          id?: string
+          peak_gain_pct?: number
+          premium?: number
+          trade_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iwm_protection_events_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "iwm_trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      iwm_signals: {
+        Row: {
+          action: string | null
+          bar_time: string
+          created_at: string
+          detail: string | null
+          ema20: number | null
+          ema8: number | null
+          id: string
+          kind: string
+          osc: number | null
+          price: number
+          side: string
+          user_id: string
+          window: number
+        }
+        Insert: {
+          action?: string | null
+          bar_time: string
+          created_at?: string
+          detail?: string | null
+          ema20?: number | null
+          ema8?: number | null
+          id?: string
+          kind: string
+          osc?: number | null
+          price: number
+          side: string
+          user_id: string
+          window: number
+        }
+        Update: {
+          action?: string | null
+          bar_time?: string
+          created_at?: string
+          detail?: string | null
+          ema20?: number | null
+          ema8?: number | null
+          id?: string
+          kind?: string
+          osc?: number | null
+          price?: number
+          side?: string
+          user_id?: string
+          window?: number
+        }
+        Relationships: []
+      }
+      iwm_strategy_settings: {
+        Row: {
+          bank_trigger: number
+          data_feed: string
+          discord_enabled: boolean
+          enabled: boolean
+          force_exit_time: string
+          max_trades_per_day: number
+          options_feed: string
+          starting_bankroll: number
+          stop_loss_pct: number
+          timeframe_min: number
+          user_id: string
+        }
+        Insert: {
+          bank_trigger?: number
+          data_feed?: string
+          discord_enabled?: boolean
+          enabled?: boolean
+          force_exit_time?: string
+          max_trades_per_day?: number
+          options_feed?: string
+          starting_bankroll?: number
+          stop_loss_pct?: number
+          timeframe_min?: number
+          user_id: string
+        }
+        Update: {
+          bank_trigger?: number
+          data_feed?: string
+          discord_enabled?: boolean
+          enabled?: boolean
+          force_exit_time?: string
+          max_trades_per_day?: number
+          options_feed?: string
+          starting_bankroll?: number
+          stop_loss_pct?: number
+          timeframe_min?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      iwm_strategy_state: {
+        Row: {
+          alerted_keys: Json
+          balance: number | null
+          banked_today: number
+          banked_total: number
+          cycles: number
+          last_bar_time: string | null
+          last_error: string | null
+          last_run_at: string | null
+          lock_token: string | null
+          lock_until: string | null
+          losses_today: number
+          open_trade: Json | null
+          pending_order: Json | null
+          pnl_today: number
+          reported_day: string | null
+          trades_today: number
+          trading_day: string | null
+          user_id: string
+          wins_today: number
+        }
+        Insert: {
+          alerted_keys?: Json
+          balance?: number | null
+          banked_today?: number
+          banked_total?: number
+          cycles?: number
+          last_bar_time?: string | null
+          last_error?: string | null
+          last_run_at?: string | null
+          lock_token?: string | null
+          lock_until?: string | null
+          losses_today?: number
+          open_trade?: Json | null
+          pending_order?: Json | null
+          pnl_today?: number
+          reported_day?: string | null
+          trades_today?: number
+          trading_day?: string | null
+          user_id: string
+          wins_today?: number
+        }
+        Update: {
+          alerted_keys?: Json
+          balance?: number | null
+          banked_today?: number
+          banked_total?: number
+          cycles?: number
+          last_bar_time?: string | null
+          last_error?: string | null
+          last_run_at?: string | null
+          lock_token?: string | null
+          lock_until?: string | null
+          losses_today?: number
+          open_trade?: Json | null
+          pending_order?: Json | null
+          pnl_today?: number
+          reported_day?: string | null
+          trades_today?: number
+          trading_day?: string | null
+          user_id?: string
+          wins_today?: number
+        }
+        Relationships: []
+      }
+      iwm_trades: {
+        Row: {
+          alpaca_entry_order_id: string | null
+          alpaca_exit_order_id: string | null
+          bankroll_after: number | null
+          contracts: number
+          cycle: number | null
+          entry_premium: number
+          entry_time: string
+          entry_underlying: number | null
+          exit_premium: number | null
+          exit_reason: string | null
+          exit_time: string | null
+          exit_underlying: number | null
+          expiry: string
+          final_floor_pct: number | null
+          gain_pct: number | null
+          id: string
+          option_symbol: string
+          peak_gain_pct: number | null
+          peak_premium: number | null
+          pnl: number | null
+          side: string
+          status: string
+          strike: number
+          user_id: string
+          window: number
+        }
+        Insert: {
+          alpaca_entry_order_id?: string | null
+          alpaca_exit_order_id?: string | null
+          bankroll_after?: number | null
+          contracts: number
+          cycle?: number | null
+          entry_premium: number
+          entry_time: string
+          entry_underlying?: number | null
+          exit_premium?: number | null
+          exit_reason?: string | null
+          exit_time?: string | null
+          exit_underlying?: number | null
+          expiry: string
+          final_floor_pct?: number | null
+          gain_pct?: number | null
+          id?: string
+          option_symbol: string
+          peak_gain_pct?: number | null
+          peak_premium?: number | null
+          pnl?: number | null
+          side: string
+          status?: string
+          strike: number
+          user_id: string
+          window: number
+        }
+        Update: {
+          alpaca_entry_order_id?: string | null
+          alpaca_exit_order_id?: string | null
+          bankroll_after?: number | null
+          contracts?: number
+          cycle?: number | null
+          entry_premium?: number
+          entry_time?: string
+          entry_underlying?: number | null
+          exit_premium?: number | null
+          exit_reason?: string | null
+          exit_time?: string | null
+          exit_underlying?: number | null
+          expiry?: string
+          final_floor_pct?: number | null
+          gain_pct?: number | null
+          id?: string
+          option_symbol?: string
+          peak_gain_pct?: number | null
+          peak_premium?: number | null
+          pnl?: number | null
+          side?: string
+          status?: string
+          strike?: number
+          user_id?: string
+          window?: number
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           broker_order_id: string | null
@@ -363,7 +713,45 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      iwm_acquire_lock: {
+        Args: { p_token: string; p_user_id: string }
+        Returns: {
+          alerted_keys: Json
+          balance: number | null
+          banked_today: number
+          banked_total: number
+          cycles: number
+          last_bar_time: string | null
+          last_error: string | null
+          last_run_at: string | null
+          lock_token: string | null
+          lock_until: string | null
+          losses_today: number
+          open_trade: Json | null
+          pending_order: Json | null
+          pnl_today: number
+          reported_day: string | null
+          trades_today: number
+          trading_day: string | null
+          user_id: string
+          wins_today: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "iwm_strategy_state"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      iwm_save_state: {
+        Args: {
+          p_events?: Json
+          p_state: Json
+          p_token: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
