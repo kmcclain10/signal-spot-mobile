@@ -18,6 +18,7 @@ import { Route as AuthenticatedPerformanceRouteImport } from './routes/_authenti
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSignalsRouteImport } from './routes/_authenticated/signals'
 import { Route as AuthenticatedStrategiesRouteImport } from './routes/_authenticated/strategies'
+import { Route as ApiPublicJobsIwmWindowStrategyRouteImport } from './routes/api/public/jobs/iwm-window-strategy'
 import { Route as ApiPublicJobsScanRouteImport } from './routes/api/public/jobs/scan'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -66,6 +67,12 @@ const AuthenticatedStrategiesRoute = AuthenticatedStrategiesRouteImport.update({
   path: '/strategies',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicJobsIwmWindowStrategyRoute =
+  ApiPublicJobsIwmWindowStrategyRouteImport.update({
+    id: '/api/public/jobs/iwm-window-strategy',
+    path: '/api/public/jobs/iwm-window-strategy',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicJobsScanRoute = ApiPublicJobsScanRouteImport.update({
   id: '/api/public/jobs/scan',
   path: '/api/public/jobs/scan',
@@ -81,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/signals': typeof AuthenticatedSignalsRoute
   '/strategies': typeof AuthenticatedStrategiesRoute
+  '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
   '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
 }
 export interface FileRoutesByTo {
@@ -92,6 +100,7 @@ export interface FileRoutesByTo {
   '/signals': typeof AuthenticatedSignalsRoute
   '/strategies': typeof AuthenticatedStrategiesRoute
   '/': typeof AuthenticatedIndexRoute
+  '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
   '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
 }
 export interface FileRoutesById {
@@ -105,6 +114,7 @@ export interface FileRoutesById {
   '/_authenticated/signals': typeof AuthenticatedSignalsRoute
   '/_authenticated/strategies': typeof AuthenticatedStrategiesRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
   '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
 }
 export interface FileRouteTypes {
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signals'
     | '/strategies'
+    | '/api/public/jobs/iwm-window-strategy'
     | '/api/public/jobs/scan'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/signals'
     | '/strategies'
     | '/'
+    | '/api/public/jobs/iwm-window-strategy'
     | '/api/public/jobs/scan'
   id:
     | '__root__'
@@ -141,12 +153,14 @@ export interface FileRouteTypes {
     | '/_authenticated/signals'
     | '/_authenticated/strategies'
     | '/_authenticated/'
+    | '/api/public/jobs/iwm-window-strategy'
     | '/api/public/jobs/scan'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicJobsIwmWindowStrategyRoute: typeof ApiPublicJobsIwmWindowStrategyRoute
   ApiPublicJobsScanRoute: typeof ApiPublicJobsScanRoute
 }
 
@@ -215,6 +229,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStrategiesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/jobs/iwm-window-strategy': {
+      id: '/api/public/jobs/iwm-window-strategy'
+      path: '/api/public/jobs/iwm-window-strategy'
+      fullPath: '/api/public/jobs/iwm-window-strategy'
+      preLoaderRoute: typeof ApiPublicJobsIwmWindowStrategyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/jobs/scan': {
       id: '/api/public/jobs/scan'
       path: '/api/public/jobs/scan'
@@ -251,6 +272,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicJobsIwmWindowStrategyRoute: ApiPublicJobsIwmWindowStrategyRoute,
   ApiPublicJobsScanRoute: ApiPublicJobsScanRoute,
 }
 export const routeTree = rootRouteImport
