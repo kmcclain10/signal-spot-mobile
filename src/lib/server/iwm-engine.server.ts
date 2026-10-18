@@ -101,7 +101,8 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
       // Account for a terminal partially-filled sell before placing only the remainder.
       const remaining=t.contracts-t.exitFilledQty;
       state.pending_order=null; await checkpoint();
-      await submitIntent({...p,id:undefined,client_id:`iwm-${crypto.randomUUID()}`,submitted_at:now.toISOString(),body:{...p.body,qty:String(remaining),type:"market",limit_price:undefined}});
+      const replacementId=`iwm-${crypto.randomUUID()}`;
+      await submitIntent({...p,id:undefined,client_id:replacementId,submitted_at:now.toISOString(),body:{...p.body,client_order_id:replacementId,qty:String(remaining),type:"market",limit_price:undefined}});
     }
   }
   async function requestExit(reason:string,bid?:number) {

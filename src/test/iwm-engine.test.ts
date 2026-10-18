@@ -59,4 +59,19 @@ describe("paper IWM order lifecycle",()=> {
     await runIwmUser(h.db,settings,h.api);await runIwmUser(h.db,settings,h.api);
     expect(h.writes.reports).toHaveLength(1);expect(h.writes.reports[0]).toMatchObject({day:"2026-10-16",trades:2,win_rate:0.5,pnl:20,ending_bankroll:220});
   });
+  it("cancels a sell after 30 seconds and resends only unfilled contracts with a new broker client ID",async()=> {
+    const h=harness({pending_order:intent});
+    h.api.order.mockResolvedValue({id:"buy-order",status:"filled",filled_qty:"2",filled_avg_price:"1"});
+    await runIwmUser(h.db,settings,h.api);
+    const firstClientId=h.state().pending_order.client_id;
+    h.api.clock.mockResolvedValue({timestamp:"2026-10-16T14:11:00Z",is_open:true,next_close:"2026-10-16T20:00:00Z"});
+    h.api.order.mockResolvedValue({id:"exit-order",status:"partially_filled",filled_qty:"1",filled_avg_price:"0.69"});
+    h.api.cancel.mockResolvedValue({id:"exit-order",status:"canceled",filled_qty:"1",filled_avg_price:"0.69"});
+    await runIwmUser(h.db,settings,h.api);
+    const replacement=h.state().pending_order;
+    expect(replacement.client_id).not.toBe(firstClientId);
+    expect(replacement.body.client_order_id).toBe(replacement.client_id);
+    expect(replacement.body).toMatchObject({qty:"1",side:"sell",type:"market"});
+    expect(h.state().open_trade.exitFilledQty).toBe(1);
+  });
 });
