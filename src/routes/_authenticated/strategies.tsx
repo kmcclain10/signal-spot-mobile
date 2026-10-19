@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -116,6 +117,7 @@ function StrategiesPage() {
   return (
     <div>
       <PageHeader title="Strategy Library" sub={`${strats.data?.length ?? 864} setups tested nightly.`} />
+      <Button asChild variant="outline" className="mb-5 h-auto w-full justify-between whitespace-normal py-4"><Link to="/iwm"><span className="text-left">IWM 20-Min Window<span className="mt-1 block text-xs text-muted-foreground">Paper automation • Options</span></span><span className="text-gain">Open →</span></Link></Button>
       <div className="mb-3 flex flex-col gap-3">
         <Input placeholder="Search strategies…" value={search} onChange={(e) => setSearch(e.target.value)} />
         <div className="flex flex-wrap gap-2">
