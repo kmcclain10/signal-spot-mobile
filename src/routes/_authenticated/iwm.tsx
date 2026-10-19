@@ -6,7 +6,8 @@ import { ArrowLeft, Download, RefreshCw, Activity, ShieldCheck } from "lucide-re
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getIwmScreen, saveIwmSettings, verifyIwmConnection } from "@/lib/iwm.functions";
-import { iwmScreenStatus } from "@/lib/iwm-screen-rules";
+import { iwmScreenStatus, iwmSettingsInput } from "@/lib/iwm-screen-rules";
+import type { z } from "zod";
 import { etParts } from "@/lib/iwmWindowStrategy";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -34,7 +35,7 @@ function IwmPage(){
   const [busy,setBusy]=useState(false),[exporting,setExporting]=useState(false),[now,setNow]=useState(new Date()),[selected,setSelected]=useState<Record<string,any>|null>(null);
   const [from,setFrom]=useState(""),[to,setTo]=useState("");
   const settings=data.settings ?? {enabled:false,timeframe_min:2,stop_loss_pct:30,max_trades_per_day:15,force_exit_time:"15:50",data_feed:"iex",options_feed:"indicative",discord_enabled:true,starting_bankroll:200,bank_trigger:25200};
-  const [draft,setDraft]=useState(settings);
+  const [draft,setDraft]=useState<Omit<typeof settings,"discord_enabled"> & {discord_enabled:boolean}>(settings);
   useEffect(()=>{setDraft(settings);},[data.settings]);
   useEffect(()=>{const timer=setInterval(()=>setNow(new Date()),1000);return ()=>clearInterval(timer);},[]);
   useEffect(()=>{
@@ -42,7 +43,7 @@ function IwmPage(){
     for(const table of ["iwm_signals","iwm_trades","iwm_strategy_state"]) ch.on("postgres_changes",{event:"*",schema:"public",table,filter:`user_id=eq.${user.id}`},()=>{qc.invalidateQueries({queryKey:options.queryKey});});
     ch.subscribe();return ()=>{supabase.removeChannel(ch);};
   },[user.id,qc]);
-  async function persist(values:Parameters<typeof save>[0]["data"]){setBusy(true);try{await save({data:values});await qc.invalidateQueries({queryKey:options.queryKey});toast.success("IWM settings saved");}catch(e){toast.error(e instanceof Error?e.message:"Could not save settings");}finally{setBusy(false);}}
+  async function persist(values:z.infer<typeof iwmSettingsInput>){setBusy(true);try{await save({data:values});await qc.invalidateQueries({queryKey:options.queryKey});toast.success("IWM settings saved");}catch(e){toast.error(e instanceof Error?e.message:"Could not save settings");}finally{setBusy(false);}}
   const state=data.state, trade=state?.open_trade as Record<string,any>|null;
   const status=iwmScreenStatus(now,state,settings.enabled,settings.max_trades_per_day);
   const today=etParts(now.toISOString()).date, isToday=state?.trading_day===today;
