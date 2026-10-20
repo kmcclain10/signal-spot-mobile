@@ -32,7 +32,11 @@ export const saveIwmSettings = createServerFn({method:"POST"})
       const account = await api.account();
       if (Number(account.options_trading_level ?? 0)<2 || account.trading_blocked) throw new Error("Paper account must allow buying options before enabling IWM");
     }
-    const result = await context.supabase.from("iwm_strategy_settings").upsert({user_id:context.userId,...data},{onConflict:"user_id"}).select("*").single();
+    const existing = await context.supabase.from("iwm_strategy_settings").select("user_id").eq("user_id",context.userId).maybeSingle();
+    if(existing.error) throw new Error("Could not read IWM settings");
+    const result = existing.data
+      ? await context.supabase.from("iwm_strategy_settings").update(data).eq("user_id",context.userId).select("*").single()
+      : await context.supabase.from("iwm_strategy_settings").insert({user_id:context.userId,...data}).select("*").single();
     if(result.error) throw new Error("Could not save IWM settings");
     return result.data;
   });
