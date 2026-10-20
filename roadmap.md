@@ -5,6 +5,6 @@
 - [x] Configure one-minute weekday schedule and verify real connected paper account, disabled defaults, saved $200 state, and rejected unauthenticated callbacks.
 - [ ] Market-open quote and fill verification — waits for an open market; no real orders placed during testing.
 - [ ] Discord notifications implemented — deferred at user's request; not a blocker.
-- [ ] Strategy screen and authenticated paper enable/settings controls.
-- [ ] Excel journal with date filter and mobile sharing.
-- [ ] Diagnose live scheduled callback 404 and verify the live runner.
+- [x] Strategy screen and authenticated paper enable/settings controls; phone/desktop checks and saved settings verified.
+- [x] Excel journal with date filter and mobile sharing; downloaded all five sheets with frozen headers. Native share handoff requires a supported phone.
+- [ ] Live scheduled runner — route works locally and rejects unauthenticated requests; published copy still returns 404, blocked on publishing the current app.
