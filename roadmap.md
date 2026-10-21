@@ -1,5 +1,5 @@
 # IWM 20-Min Window
-- [ ] Verify persistent account opt-in and automatic daily paper operation for Kevin.
+- [x] Enable Kevin's account opt-in and verify it persists after reopening; active weekday schedule and published callback present (401 without credentials).
 - [x] Preserve supplied strategy and test its concrete rules.
 - [x] Add user-owned strategy tables and atomic run locking.
 - [x] Implement paper-only Alpaca scanning, fill reconciliation, exits, banking and reports.
@@ -8,4 +8,4 @@
 - [ ] Discord notifications implemented — deferred at user's request; not a blocker.
 - [x] Strategy screen and authenticated paper enable/settings controls; phone/desktop checks and saved settings verified.
 - [x] Excel journal with date filter and mobile sharing; downloaded all five sheets with frozen headers. Native share handoff requires a supported phone.
-- [ ] Live scheduled runner — route works locally and rejects unauthenticated requests; published copy still returns 404, blocked on publishing the current app.
+- [x] Published scheduled callback is present and rejects unauthenticated requests (401); weekday one-minute managed schedule is active. Market-open execution remains to be verified.
