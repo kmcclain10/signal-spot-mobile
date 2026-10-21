@@ -1,4 +1,5 @@
 # IWM 20-Min Window
+- [ ] Verify persistent account opt-in and automatic daily paper operation for Kevin.
 - [x] Preserve supplied strategy and test its concrete rules.
 - [x] Add user-owned strategy tables and atomic run locking.
 - [x] Implement paper-only Alpaca scanning, fill reconciliation, exits, banking and reports.
