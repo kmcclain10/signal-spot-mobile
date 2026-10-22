@@ -12,6 +12,13 @@ export const iwmSettingsInput = z.object({
   discord_enabled: z.boolean().optional(),
 }).strict();
 
+const clock = (m: number) => `${Math.floor(m / 60) > 12 ? Math.floor(m / 60) - 12 : Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
+/** ET clock range of a 20-minute window: window 1 = 10:00–10:20, window 15 = 2:40–3:00. */
+export function windowRange(window: number) {
+  const start = 600 + (window - 1) * 20;
+  return `${clock(start)}–${clock(start + 20)} ET`;
+}
+
 export function iwmScreenStatus(now: Date, state: Record<string, any> | null, enabled: boolean, maxTrades = 15) {
   if (state?.pending_order) return { label: "Order pending", remaining: null };
   if (state?.open_trade) return { label: "In trade", remaining: null };
@@ -24,7 +31,7 @@ export function iwmScreenStatus(now: Date, state: Record<string, any> | null, en
   const window = windowOf(iso);
   const remaining = (20 - (minutes - 600) % 20) * 60 - now.getUTCSeconds();
   if (!state?.last_run_at || now.getTime() - Date.parse(state.last_run_at) > 150000) return {label:"Waiting for runner",remaining};
-  return {label:`Scanning • Window ${window}/15`,remaining};
+  return {label:`Scanning • Window ${window}/15 (${windowRange(window ?? 1)})`,remaining};
 }
 
 export const journalColumns = {
