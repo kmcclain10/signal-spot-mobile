@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/trade")({
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(desk),
   component: TradePage,
-  errorComponent: ({ error }: { error: Error }) => <div className="p-6 text-sm text-muted-foreground">Could not load your paper account: {error.message}. Check Connections.</div>,
+  errorComponent: ({ error }) => <div className="p-6 text-sm text-muted-foreground">Could not load your paper account: {error instanceof Error ? error.message : "unknown error"}. Check Connections.</div>,
 });
 const cash = (v: number) => (Number.isFinite(v) ? v : 0).toLocaleString("en-US", { style: "currency", currency: "USD" });
 const QUICK = ["IWM", "SPY", "QQQ", "AAPL", "TSLA", "NVDA"];
