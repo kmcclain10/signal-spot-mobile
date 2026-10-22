@@ -1,5 +1,6 @@
 # IWM 20-Min Window
 - [x] Refresh stale runner access binding; closed-market run processed the enabled account (1 user, 0 errors), saved a fresh heartbeat, and passed 35 IWM tests. Next published market-hours callback still needs verification.
+- [x] Market-day check: runner ran every minute and found 7 setups but no exact 3rd-candle entry on the free IEX feed (full SIP data would have entered one PUT at 12:08 ET; real-time SIP needs a paid Alpaca data plan). Screen now shows window ranges and bar close times.
 - [x] Enable Kevin's account opt-in and verify it persists after reopening; active weekday schedule and published callback present (401 without credentials).
 - [x] Preserve supplied strategy and test its concrete rules.
 - [x] Add user-owned strategy tables and atomic run locking.
