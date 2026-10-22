@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/trade")({
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(desk),
   component: TradePage,
-  errorComponent: ({ error }) => <div className="p-6 text-sm text-muted-foreground">Could not load your paper account: {error.message}. Check Connections.</div>,
+  errorComponent: ({ error }: { error: Error }) => <div className="p-6 text-sm text-muted-foreground">Could not load your paper account: {error.message}. Check Connections.</div>,
 });
 const cash = (v: number) => (Number.isFinite(v) ? v : 0).toLocaleString("en-US", { style: "currency", currency: "USD" });
 const QUICK = ["IWM", "SPY", "QQQ", "AAPL", "TSLA", "NVDA"];
@@ -97,7 +97,7 @@ function StockTicket({ onDone }: { onDone: () => void }) {
   const px = type === "limit" ? Number(limit) : (side === "buy" ? quote.data?.ask : quote.data?.bid) || quote.data?.last || 0;
   const { busy, run } = useSubmit(onDone);
   const ticket: TradeTicket = { kind: "stock", symbol, side, qty, type, ...(type === "limit" ? { limit_price: Number(limit) } : {}) };
-  return <form className="space-y-4 pt-4" onSubmit={e => { e.preventDefault(); if (type === "limit" && !(Number(limit) > 0)) return toast.error("Enter a limit price"); setConfirm(true); }}>
+  return <form className="space-y-4 pt-4" onSubmit={e => { e.preventDefault(); if (type === "limit" && !(Number(limit) > 0)) { toast.error("Enter a limit price"); return; } setConfirm(true); }}>
     <div className="space-y-2"><Label htmlFor="sym">Symbol</Label>
       <Input id="sym" value={symbol} autoCapitalize="characters" onChange={e => setSymbol(e.target.value.toUpperCase().replace(/[^A-Z.]/g, "").slice(0, 10))} />
       <div className="flex flex-wrap gap-2">{QUICK.map(s => <Button key={s} type="button" size="sm" variant={s === symbol ? "secondary" : "ghost"} onClick={() => setSymbol(s)}>{s}</Button>)}</div>

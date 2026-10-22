@@ -25,7 +25,7 @@ export const getTradeDesk = createServerFn({ method: "POST" })
       api.call("/v2/orders?status=open&limit=50&nested=false"), api.call("/v2/orders?status=closed&limit=20"), api.clock(),
     ]);
     const state = await context.supabase.from("iwm_strategy_state").select("open_trade").eq("user_id", context.userId).maybeSingle();
-    const botSymbol = state.data?.open_trade?.optionSymbol ?? null;
+    const botSymbol = (state.data?.open_trade as Rec | null)?.optionSymbol ?? null;
     return {
       account: { equity: Number(account.equity), cash: Number(account.cash), buying_power: Number(account.buying_power),
         options_buying_power: Number(account.options_buying_power ?? account.buying_power), options_level: Number(account.options_trading_level ?? 0),
@@ -93,14 +93,14 @@ export const closePaperPosition = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { api, db } = await broker(context.userId);
     const st = await context.supabase.from("iwm_strategy_state").select("open_trade").eq("user_id", context.userId).maybeSingle();
-    if (st.data?.open_trade?.optionSymbol !== data.symbol) {
+    if ((st.data?.open_trade as Rec | null)?.optionSymbol !== data.symbol) {
       await api.call(`/v2/positions/${encodeURIComponent(data.symbol)}`, "DELETE");
       return { closed: true, viaBot: false };
     }
     const token = crypto.randomUUID();
     const { data: locks, error } = await db.rpc("iwm_acquire_lock", { p_user_id: context.userId, p_token: token });
     if (error) throw new Error("Could not reach the IWM bot");
-    const state = locks?.[0];
+    const state = locks?.[0] as Rec | undefined;
     if (!state) throw new Error("The IWM bot is mid-check; try again in a few seconds");
     try {
       if (!state.open_trade) return { closed: true, viaBot: true };
