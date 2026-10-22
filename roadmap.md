@@ -12,5 +12,5 @@
 - [x] Excel journal with date filter and mobile sharing; downloaded all five sheets with frozen headers. Native share handoff requires a supported phone.
 - [x] Published scheduled callback is present and rejects unauthenticated requests (401); weekday one-minute managed schedule is active. Market-open execution remains to be verified.
 # Trade desk
-- [ ] Make manual Options follow the selected stock/ETF and verify real quotes without placing an order.
+- [x] Manual Options follow the selected stock/ETF; verified live SPY and IWM contracts on the phone-sized page, with 38 tests passing and no orders placed.
 - [x] Trade tab: stock/ETF and IWM option tickets, positions with Close (bot positions handed to bot), working/recent orders with Cancel. Page verified on phone; no test order placed.
