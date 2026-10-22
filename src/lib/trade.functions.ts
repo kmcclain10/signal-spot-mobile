@@ -38,7 +38,7 @@ export const getTradeDesk = createServerFn({ method: "POST" })
     };
   });
 
-/** Live quote for a ticket preview. IWM options pick the nearest-expiry at-the-money contract like the bot does. */
+/** Live quote for the selected underlying and its nearest-expiry at-the-money option. */
 export const getTicketQuote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ symbol: z.string().regex(/^[A-Z][A-Z.]{0,9}$/), option: z.enum(["CALL", "PUT"]).optional() }).parse(i))
@@ -50,7 +50,7 @@ export const getTicketQuote = createServerFn({ method: "POST" })
     if (!data.option) return { symbol: data.symbol, last, bid, ask, contract: null };
     const clock = await api.clock(); const now = new Date(clock.timestamp);
     const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(now);
-    const contract = last > 0 ? await api.chooseContract(data.option, last, today, "indicative", now) : null;
+    const contract = last > 0 ? await api.chooseContract(data.option, last, today, "indicative", now, data.symbol) : null;
     return { symbol: data.symbol, last, bid, ask, contract };
   });
 
@@ -65,10 +65,12 @@ export const placeManualTrade = createServerFn({ method: "POST" })
     const clock = await api.clock();
     if (!clock.is_open) throw new Error("Options can only be traded while the market is open");
     const now = new Date(clock.timestamp);
-    const t = await api.call(`/v2/stocks/IWM/trades/latest?feed=iex`, "GET", undefined, true);
+    const t = await api.call(`/v2/stocks/${data.symbol}/trades/latest?feed=iex`, "GET", undefined, true);
     const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(now);
-    const contract = await api.chooseContract(data.side, Number(t?.trade?.p), today, "indicative", now);
-    if (!contract) throw new Error("No IWM option with a fresh quote is available right now");
+    const spot = Number(t?.trade?.p);
+    if (!Number.isFinite(spot) || spot <= 0) throw new Error(`No fresh ${data.symbol} stock price is available right now`);
+    const contract = await api.chooseContract(data.side, spot, today, "indicative", now, data.symbol);
+    if (!contract) throw new Error(`No ${data.symbol} option with a fresh quote is available right now`);
     return pick(await api.submit({ symbol: contract.symbol, qty: String(data.contracts), side: "buy", type: "limit",
       limit_price: contract.ask.toFixed(2), time_in_force: "day", position_intent: "buy_to_open", client_order_id: clientId }));
   });
