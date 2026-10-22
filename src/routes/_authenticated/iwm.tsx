@@ -6,7 +6,7 @@ import { ArrowLeft, Download, RefreshCw, Activity, ShieldCheck } from "lucide-re
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getIwmScreen, saveIwmSettings, verifyIwmConnection } from "@/lib/iwm.functions";
-import { iwmScreenStatus, iwmSettingsInput } from "@/lib/iwm-screen-rules";
+import { iwmScreenStatus, iwmSettingsInput, windowRange } from "@/lib/iwm-screen-rules";
 import type { z } from "zod";
 import { etParts } from "@/lib/iwmWindowStrategy";
 import { Button } from "@/components/ui/button";
