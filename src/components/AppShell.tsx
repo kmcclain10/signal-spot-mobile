@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Activity,
   BarChart3,
+  CandlestickChart,
   Home,
   Library,
   LogOut,
@@ -21,6 +22,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 
 const NAV = [
   { to: "/", label: "Today", icon: Home },
+  { to: "/trade", label: "Trade", icon: CandlestickChart },
   { to: "/signals", label: "Signals", icon: Radio },
   { to: "/strategies", label: "Strategies", icon: Library },
   { to: "/performance", label: "Performance", icon: BarChart3 },

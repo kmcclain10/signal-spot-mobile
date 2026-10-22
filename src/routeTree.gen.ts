@@ -19,6 +19,7 @@ import { Route as AuthenticatedPerformanceRouteImport } from './routes/_authenti
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSignalsRouteImport } from './routes/_authenticated/signals'
 import { Route as AuthenticatedStrategiesRouteImport } from './routes/_authenticated/strategies'
+import { Route as AuthenticatedTradeRouteImport } from './routes/_authenticated/trade'
 import { Route as ApiPublicJobsIwmWindowStrategyRouteImport } from './routes/api/public/jobs/iwm-window-strategy'
 import { Route as ApiPublicJobsScanRouteImport } from './routes/api/public/jobs/scan'
 
@@ -73,6 +74,11 @@ const AuthenticatedStrategiesRoute = AuthenticatedStrategiesRouteImport.update({
   path: '/strategies',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTradeRoute = AuthenticatedTradeRouteImport.update({
+  id: '/trade',
+  path: '/trade',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiPublicJobsIwmWindowStrategyRoute =
   ApiPublicJobsIwmWindowStrategyRouteImport.update({
     id: '/api/public/jobs/iwm-window-strategy',
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/signals': typeof AuthenticatedSignalsRoute
   '/strategies': typeof AuthenticatedStrategiesRoute
+  '/trade': typeof AuthenticatedTradeRoute
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
   '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
 }
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/signals': typeof AuthenticatedSignalsRoute
   '/strategies': typeof AuthenticatedStrategiesRoute
+  '/trade': typeof AuthenticatedTradeRoute
   '/': typeof AuthenticatedIndexRoute
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
   '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/signals': typeof AuthenticatedSignalsRoute
   '/_authenticated/strategies': typeof AuthenticatedStrategiesRoute
+  '/_authenticated/trade': typeof AuthenticatedTradeRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
   '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signals'
     | '/strategies'
+    | '/trade'
     | '/api/public/jobs/iwm-window-strategy'
     | '/api/public/jobs/scan'
   fileRoutesByTo: FileRoutesByTo
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signals'
     | '/strategies'
+    | '/trade'
     | '/'
     | '/api/public/jobs/iwm-window-strategy'
     | '/api/public/jobs/scan'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/signals'
     | '/_authenticated/strategies'
+    | '/_authenticated/trade'
     | '/_authenticated/'
     | '/api/public/jobs/iwm-window-strategy'
     | '/api/public/jobs/scan'
@@ -248,6 +260,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStrategiesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/trade': {
+      id: '/_authenticated/trade'
+      path: '/trade'
+      fullPath: '/trade'
+      preLoaderRoute: typeof AuthenticatedTradeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/jobs/iwm-window-strategy': {
       id: '/api/public/jobs/iwm-window-strategy'
       path: '/api/public/jobs/iwm-window-strategy'
@@ -273,6 +292,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSignalsRoute: typeof AuthenticatedSignalsRoute
   AuthenticatedStrategiesRoute: typeof AuthenticatedStrategiesRoute
+  AuthenticatedTradeRoute: typeof AuthenticatedTradeRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
@@ -284,6 +304,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSignalsRoute: AuthenticatedSignalsRoute,
   AuthenticatedStrategiesRoute: AuthenticatedStrategiesRoute,
+  AuthenticatedTradeRoute: AuthenticatedTradeRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 

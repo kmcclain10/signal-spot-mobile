@@ -11,3 +11,5 @@
 - [x] Strategy screen and authenticated paper enable/settings controls; phone/desktop checks and saved settings verified.
 - [x] Excel journal with date filter and mobile sharing; downloaded all five sheets with frozen headers. Native share handoff requires a supported phone.
 - [x] Published scheduled callback is present and rejects unauthenticated requests (401); weekday one-minute managed schedule is active. Market-open execution remains to be verified.
+# Trade desk
+- [x] Trade tab: stock/ETF and IWM option tickets, positions with Close (bot positions handed to bot), working/recent orders with Cancel. Page verified on phone; no test order placed.

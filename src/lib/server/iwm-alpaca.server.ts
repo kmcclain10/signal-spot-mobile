@@ -67,6 +67,8 @@ export async function iwmAlpaca(db: any, userId: string, connectionId?: string) 
   }
   return {
     connectionId:conn.id,
+    /** Generic paper-only broker call for the manual Trade desk. */
+    call,
     clock:()=>call("/v2/clock"),
     account:()=>call("/v2/account"),
     async bars(cfg:StrategyConfig, feed:string, now:Date):Promise<Bar[]> {
