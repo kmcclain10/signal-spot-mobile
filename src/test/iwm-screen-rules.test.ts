@@ -1,5 +1,5 @@
 import { describe,it,expect } from "vitest";
-import {iwmSettingsInput,iwmScreenStatus,journalDay,journalColumns} from "@/lib/iwm-screen-rules";
+import {iwmSettingsInput,iwmScreenStatus, windowRange,journalDay,journalColumns} from "@/lib/iwm-screen-rules";
 describe("IWM screen rules",()=>{
   it("supports the requested bar intervals",()=>{for(const timeframe_min of [1,2,4,5,10]) expect(iwmSettingsInput.parse({timeframe_min})).toEqual({timeframe_min});expect(iwmSettingsInput.safeParse({timeframe_min:3}).success).toBe(false);});
   it("does not allow starting bankroll or bank trigger edits",()=>{expect(iwmSettingsInput.safeParse({starting_bankroll:300}).success).toBe(false);expect(iwmSettingsInput.safeParse({bank_trigger:1000}).success).toBe(false);});
