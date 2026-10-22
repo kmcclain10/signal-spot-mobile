@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 const desk = queryOptions({ queryKey: ["trade-desk"], queryFn: () => getTradeDesk(), refetchInterval: 10000 });
 export const Route = createFileRoute("/_authenticated/trade")({
   validateSearch: z.object({ option: z.enum(["CALL", "PUT"]).optional() }),
-  head: () => ({ meta: [{ title: "Trade — Pulse Signals" }, { name: "description", content: "Place paper stock and IWM option trades, close positions and manage orders." },
+  head: () => ({ meta: [{ title: "Trade — Pulse Signals" }, { name: "description", content: "Place paper stock, ETF and option trades, close positions and manage orders." },
     { property: "og:title", content: "Paper Trade Desk — Pulse Signals" }, { property: "og:description", content: "Manual paper trading on your Alpaca paper account." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(desk),
@@ -33,6 +33,7 @@ function TradePage() {
   const qc = useQueryClient();
   const refresh = () => qc.invalidateQueries({ queryKey: desk.queryKey });
   const [tab, setTab] = useState(search.option ? "option" : "stock");
+  const [symbol, setSymbol] = useState("IWM");
   return <div className="mx-auto max-w-5xl space-y-5">
     <header className="flex items-start justify-between gap-3">
       <div><div className="mb-1 flex items-center gap-2 text-xs text-gain"><ShieldCheck className="size-4" />PAPER ACCOUNT</div><h1 className="text-2xl font-semibold">Trade</h1></div>
@@ -46,10 +47,14 @@ function TradePage() {
     </div>
     <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
       <section className="rounded-lg border bg-card p-4">
+        <div className="mb-4 space-y-2"><Label htmlFor="sym">Symbol</Label>
+          <Input id="sym" value={symbol} autoCapitalize="characters" onChange={e => setSymbol(e.target.value.toUpperCase().replace(/[^A-Z.]/g, "").slice(0, 10))} />
+          <div className="flex flex-wrap gap-2">{QUICK.map(s => <Button key={s} type="button" size="sm" variant={s === symbol ? "secondary" : "ghost"} onClick={() => setSymbol(s)}>{s}</Button>)}</div>
+        </div>
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="w-full"><TabsTrigger value="stock" className="flex-1">Stock / ETF</TabsTrigger><TabsTrigger value="option" className="flex-1">IWM option</TabsTrigger></TabsList>
-          <TabsContent value="stock"><StockTicket onDone={refresh} /></TabsContent>
-          <TabsContent value="option"><OptionTicket initial={search.option ?? "CALL"} open={data.clock.is_open} level={data.account.options_level} onDone={refresh} /></TabsContent>
+          <TabsList className="w-full"><TabsTrigger value="stock" className="flex-1">Stock / ETF</TabsTrigger><TabsTrigger value="option" className="flex-1">Options</TabsTrigger></TabsList>
+          <TabsContent value="stock"><StockTicket key={symbol} symbol={symbol} onDone={refresh} /></TabsContent>
+          <TabsContent value="option"><OptionTicket key={symbol} symbol={symbol} initial={search.option ?? "CALL"} open={data.clock.is_open} level={data.account.options_level} onDone={refresh} /></TabsContent>
         </Tabs>
       </section>
       <div className="space-y-6">
@@ -84,8 +89,7 @@ function useSubmit(onDone: () => void) {
   } };
 }
 
-function StockTicket({ onDone }: { onDone: () => void }) {
-  const [symbol, setSymbol] = useState("IWM");
+function StockTicket({ symbol, onDone }: { symbol: string; onDone: () => void }) {
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [qty, setQty] = useState(1);
   const [type, setType] = useState<"market" | "limit">("market");
@@ -98,10 +102,6 @@ function StockTicket({ onDone }: { onDone: () => void }) {
   const { busy, run } = useSubmit(onDone);
   const ticket: TradeTicket = { kind: "stock", symbol, side, qty, type, ...(type === "limit" ? { limit_price: Number(limit) } : {}) };
   return <form className="space-y-4 pt-4" onSubmit={e => { e.preventDefault(); if (type === "limit" && !(Number(limit) > 0)) { toast.error("Enter a limit price"); return; } setConfirm(true); }}>
-    <div className="space-y-2"><Label htmlFor="sym">Symbol</Label>
-      <Input id="sym" value={symbol} autoCapitalize="characters" onChange={e => setSymbol(e.target.value.toUpperCase().replace(/[^A-Z.]/g, "").slice(0, 10))} />
-      <div className="flex flex-wrap gap-2">{QUICK.map(s => <Button key={s} type="button" size="sm" variant={s === symbol ? "secondary" : "ghost"} onClick={() => setSymbol(s)}>{s}</Button>)}</div>
-    </div>
     <div className="num grid grid-cols-3 gap-2 text-center text-sm">
       {(["bid", "last", "ask"] as const).map(k => <div key={k} className="rounded border p-2"><div className="text-[10px] uppercase text-muted-foreground">{k}</div>{quote.data?.[k] ? quote.data[k].toFixed(2) : "—"}</div>)}
     </div>
@@ -122,29 +122,30 @@ function StockTicket({ onDone }: { onDone: () => void }) {
   </form>;
 }
 
-function OptionTicket({ initial, open, level, onDone }: { initial: "CALL" | "PUT"; open: boolean; level: number; onDone: () => void }) {
+function OptionTicket({ symbol, initial, open, level, onDone }: { symbol: string; initial: "CALL" | "PUT"; open: boolean; level: number; onDone: () => void }) {
   const [side, setSide] = useState<"CALL" | "PUT">(initial);
   const [contracts, setContracts] = useState(1);
   const [confirm, setConfirm] = useState(false);
   const quoteFn = useServerFn(getTicketQuote);
-  const quote = useQuery({ queryKey: ["opt-quote", side], queryFn: () => quoteFn({ data: { symbol: "IWM", option: side } }), enabled: open, refetchInterval: 10000 });
+  const valid = /^[A-Z][A-Z.]{0,9}$/.test(symbol);
+  const quote = useQuery({ queryKey: ["opt-quote", symbol, side], queryFn: () => quoteFn({ data: { symbol, option: side } }), enabled: open && valid, refetchInterval: 10000 });
   const c = quote.data?.contract;
   const { busy, run } = useSubmit(onDone);
   return <div className="space-y-4 pt-4">
-    <p className="text-sm text-muted-foreground">Buys the nearest-expiry, at-the-money IWM option — the same contract the bot would choose. Manual trades are yours to close; the bot doesn't manage them.</p>
+    <h2 className="font-medium">{symbol || "Select a symbol"} options</h2>
     <div className="grid grid-cols-2 gap-2">
       <Button variant={side === "CALL" ? "default" : "outline"} className={cn(side === "CALL" && "bg-gain text-primary-foreground hover:bg-gain/90")} onClick={() => setSide("CALL")}><ArrowUpRight />Call</Button>
       <Button variant={side === "PUT" ? "default" : "outline"} className={cn(side === "PUT" && "bg-loss text-destructive-foreground hover:bg-loss/90")} onClick={() => setSide("PUT")}><ArrowDownRight />Put</Button>
     </div>
     {!open ? <p className="rounded border border-warning/40 bg-warning/10 p-3 text-sm text-warning">Options trade only while the market is open (9:30 AM–4:00 PM ET).</p>
       : level < 2 ? <p className="rounded border border-warning/40 bg-warning/10 p-3 text-sm text-warning">Your paper account needs options level 2 to buy options.</p>
-      : <div className="rounded border p-3 text-sm">{quote.isLoading ? "Finding contract…" : c ? <><div className="font-medium">IWM ${c.strike} {side} • exp {c.expiry}</div><div className="num mt-1 text-muted-foreground">Bid {c.bid.toFixed(2)} • Ask {c.ask.toFixed(2)} • IWM {quote.data?.last.toFixed(2)}</div></> : "No contract with a fresh quote right now"}</div>}
+      : <div className="rounded border p-3 text-sm">{!valid ? "Enter a valid symbol" : quote.isLoading ? "Finding contract…" : quote.isError ? `Could not load ${symbol} options. Try refreshing.` : c ? <><div className="font-medium">{symbol} ${c.strike} {side} • exp {c.expiry}</div><div className="num mt-1 text-muted-foreground">Bid {c.bid.toFixed(2)} • Ask {c.ask.toFixed(2)} • {symbol} {quote.data?.last.toFixed(2)}</div></> : `No ${symbol} contract with a fresh quote right now`}</div>}
     <div className="flex items-end justify-between gap-4"><div className="space-y-2"><Label>Contracts</Label><Stepper value={contracts} set={setContracts} max={50} /></div>
       <div className="text-right text-sm"><div className="text-muted-foreground">Estimated cost</div><div className="num font-semibold">{c ? cash(ticketCost(c.ask, contracts, true)) : "—"}</div></div></div>
-    <Button className="w-full" size="lg" disabled={!open || level < 2 || !c || busy} onClick={() => setConfirm(true)}>Review {side.toLowerCase()} order</Button>
-    <Confirm open={confirm} setOpen={setConfirm} busy={busy} title={`Buy ${contracts} IWM ${side}${contracts > 1 ? "s" : ""}`}
+    <Button className="w-full" size="lg" disabled={!valid || !open || level < 2 || !c || busy} onClick={() => setConfirm(true)}>Review {side.toLowerCase()} order</Button>
+    <Confirm open={confirm} setOpen={setConfirm} busy={busy} title={`Buy ${contracts} ${symbol} ${side}${contracts > 1 ? "s" : ""}`}
       body={c ? `$${c.strike} strike, exp ${c.expiry} • limit at current ask • about ${cash(ticketCost(c.ask, contracts, true))} • paper account` : ""}
-      onYes={async () => { if (await run({ kind: "iwm_option", side, contracts })) setConfirm(false); }} />
+      onYes={async () => { if (await run({ kind: "option", symbol, side, contracts })) setConfirm(false); }} />
   </div>;
 }
 

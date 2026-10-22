@@ -13,3 +13,4 @@
 - IWM automation uses managed TanStack callbacks and service-only atomic lease/checkpoint RPCs; persist order intents with broker client IDs before submissions to avoid duplicate exposure after interruption.
 - IWM screen reads use authenticated query-backed server functions; subscribe to owner-filtered realtime changes and retain polling to detect stopped runners.
 - IWM journal export is browser-only, paginates owner-visible rows and uses SheetJS table conversion plus ExcelJS formatting to retain frozen styled headers.
+- Manual stock and option tickets share one selected underlying; pass it through quote and contract selection, while automated IWM callers keep the default underlying to preserve strategy behavior.
