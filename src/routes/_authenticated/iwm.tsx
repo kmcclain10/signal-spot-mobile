@@ -36,7 +36,7 @@ function IwmPage(){
   const [lossDraft,setLossDraft]=useState(String(data.settings?.max_daily_loss ?? 100));
   const [busy,setBusy]=useState(false),[exporting,setExporting]=useState(false),[now,setNow]=useState(new Date()),[selected,setSelected]=useState<Record<string,any>|null>(null);
   const [from,setFrom]=useState(""),[to,setTo]=useState("");
-  const settings=data.settings ?? {enabled:false,timeframe_min:2,stop_loss_pct:30,max_trades_per_day:15,force_exit_time:"15:50",data_feed:"iex",options_feed:"indicative",discord_enabled:true,starting_bankroll:200,bank_trigger:25200};
+  const settings=data.settings ?? {enabled:false,timeframe_min:2,stop_loss_pct:30,max_trades_per_day:15,force_exit_time:"15:50",data_feed:"iex",options_feed:"indicative",discord_enabled:true,starting_bankroll:200,bank_trigger:25200,kill_switch:false,max_daily_loss:100};
   const [draft,setDraft]=useState<Omit<typeof settings,"discord_enabled"> & {discord_enabled:boolean}>(settings);
   useEffect(()=>{setDraft(settings);},[data.settings]);
   useEffect(()=>{const timer=setInterval(()=>setNow(new Date()),1000);return ()=>clearInterval(timer);},[]);
