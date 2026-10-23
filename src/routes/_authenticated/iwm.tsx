@@ -5,8 +5,9 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Download, RefreshCw, Activity, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { getIwmScreen, saveIwmSettings, verifyIwmConnection } from "@/lib/iwm.functions";
+import { getIwmScreen, saveIwmSettings, verifyIwmConnection, acknowledgeIwmReview } from "@/lib/iwm.functions";
 import { iwmScreenStatus, iwmSettingsInput, windowRange } from "@/lib/iwm-screen-rules";
+import { iwmScheduleTime } from "@/lib/iwm-engine-rules";
 import type { z } from "zod";
 import { etParts } from "@/lib/iwmWindowStrategy";
 import { Button } from "@/components/ui/button";
@@ -31,7 +32,8 @@ function Stat({label,value,tone}:{label:string;value:string;tone?:string}) {retu
 
 function IwmPage(){
   const {data}=useSuspenseQuery(options), qc=useQueryClient(), user=Route.useRouteContext().user;
-  const save=useServerFn(saveIwmSettings), verify=useServerFn(verifyIwmConnection);
+  const save=useServerFn(saveIwmSettings), verify=useServerFn(verifyIwmConnection), acknowledge=useServerFn(acknowledgeIwmReview);
+  const [lossDraft,setLossDraft]=useState(String(data.settings?.max_daily_loss ?? 100));
   const [busy,setBusy]=useState(false),[exporting,setExporting]=useState(false),[now,setNow]=useState(new Date()),[selected,setSelected]=useState<Record<string,any>|null>(null);
   const [from,setFrom]=useState(""),[to,setTo]=useState("");
   const settings=data.settings ?? {enabled:false,timeframe_min:2,stop_loss_pct:30,max_trades_per_day:15,force_exit_time:"15:50",data_feed:"iex",options_feed:"indicative",discord_enabled:true,starting_bankroll:200,bank_trigger:25200};
@@ -56,12 +58,18 @@ function IwmPage(){
     ...data.banks.map(r=>({id:r.id,at:r.created_at,type:"Banked",body:`${cash(r.amount_banked)} • Cycle ${r.new_cycle}`,tone:"text-banked"})),
     ...data.reports.map(r=>({id:r.id,at:r.day+"T23:00:00Z",type:"Daily",body:`${r.trades} trades • P&L ${cash(r.pnl)}`,tone:"text-primary"})),
   ].sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
-  const stale=!!state?.last_run_at && settings.enabled && now.getTime()-Date.parse(state.last_run_at)>150000;
+  const offline=settings.enabled && iwmScheduleTime(now) && (!state?.last_success_at || now.getTime()-Date.parse(state.last_success_at)>180000);
+  const stale=!offline && !!state?.last_run_at && settings.enabled && now.getTime()-Date.parse(state.last_run_at)>150000;
+  const earlyClose=!!state?.session_close && etParts(state.session_close).date===today && etParts(state.session_close).minutes<960;
   return <div className="mx-auto max-w-5xl space-y-5">
     <Button variant="ghost" size="sm" asChild><Link to="/strategies"><ArrowLeft/>Strategies</Link></Button>
     <header className="flex flex-wrap items-start justify-between gap-4"><div><div className="mb-2 flex items-center gap-2 text-xs text-gain"><ShieldCheck className="size-4"/>PAPER ONLY</div><h1 className="text-2xl font-semibold">IWM 20-Min Window</h1></div><div className="flex items-center gap-2"><Label htmlFor="iwm-enabled">Enabled</Label><Switch id="iwm-enabled" checked={settings.enabled} disabled={busy} onCheckedChange={enabled=>persist({enabled})}/></div></header>
     <div className="flex flex-wrap items-center justify-between gap-2 border-y py-3"><span className="flex items-center gap-2 text-sm"><Activity className={cn("size-4",settings.enabled?"text-gain":"text-muted-foreground")}/>{status.label}{status.remaining!=null&&<span className="num text-muted-foreground">• {Math.floor(status.remaining/60)}:{String(status.remaining%60).padStart(2,"0")} left</span>}</span><Button size="icon" variant="ghost" title="Refresh" aria-label="Refresh IWM" onClick={()=>qc.invalidateQueries({queryKey:options.queryKey})}><RefreshCw/></Button></div>
+    {offline&&<div role="alert" className="flex items-center gap-2 rounded-md bg-destructive/15 p-3 text-sm font-medium text-destructive"><span className="size-2 rounded-full bg-destructive"/>Bot offline — no successful check in the last 3 minutes</div>}
+    {earlyClose&&<div className="border-l-2 border-warning bg-warning/10 p-3 text-sm text-warning">Early close today {time(state.session_close)} — no new entries in the final hour</div>}
+    {state?.needs_review&&<div className="space-y-2 border-l-2 border-destructive bg-destructive/10 p-3 text-sm text-destructive"><p><strong>New trades paused:</strong> {state.needs_review}. Check your Alpaca positions, then confirm.</p><Button size="sm" variant="outline" disabled={busy} onClick={async()=>{setBusy(true);try{await acknowledge();await qc.invalidateQueries({queryKey:options.queryKey});toast.success("Bot may trade again");}finally{setBusy(false);}}}>I've checked — resume trading</Button></div>}
     {(state?.last_error||stale)&&<div className="border-l-2 border-warning bg-warning/10 p-3 text-sm text-warning">{state?.last_error??"The runner has not checked recently."}</div>}
+    <section className="flex flex-wrap items-end justify-between gap-3 rounded-md border p-3"><div className="space-y-1"><Label htmlFor="iwm-loss">Daily loss limit ($)</Label><div className="flex gap-2"><Input id="iwm-loss" type="number" inputMode="decimal" className="w-28" value={lossDraft} onChange={e=>setLossDraft(e.target.value)}/><Button size="sm" variant="outline" disabled={busy||!(Number(lossDraft)>0)} onClick={()=>persist({max_daily_loss:Number(lossDraft)})}>Save</Button></div><p className="text-xs text-muted-foreground">No new trades once today's loss reaches this.</p></div>{settings.kill_switch?<p className="text-sm font-medium text-destructive">Kill switch on — turn Enabled back on to resume</p>:<Button variant="destructive" disabled={busy} onClick={()=>{if(confirm("Stop the bot now? It cancels its working order, sells its open position and turns itself off."))persist({kill_switch:true});}}>Kill switch</Button>}</section>
     <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground"><span>Last check: {state?.last_run_at?time(state.last_run_at):"Not yet run"}</span><span>Last bar closed: {state?.last_bar_time?time(new Date(Date.parse(state.last_bar_time)+settings.timeframe_min*60000).toISOString()):"—"}</span></div>
     <Tabs defaultValue="overview"><TabsList className="w-full"><TabsTrigger value="overview" className="flex-1">Overview</TabsTrigger><TabsTrigger value="rules" className="flex-1">Rules</TabsTrigger><TabsTrigger value="settings" className="flex-1">Settings</TabsTrigger></TabsList>
       <TabsContent value="overview" className="space-y-6">
