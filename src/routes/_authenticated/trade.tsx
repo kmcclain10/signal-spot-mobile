@@ -46,7 +46,7 @@ function TradePage() {
       <Stat label="Market" value={data.clock.is_open ? "Open" : "Closed"} tone={data.clock.is_open ? "text-gain" : "text-muted-foreground"} />
     </div>
     <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-      <section className="rounded-lg border bg-card p-4">
+      <section className="min-w-0 lg:border-r lg:pr-6">
         <div className="mb-4 space-y-2"><Label htmlFor="sym">Symbol</Label>
           <Input id="sym" value={symbol} autoCapitalize="characters" onChange={e => setSymbol(e.target.value.toUpperCase().replace(/[^A-Z.]/g, "").slice(0, 10))} />
           <div className="flex flex-wrap gap-2">{QUICK.map(s => <Button key={s} type="button" size="sm" variant={s === symbol ? "secondary" : "ghost"} onClick={() => setSymbol(s)}>{s}</Button>)}</div>
@@ -67,7 +67,7 @@ function TradePage() {
 }
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
-  return <div className="rounded-lg border bg-card p-3"><div className="text-xs text-muted-foreground">{label}</div><div className={cn("num mt-1 font-semibold", tone)}>{value}</div></div>;
+  return <div className="min-w-0 border-b py-4"><div className="text-xs text-muted-foreground">{label}</div><div className={cn("num mt-2 break-words text-xl font-semibold", tone)}>{value}</div></div>;
 }
 
 function Stepper({ value, set, max }: { value: number; set: (n: number) => void; max: number }) {

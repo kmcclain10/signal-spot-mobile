@@ -22,7 +22,7 @@ export function PageHeader({ title, sub, action }: { title: string; sub?: string
   return (
     <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="text-3xl font-semibold">{title}</h1>
         {sub && <p className="mt-1 text-sm text-muted-foreground">{sub}</p>}
       </div>
       {action}
@@ -31,7 +31,7 @@ export function PageHeader({ title, sub, action }: { title: string; sub?: string
 }
 
 export function Panel({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn("rounded-[10px] border bg-card", className)}>{children}</div>;
+  return <div className={cn("min-w-0", className)}>{children}</div>;
 }
 
 export function StatCard({ label, value, tone, hint }: { label: string; value: string; tone?: "gain" | "loss"; hint?: string }) {
@@ -48,7 +48,7 @@ export function StatCard({ label, value, tone, hint }: { label: string; value: s
 
 export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center rounded-[10px] border border-dashed px-6 py-10 text-center">
+    <div className="flex flex-col items-center border-y px-6 py-10 text-center">
       <Inbox className="mb-3 size-6 text-muted-foreground" />
       <div className="text-sm font-medium">{title}</div>
       {body && <p className="mt-1 max-w-sm text-sm text-muted-foreground">{body}</p>}
@@ -59,7 +59,7 @@ export function EmptyState({ title, body, action }: { title: string; body?: stri
 
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   return (
-    <div className="flex flex-col items-center rounded-[10px] border border-loss/40 px-6 py-8 text-center">
+    <div className="flex flex-col items-center border-y border-loss/40 px-6 py-8 text-center">
       <AlertTriangle className="mb-2 size-5 text-loss" />
       <p className="max-w-md text-sm text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
       {onRetry && (

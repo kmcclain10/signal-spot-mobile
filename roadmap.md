@@ -12,7 +12,14 @@
 - [x] Excel journal with date filter and mobile sharing; downloaded all five sheets with frozen headers. Native share handoff requires a supported phone.
 - [x] Published scheduled callback is present and rejects unauthenticated requests (401); weekday one-minute managed schedule is active. Market-open execution remains to be verified.
 - [x] Audit Fix B/C: broker position check, early-close entries, kill switch, $100 daily loss limit (default), 15s quote guard, run history, error log, Bot offline warning; 62 tests pass.
-- [ ] Robinhood-style redesign P1–P8 — next, after paper-testing the safety fixes.
+- [x] P1 — Five-tab shell, black/green/orange design, local market time, refresh gesture and button. All five destinations checked signed-in at phone size; desktop quotes and account loaded; IWM remains enabled; 62 tests pass. Existing routes retained; full destination screens follow in P2–P8.
+- [ ] P2 — Home portfolio history, positions and editable live watchlist; next after P1 paper checks.
+- [ ] P3 — Explore asset search, movers and detailed quote pages.
+- [ ] P4 — Expanded stock ticket and order status; validate new order rules before enabling.
+- [ ] P5 — Options chain and ticket; preserve selected underlying and validate new safety rules.
+- [ ] P6 — Bot allocation and controls; keep IWM paper-only.
+- [ ] P7 — Unified activity, exports and supported notifications; Discord remains deferred.
+- [ ] P8 — Account security and supported phone experience; native iOS requires separate supported delivery.
 # Trade desk
 - [x] Manual Options follow the selected stock/ETF; verified live SPY and IWM contracts on the phone-sized page, with 38 tests passing and no orders placed.
 - [x] Trade tab: stock/ETF and IWM option tickets, positions with Close (bot positions handed to bot), working/recent orders with Cancel. Page verified on phone; no test order placed.

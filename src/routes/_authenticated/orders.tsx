@@ -94,7 +94,7 @@ function OrdersPage() {
     <div>
       <PageHeader title="Orders & Positions" sub="Live from your default broker." />
       <Tabs defaultValue="positions">
-        <TabsList>
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:flex sm:w-fit">
           <TabsTrigger value="positions">Positions</TabsTrigger>
           <TabsTrigger value="open">Open orders</TabsTrigger>
           <TabsTrigger value="fills">Today's fills</TabsTrigger>
