@@ -4,8 +4,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ArrowDownRight, ArrowUpRight, Bot, Minus, Plus, RefreshCw, ShieldCheck, X } from "lucide-react";
-import { getTradeDesk, getTicketQuote, placeManualTrade, cancelPaperOrder, closePaperPosition } from "@/lib/trade.functions";
-import { ticketCost, type TradeTicket } from "@/lib/trade-rules";
+import { getTradeDesk, getTicketQuote, placeManualTrade, cancelPaperOrder, closePaperPosition, getPaperOrder } from "@/lib/trade.functions";
+import { ticketCost, stockTicket, orderStatus, type TradeTicket } from "@/lib/trade-rules";
+import { Switch } from "@/components/ui/switch";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { tradeSearch } from "@/lib/explore-rules";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,25 +86,46 @@ function useSubmit(onDone: () => void) {
   const [busy, setBusy] = useState(false);
   return { busy, async run(t: TradeTicket) {
     setBusy(true);
-    try { const o = await place({ data: t }); toast.success(`Paper order ${o.status}: ${o.side} ${o.qty} ${o.symbol}`); onDone(); return true; }
-    catch (e) { toast.error(e instanceof Error ? e.message : "Order failed"); return false; }
+    try { const o = await place({ data: t }); toast.success(`Paper order sent: ${o.side} ${o.notional ? cash(o.notional) : o.qty} ${o.symbol}`); onDone(); return o; }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Order failed"); return null; }
     finally { setBusy(false); }
   } };
 }
 
+const TYPES = [["market", "Market"], ["limit", "Limit"], ["stop", "Stop"], ["stop_limit", "Stop limit"]] as const;
+type OType = typeof TYPES[number][0];
 function StockTicket({ symbol, initial, onDone }: { symbol: string; initial: "buy" | "sell"; onDone: () => void }) {
   const [side, setSide] = useState<"buy" | "sell">(initial);
+  const [mode, setMode] = useState<"shares" | "dollars">("shares");
   const [qty, setQty] = useState(1);
-  const [type, setType] = useState<"market" | "limit">("market");
+  const [dollars, setDollars] = useState("");
+  const [type, setType] = useState<OType>("market");
   const [limit, setLimit] = useState("");
+  const [stop, setStop] = useState("");
+  const [tif, setTif] = useState<"day" | "gtc">("day");
+  const [ext, setExt] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [placed, setPlaced] = useState<string | null>(null);
   const quoteFn = useServerFn(getTicketQuote);
   const valid = /^[A-Z][A-Z.]{0,9}$/.test(symbol);
   const quote = useQuery({ queryKey: ["quote", symbol], queryFn: () => quoteFn({ data: { symbol } }), enabled: valid, refetchInterval: 5000 });
-  const px = type === "limit" ? Number(limit) : (side === "buy" ? quote.data?.ask : quote.data?.bid) || quote.data?.last || 0;
+  const dollarsMode = mode === "dollars";
+  useEffect(() => { if (dollarsMode) { setType("market"); setTif("day"); setExt(false); } }, [dollarsMode]);
+  useEffect(() => { if (type !== "limit" || tif !== "day") setExt(false); }, [type, tif]);
+  const hasLimit = type === "limit" || type === "stop_limit", hasStop = type === "stop" || type === "stop_limit";
+  const mkt = (side === "buy" ? quote.data?.ask : quote.data?.bid) || quote.data?.last || 0;
+  const px = hasLimit ? Number(limit) : hasStop ? Number(stop) : mkt;
+  const raw = { kind: "stock" as const, symbol, side, type, time_in_force: tif, extended_hours: ext,
+    ...(dollarsMode ? { notional: Number(dollars) } : { qty }),
+    ...(hasLimit ? { limit_price: Number(limit) || undefined } : {}), ...(hasStop ? { stop_price: Number(stop) || undefined } : {}) };
+  const parsed = stockTicket.safeParse(raw);
+  const problem = parsed.success ? null : parsed.error.issues[0]?.message;
+  const est = dollarsMode ? Number(dollars) || 0 : px ? ticketCost(px, qty, false) : 0;
+  const estShares = dollarsMode && mkt ? (Number(dollars) || 0) / mkt : null;
+  const typeText = type === "market" ? "Market" : type === "limit" ? `Limit $${Number(limit).toFixed(2)}` : type === "stop" ? `Stop $${Number(stop).toFixed(2)}` : `Stop $${Number(stop).toFixed(2)} → limit $${Number(limit).toFixed(2)}`;
   const { busy, run } = useSubmit(onDone);
-  const ticket: TradeTicket = { kind: "stock", symbol, side, qty, type, ...(type === "limit" ? { limit_price: Number(limit) } : {}) };
-  return <form className="space-y-4 pt-4" onSubmit={e => { e.preventDefault(); if (type === "limit" && !(Number(limit) > 0)) { toast.error("Enter a limit price"); return; } setConfirm(true); }}>
+  const priceField = (id: string, label: string, v: string, set: (s: string) => void) => <div className="space-y-2"><Label htmlFor={id}>{label}</Label><Input id={id} inputMode="decimal" className="num" value={v} placeholder={quote.data?.last ? quote.data.last.toFixed(2) : "0.00"} onChange={e => set(e.target.value.replace(/[^0-9.]/g, ""))} /></div>;
+  return <form className="space-y-4 pt-4" onSubmit={e => { e.preventDefault(); if (problem) { toast.error(problem); return; } setConfirm(true); }}>
     <div className="num grid grid-cols-3 gap-2 text-center text-sm">
       {(["bid", "last", "ask"] as const).map(k => <div key={k} className="rounded border p-2"><div className="text-[10px] uppercase text-muted-foreground">{k}</div>{quote.data?.[k] ? quote.data[k].toFixed(2) : "—"}</div>)}
     </div>
@@ -110,16 +133,27 @@ function StockTicket({ symbol, initial, onDone }: { symbol: string; initial: "bu
       <Button type="button" variant={side === "buy" ? "default" : "outline"} className={cn(side === "buy" && "bg-gain text-primary-foreground hover:bg-gain/90")} onClick={() => setSide("buy")}><ArrowUpRight />Buy</Button>
       <Button type="button" variant={side === "sell" ? "default" : "outline"} className={cn(side === "sell" && "bg-loss text-destructive-foreground hover:bg-loss/90")} onClick={() => setSide("sell")}><ArrowDownRight />Sell</Button>
     </div>
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div className="space-y-2"><Label>Shares</Label><Stepper value={qty} set={setQty} max={10000} /></div>
-      <div className="space-y-2"><Label>Order type</Label><div className="flex gap-1">{(["market", "limit"] as const).map(t => <Button key={t} type="button" size="sm" variant={type === t ? "secondary" : "ghost"} onClick={() => setType(t)} className="capitalize">{t}</Button>)}</div></div>
+    <div className="space-y-2"><Label>{side === "buy" ? "Buy in" : "Sell in"}</Label>
+      <div className="flex gap-1">{(["shares", "dollars"] as const).map(m => <Button key={m} type="button" size="sm" variant={mode === m ? "secondary" : "ghost"} className="capitalize" onClick={() => setMode(m)}>{m}</Button>)}</div>
+      {dollarsMode ? <div><Input aria-label="Dollar amount" inputMode="decimal" className="num" placeholder="$ amount (min $1)" value={dollars} onChange={e => setDollars(e.target.value.replace(/[^0-9.]/g, ""))} />
+        <p className="mt-1 text-xs text-muted-foreground">Market day order. {estShares ? `About ${estShares.toFixed(4)} shares.` : ""} Only for stocks that allow fractional shares.</p></div>
+        : <Stepper value={qty} set={setQty} max={10000} />}
     </div>
-    {type === "limit" && <div className="space-y-2"><Label htmlFor="limit">Limit price</Label><Input id="limit" inputMode="decimal" value={limit} placeholder={quote.data?.last?.toFixed(2)} onChange={e => setLimit(e.target.value.replace(/[^0-9.]/g, ""))} /></div>}
-    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Estimated {side === "buy" ? "cost" : "proceeds"}</span><span className="num font-semibold">{px ? cash(ticketCost(px, qty, false)) : "—"}</span></div>
-    <Button type="submit" className="w-full" size="lg" disabled={!valid || busy}>Review {side} order</Button>
-    <Confirm open={confirm} setOpen={setConfirm} busy={busy} title={`${side === "buy" ? "Buy" : "Sell"} ${qty} ${symbol}`}
-      body={`${type === "market" ? "Market" : `Limit $${Number(limit).toFixed(2)}`} • day order • about ${px ? cash(ticketCost(px, qty, false)) : "unknown"} • paper account`}
-      onYes={async () => { if (await run(ticket)) setConfirm(false); }} />
+    <div className="space-y-2"><Label>Order type</Label>
+      <div className="grid grid-cols-4 gap-1">{TYPES.map(([t, l]) => <Button key={t} type="button" size="sm" disabled={dollarsMode && t !== "market"} variant={type === t ? "secondary" : "ghost"} onClick={() => setType(t)}>{l}</Button>)}</div>
+    </div>
+    {(hasStop || hasLimit) && <div className="grid grid-cols-2 gap-3">{hasStop && priceField("stop", "Stop price", stop, setStop)}{hasLimit && priceField("limit", "Limit price", limit, setLimit)}</div>}
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="space-y-2"><Label>Good for</Label><div className="flex gap-1">{([["day", "Today"], ["gtc", "Until canceled"]] as const).map(([t, l]) => <Button key={t} type="button" size="sm" disabled={dollarsMode && t === "gtc"} variant={tif === t ? "secondary" : "ghost"} onClick={() => setTif(t)}>{l}</Button>)}</div></div>
+      <label className="flex items-center gap-2 text-sm"><Switch checked={ext} disabled={type !== "limit" || tif !== "day"} onCheckedChange={setExt} />Extended hours</label>
+    </div>
+    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Estimated {side === "buy" ? "cost" : "proceeds"}</span><span className="num font-semibold">{est ? cash(est) : "—"}</span></div>
+    {problem && <p className="text-xs text-warning">{problem}</p>}
+    <Button type="submit" className="w-full" size="lg" disabled={!valid || busy || !!problem}>Review {side} order</Button>
+    <Confirm open={confirm} setOpen={setConfirm} busy={busy} title={`${side === "buy" ? "Buy" : "Sell"} ${dollarsMode ? cash(Number(dollars)) + " of" : qty} ${symbol}`}
+      body={`${typeText} • ${tif === "day" ? "today only" : "good until canceled"}${ext ? " • extended hours" : ""} • about ${est ? cash(est) : "unknown"} • paper account`}
+      onYes={async () => { if (!parsed.success) return; const o = await run(parsed.data); if (o) { setConfirm(false); setPlaced(o.id); } }} />
+    <OrderSheet id={placed} onClose={() => setPlaced(null)} onDone={onDone} />
   </form>;
 }
 
@@ -179,15 +213,46 @@ function Positions({ rows, onDone }: { rows: Pos[]; onDone: () => void }) {
 }
 
 type Ord = Awaited<ReturnType<typeof getTradeDesk>>["open"][number];
+const toneClass = (t: string) => t === "gain" ? "text-gain" : t === "loss" ? "text-loss" : t === "warning" ? "text-warning" : "text-muted-foreground";
+const etTime = (v: string | null) => v ? new Date(v).toLocaleString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit" }) + " ET" : null;
+const typeLabel = (o: Ord) => `${o.type.replace("_", " ")}${o.stop_price ? ` stop ${o.stop_price.toFixed(2)}` : ""}${o.limit_price ? ` limit ${o.limit_price.toFixed(2)}` : ""}`;
+
+function OrderSheet({ id, onClose, onDone }: { id: string | null; onClose: () => void; onDone: () => void }) {
+  const fn = useServerFn(getPaperOrder);
+  const cancelFn = useServerFn(cancelPaperOrder);
+  const q = useQuery({ queryKey: ["paper-order", id], queryFn: () => fn({ data: { id: id! } }), enabled: !!id,
+    refetchInterval: (query) => { const o = query.state.data; return o && orderStatus(o.status, o.filled_qty, o.qty).done ? false : 2000; } });
+  const o = q.data, st = o ? orderStatus(o.status, o.filled_qty, o.qty) : null;
+  const steps = o ? [["Submitted", o.submitted_at], ["Filled", o.filled_at], ["Canceled", o.canceled_at], ["Expired", o.expired_at], ["Failed", o.failed_at]].filter(([, t]) => t) as [string, string][] : [];
+  return <Sheet open={!!id} onOpenChange={v => !v && onClose()}><SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
+    <SheetHeader><SheetTitle>{o ? `${o.side === "buy" ? "Buy" : "Sell"} ${o.notional ? cash(o.notional) + " of" : o.qty} ${o.symbol}` : "Order status"}</SheetTitle>
+      <SheetDescription>Paper order{o?.bot ? " • managed by the IWM bot" : ""}</SheetDescription></SheetHeader>
+    {q.isLoading ? <p className="p-4 text-sm text-muted-foreground">Loading order…</p> : q.isError ? <p className="p-4 text-sm text-loss">Could not load this order.</p> : o && st && <div className="space-y-4 p-4">
+      <div className={cn("text-2xl font-semibold", toneClass(st.tone))}>{st.label}</div>
+      {o.qty > 0 && <div><div className="h-2 overflow-hidden rounded bg-secondary"><div className="h-full bg-gain" style={{ width: `${Math.min(100, (o.filled_qty / o.qty) * 100)}%` }} /></div>
+        <div className="num mt-1 text-xs text-muted-foreground">{o.filled_qty} of {o.qty} filled{o.filled_avg_price ? ` @ ${o.filled_avg_price.toFixed(2)}` : ""}</div></div>}
+      <dl className="num grid grid-cols-2 gap-y-2 text-sm">
+        <dt className="text-muted-foreground">Type</dt><dd className="text-right capitalize">{typeLabel(o)}</dd>
+        <dt className="text-muted-foreground">Good for</dt><dd className="text-right">{o.time_in_force === "gtc" ? "Until canceled" : "Today"}{o.extended_hours ? " • ext. hours" : ""}</dd>
+        {o.filled_avg_price != null && <><dt className="text-muted-foreground">Fill value</dt><dd className="text-right">{cash(o.filled_avg_price * o.filled_qty * (o.asset_class === "us_option" ? 100 : 1))}</dd></>}
+      </dl>
+      <ol className="space-y-2 border-l pl-4 text-sm">{steps.map(([l, t]) => <li key={l}><span className="font-medium">{l}</span> <span className="text-muted-foreground">{etTime(t)}</span></li>)}</ol>
+      {!st.done && !o.bot && <Button variant="outline" className="w-full" onClick={async () => { try { await cancelFn({ data: { id: o.id } }); toast.success("Cancel requested"); q.refetch(); onDone(); } catch (e) { toast.error(e instanceof Error ? e.message : "Cancel failed"); } }}>Cancel order</Button>}
+    </div>}
+  </SheetContent></Sheet>;
+}
+
 function Orders({ title, rows, cancel, onDone }: { title: string; rows: Ord[]; cancel?: boolean; onDone: () => void }) {
   const cancelFn = useServerFn(cancelPaperOrder);
+  const [open, setOpen] = useState<string | null>(null);
   if (!rows.length && !cancel) return null;
   return <section><h2 className="mb-2 font-medium">{title}</h2>
     {!rows.length && <p className="py-3 text-sm text-muted-foreground">No working orders</p>}
-    {rows.map(o => <div key={o.id} className="flex items-center justify-between gap-3 border-b py-2 text-sm">
-      <div className="min-w-0"><div className="truncate"><span className={o.side === "buy" ? "text-gain" : "text-loss"}>{o.side.toUpperCase()}</span> {o.qty} {o.symbol}{o.bot && <span className="ml-2 text-[10px] text-muted-foreground">bot</span>}</div>
-        <div className="num text-xs text-muted-foreground">{o.type}{o.limit_price ? ` ${o.limit_price.toFixed(2)}` : ""} • {o.status}{o.filled_avg_price ? ` @ ${o.filled_avg_price.toFixed(2)}` : ""} • {new Date(o.submitted_at).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET</div></div>
+    {rows.map(o => { const st = orderStatus(o.status, o.filled_qty, o.qty); return <div key={o.id} className="flex items-center justify-between gap-3 border-b py-2 text-sm">
+      <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setOpen(o.id)}><div className="truncate"><span className={o.side === "buy" ? "text-gain" : "text-loss"}>{o.side.toUpperCase()}</span> {o.notional ? cash(o.notional) : o.qty} {o.symbol}{o.bot && <span className="ml-2 text-[10px] text-muted-foreground">bot</span>}</div>
+        <div className="num text-xs text-muted-foreground"><span className="capitalize">{typeLabel(o)}</span> • <span className={toneClass(st.tone)}>{st.label}</span>{o.filled_avg_price ? ` @ ${o.filled_avg_price.toFixed(2)}` : ""} • {new Date(o.submitted_at).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET</div></button>
       {cancel && !o.bot && <Button size="icon" variant="ghost" aria-label={`Cancel ${o.symbol}`} onClick={async () => { try { await cancelFn({ data: { id: o.id } }); toast.success("Order canceled"); onDone(); } catch (e) { toast.error(e instanceof Error ? e.message : "Cancel failed"); } }}><X /></Button>}
-    </div>)}
+    </div>; })}
+    <OrderSheet id={open} onClose={() => setOpen(null)} onDone={onDone} />
   </section>;
 }
