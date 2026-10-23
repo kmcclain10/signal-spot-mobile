@@ -14,7 +14,7 @@
 - [x] Audit Fix B/C: broker position check, early-close entries, kill switch, $100 daily loss limit (default), 15s quote guard, run history, error log, Bot offline warning; 62 tests pass.
 - [x] P1 — Five-tab shell, black/green/orange design, local market time, refresh gesture and button. All five destinations checked signed-in at phone size; desktop quotes and account loaded; IWM remains enabled; 62 tests pass. Existing routes retained; full destination screens follow in P2–P8.
 - [x] P2 — Home paper portfolio chart, all seven periods, hover/slider scrubbing, day dollar/percent return, separate stock/options buying power, positions and editable live watchlist. Real account history and prices verified; add/reorder/remove saved and reopened, original watchlist restored; five-second foreground refresh and background pause verified; 67 tests pass. Account had no open positions, so populated position rendering remains unverified; no orders placed.
-- [ ] P3 — Explore asset search, movers and detailed quote pages.
+- [ ] P3 — In progress: Explore asset search, recent searches, movers/most-active/picks, IWM status and detailed quote pages with selected-symbol trading.
 - [ ] P4 — Expanded stock ticket and order status; validate new order rules before enabling.
 - [ ] P5 — Options chain and ticket; preserve selected underlying and validate new safety rules.
 - [ ] P6 — Bot allocation and controls; keep IWM paper-only.
