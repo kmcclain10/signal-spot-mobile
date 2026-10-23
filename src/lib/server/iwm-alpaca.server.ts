@@ -68,6 +68,12 @@ export async function iwmAlpaca(db: any, userId: string, connectionId?: string) 
     call,
     clock:()=>call("/v2/clock"),
     account:()=>call("/v2/account"),
+    positions:async():Promise<any[]>=>(await call("/v2/positions")) ?? [],
+    /** Most recent sell fill for a symbol, used when a position closed outside the bot. */
+    async lastSellFill(symbol:string) {
+      const fills:any[] = (await call(`/v2/account/activities/FILL?${new URLSearchParams({direction:"desc",page_size:"100"})}`)) ?? [];
+      return fills.find(f=>f.symbol===symbol && f.side==="sell") ?? null;
+    },
     async bars(cfg:StrategyConfig, feed:string, now:Date):Promise<Bar[]> {
       return pages("/v2/stocks/bars",{symbols:"IWM",timeframe:`${cfg.timeframeMin}Min`,start:new Date(now.getTime()-3*86400000).toISOString(),end:now.toISOString(),feed,adjustment:"raw",limit:"10000",sort:"asc"},"bars",true);
     },
