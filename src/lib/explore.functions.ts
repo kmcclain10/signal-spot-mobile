@@ -19,7 +19,7 @@ export const getExploreLists = createServerFn({ method: "POST" }).middleware([re
     context.supabase.from("iwm_strategy_state").select("last_run_at,pnl_today,trades_today,last_error,needs_review,open_trade,trading_day").eq("user_id", context.userId).maybeSingle(),
     context.supabase.from("picks").select("id,strategy_id,trade_date,bt_win_rate").eq("user_id", context.userId).order("trade_date", { ascending: false }).limit(10),
   ]);
-  let movers: Rec | null = null, active: Rec | null = null;
+  let movers: { gainers: Rec[]; losers: Rec[]; last_updated?: string } | null = null, active: { most_actives: Rec[]; last_updated?: string } | null = null;
   try { const api = await apiFor(context.userId); [movers, active] = await Promise.all([
     api.call("/v1beta1/screener/stocks/movers?top=10", "GET", undefined, true).catch(() => null),
     api.call("/v1beta1/screener/stocks/most-actives?by=volume&top=10", "GET", undefined, true).catch(() => null),
@@ -38,7 +38,7 @@ export const getStockQuote = createServerFn({ method: "POST" }).middleware([requ
   return { asset: asset ? assetDto(asset) : null, symbol: data, price: price > 0 && Number.isFinite(price) ? price : null, change: price > 0 && previous > 0 ? price - previous : null, percent: price > 0 && previous > 0 ? (price / previous - 1) * 100 : null,
     time: snapshot?.latestTrade?.t ?? snapshot?.dailyBar?.t ?? null, bid: snapshot?.latestQuote?.bp ?? null, ask: snapshot?.latestQuote?.ap ?? null,
     open: snapshot?.dailyBar?.o ?? null, high: snapshot?.dailyBar?.h ?? null, low: snapshot?.dailyBar?.l ?? null, previous: previous > 0 ? previous : null, volume: snapshot?.dailyBar?.v ?? null,
-    news: (news?.news ?? []).flatMap((n: Rec) => { const url = safeNewsUrl(String(n.url)); return url ? [{ id: String(n.id), title: String(n.headline), source: String(n.source), at: String(n.created_at), url }] : []; }), newsUnavailable: news === null, quoteUnavailable: snapshot === null };
+    news: ((news?.news ?? []) as Rec[]).flatMap((n: Rec) => { const url = safeNewsUrl(String(n.url)); return url ? [{ id: String(n.id), title: String(n.headline), source: String(n.source), at: String(n.created_at), url }] : []; }), newsUnavailable: news === null, quoteUnavailable: snapshot === null };
 });
 export const getQuoteBars = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(i => z.object({ symbol: quoteSymbol, range: quoteRange }).parse(i)).handler(async ({ data, context }) => {
   const api = await apiFor(context.userId);
