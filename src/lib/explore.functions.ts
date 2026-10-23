@@ -35,7 +35,13 @@ export const getStockQuote = createServerFn({ method: "POST" }).middleware([requ
     api.call(`/v1beta1/news?${new URLSearchParams({ symbols: data, limit: "8", sort: "desc" })}`, "GET", undefined, true).catch(() => null),
   ]);
   const price = Number(snapshot?.latestTrade?.p ?? snapshot?.dailyBar?.c), previous = Number(snapshot?.prevDailyBar?.c);
-  return { asset: asset ? assetDto(asset) : null, symbol: data, price: price > 0 && Number.isFinite(price) ? price : null, change: price > 0 && previous > 0 ? price - previous : null, percent: price > 0 && previous > 0 ? (price / previous - 1) * 100 : null,
+  const dto = asset ? assetDto(asset) : null;
+  if (dto?.optionable) {
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+    const contracts = await api.call(`/v2/options/contracts?${new URLSearchParams({ underlying_symbols: data, status: "active", expiration_date_gte: today, limit: "10" })}`).catch(() => null);
+    dto.optionable = (contracts?.option_contracts ?? []).some((c: Rec) => c.tradable);
+  }
+  return { asset: dto, symbol: data, price: price > 0 && Number.isFinite(price) ? price : null, change: price > 0 && previous > 0 ? price - previous : null, percent: price > 0 && previous > 0 ? (price / previous - 1) * 100 : null,
     time: snapshot?.latestTrade?.t ?? snapshot?.dailyBar?.t ?? null, bid: snapshot?.latestQuote?.bp ?? null, ask: snapshot?.latestQuote?.ap ?? null,
     open: snapshot?.dailyBar?.o ?? null, high: snapshot?.dailyBar?.h ?? null, low: snapshot?.dailyBar?.l ?? null, previous: previous > 0 ? previous : null, volume: snapshot?.dailyBar?.v ?? null,
     news: ((news?.news ?? []) as Rec[]).flatMap((n: Rec) => { const url = safeNewsUrl(String(n.url)); return url ? [{ id: String(n.id), title: String(n.headline), source: String(n.source), at: String(n.created_at), url }] : []; }), newsUnavailable: news === null, quoteUnavailable: snapshot === null };
