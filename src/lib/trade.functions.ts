@@ -13,6 +13,9 @@ const pick = (o: Rec) => ({
   id: o.id, symbol: o.symbol, side: o.side, qty: Number(o.qty ?? 0), filled_qty: Number(o.filled_qty ?? 0), type: o.type,
   limit_price: o.limit_price ? Number(o.limit_price) : null, filled_avg_price: o.filled_avg_price ? Number(o.filled_avg_price) : null,
   status: o.status, submitted_at: o.submitted_at, asset_class: o.asset_class, bot: String(o.client_order_id ?? "").startsWith("iwm-"),
+  stop_price: o.stop_price ? Number(o.stop_price) : null, notional: o.notional ? Number(o.notional) : null,
+  time_in_force: o.time_in_force, extended_hours: !!o.extended_hours, filled_at: o.filled_at ?? null,
+  canceled_at: o.canceled_at ?? null, expired_at: o.expired_at ?? null, failed_at: o.failed_at ?? null,
 });
 
 /** Paper account, positions and orders for the Trade desk. Read-only. */
@@ -61,7 +64,13 @@ export const placeManualTrade = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { api } = await broker(context.userId);
     const clientId = `manual-${crypto.randomUUID()}`;
-    if (data.kind === "stock") return pick(await api.submit(toBrokerOrder(data, clientId)));
+    if (data.kind === "stock") {
+      if (data.notional != null) {
+        const asset = await api.call(`/v2/assets/${data.symbol}`);
+        if (!asset?.fractionable) throw new Error(`${data.symbol} can't be bought by dollar amount; use whole shares`);
+      }
+      return pick(await api.submit(toBrokerOrder(data, clientId)));
+    }
     const clock = await api.clock();
     if (!clock.is_open) throw new Error("Options can only be traded while the market is open");
     const now = new Date(clock.timestamp);
@@ -113,4 +122,13 @@ export const closePaperPosition = createServerFn({ method: "POST" })
       await db.from("iwm_strategy_state").update({ lock_until: null, lock_token: null }).eq("user_id", context.userId).eq("lock_token", token);
     }
     return { closed: false, viaBot: true };
+  });
+
+/** Read-only status of one paper order, for the order status sheet. */
+export const getPaperOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { api } = await broker(context.userId);
+    return pick(await api.order(data.id));
   });
