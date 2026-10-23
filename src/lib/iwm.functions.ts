@@ -76,3 +76,12 @@ export const initializeIwmEngine = createServerFn({method:"POST"})
     if(state.error || state.data?.open_trade || state.data?.pending_order) throw new Error("Read-only initialization cannot run with an active position or order");
     return runIwmUser(supabaseAdmin,{...settings,enabled:false},api);
   });
+/** User confirms a broker mismatch was resolved so the bot may open new trades again. */
+export const acknowledgeIwmReview = createServerFn({method:"POST"})
+  .middleware([requireSupabaseAuth])
+  .handler(async({context})=> {
+    const {supabaseAdmin}=await import("@/integrations/supabase/client.server");
+    const {error}=await supabaseAdmin.from("iwm_strategy_state").update({needs_review:null}).eq("user_id",context.userId);
+    if(error) throw new Error("Could not clear the review flag");
+    return {ok:true};
+  });
