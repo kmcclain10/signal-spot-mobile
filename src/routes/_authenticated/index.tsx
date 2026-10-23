@@ -14,10 +14,10 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
-      { title: "Today — Pulse Signals" },
-      { name: "description", content: "Tonight's strategy picks and live trade signals." },
-      { property: "og:title", content: "Today — Pulse Signals" },
-      { property: "og:description", content: "Tonight's strategy picks and live trade signals." },
+      { title: "Home — Pulse Signals" },
+      { name: "description", content: "Your connected trading account, strategy picks and live trade signals." },
+      { property: "og:title", content: "Home — Pulse Signals" },
+      { property: "og:description", content: "Your trading account overview, strategy picks and live signals." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
