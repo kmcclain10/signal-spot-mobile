@@ -5,11 +5,10 @@ import { X, CandlestickChart, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLatestBacktest, useRealtimeInvalidate } from "@/hooks/use-app-data";
 import { isBeforeSignals, nyDate } from "@/lib/market-hours";
-import { num, pct, signed, usd } from "@/lib/format";
+import { num, pct } from "@/lib/format";
 import { strategySetup, parseStrategyId } from "@/lib/strategy-names";
 import { EmptyState, ErrorState, LoadingRows, Panel, SideBadge } from "@/components/common";
 import { SignalRow, type Signal } from "@/components/SignalRow";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { HomePortfolio, homePortfolioOptions } from "@/components/HomePortfolio";
 

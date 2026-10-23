@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { AreaChart, Area, ResponsiveContainer, ReferenceLine } from "recharts";
+import { AreaChart, Area, ResponsiveContainer, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
 import { ArrowDown, ArrowUp, Pencil, Plus, X, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { getHomePortfolio, getPortfolioHistory, saveHomeWatchlist } from "@/lib/portfolio.functions";
@@ -40,8 +40,9 @@ export function HomePortfolio() {
       <div className={cn("num mt-2 flex flex-wrap items-center gap-2 text-sm", positive ? "text-gain" : "text-loss")}><span>{pnl != null ? signedCash(pnl) : "—"}</span><span>{pct != null ? `(${percent(pct)})` : ""}</span><span className="font-sans text-muted-foreground">{point ? new Date(point.timestamp * 1000).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : range === "1D" ? "Today" : range}</span></div>
       <div className="mt-5 h-56 w-full sm:h-64" aria-label={`${range} portfolio equity chart`}>
         {history.isPending ? <Skeleton className="h-full w-full" /> : history.isError || history.data?.error ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Portfolio history is unavailable right now.</div> : !points.length ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No portfolio history for this period.</div> : <ResponsiveContainer width="100%" height="100%"><AreaChart data={points} margin={{ top: 12, right: 2, bottom: 12, left: 2 }} onMouseMove={(state: { activeTooltipIndex?: number | string }) => { const index = Number(state.activeTooltipIndex); if (Number.isInteger(index) && index >= 0 && index < points.length) setScrub(index); }} onMouseLeave={() => setScrub(null)}>
+          <XAxis dataKey="timestamp" hide /><YAxis hide domain={["dataMin", "dataMax"]} /><Tooltip content={() => null} />
           <Area type="linear" dataKey="equity" stroke={positive ? "var(--gain)" : "var(--loss)"} fill="var(--background)" strokeWidth={2} isAnimationActive={false} />
-          {scrub != null && <ReferenceLine x={scrub} stroke="var(--muted-foreground)" strokeDasharray="3 3" />}
+          {point && <ReferenceLine x={point.timestamp} stroke="var(--muted-foreground)" strokeDasharray="3 3" />}
         </AreaChart></ResponsiveContainer>}
       </div>
       {points.length > 0 && <input aria-label="Scrub portfolio history" type="range" min={0} max={points.length - 1} value={scrub ?? points.length - 1} onChange={e => setScrub(Number(e.target.value))} onBlur={() => setScrub(null)} className="my-2 h-3 w-full cursor-pointer accent-primary" />}
