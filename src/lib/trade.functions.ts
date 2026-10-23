@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { tradeTicket, toBrokerOrder } from "@/lib/trade-rules";
+import { tradeTicket, toBrokerOrder, chainTicket, chainStrikeRange, optionLimitProblem, closeQtyProblem } from "@/lib/trade-rules";
 
 type Rec = Record<string, any>;
 async function broker(userId: string) {
@@ -131,4 +131,69 @@ export const getPaperOrder = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { api } = await broker(context.userId);
     return pick(await api.order(data.id));
+  });
+
+const nyToday = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d);
+
+/** Option chain for the selected underlying: expirations in the next 60 days and strikes near the price, with live quotes. */
+export const getOptionChain = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ symbol: z.string().regex(/^[A-Z][A-Z.]{0,9}$/), type: z.enum(["call", "put"]), expiration: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { api } = await broker(context.userId);
+    const [clock, t, positions] = await Promise.all([api.clock(), api.call(`/v2/stocks/${data.symbol}/trades/latest?feed=iex`, "GET", undefined, true).catch(() => null), api.call("/v2/positions")]);
+    const spot = Number(t?.trade?.p ?? 0);
+    const today = nyToday(new Date(clock.timestamp));
+    const base = { symbol: data.symbol, spot, today, market_open: !!clock.is_open };
+    if (!(spot > 0)) return { ...base, expirations: [] as string[], expiration: null, rows: [], error: `No ${data.symbol} stock price available right now` };
+    const range = chainStrikeRange(spot);
+    const end = new Date(Date.parse(`${today}T12:00:00Z`) + 60 * 86400000).toISOString().slice(0, 10);
+    const contracts: Rec[] = []; let token: string | undefined;
+    for (let n = 0; n < 5; n++) {
+      const q = new URLSearchParams({ underlying_symbols: data.symbol, status: "active", type: data.type, expiration_date_gte: today, expiration_date_lte: end,
+        strike_price_gte: String(spot - range), strike_price_lte: String(spot + range), limit: "1000", ...(token ? { page_token: token } : {}) });
+      const r = await api.call(`/v2/options/contracts?${q}`);
+      contracts.push(...(r?.option_contracts ?? []).filter((c: Rec) => c.tradable));
+      token = r?.next_page_token; if (!token) break;
+    }
+    const expirations = [...new Set(contracts.map(c => String(c.expiration_date)))].sort();
+    const expiration = data.expiration && expirations.includes(data.expiration) ? data.expiration : expirations[0] ?? null;
+    const list = contracts.filter(c => c.expiration_date === expiration).sort((a, b) => +a.strike_price - +b.strike_price);
+    const snaps: Rec = {};
+    for (let i = 0; i < list.length; i += 100) {
+      const r = await api.call(`/v1beta1/options/snapshots?${new URLSearchParams({ symbols: list.slice(i, i + 100).map(c => c.symbol).join(","), feed: "indicative", limit: "1000" })}`, "GET", undefined, true).catch(() => null);
+      Object.assign(snaps, r?.snapshots ?? {});
+    }
+    const held = new Map<string, number>((positions ?? []).map((p: Rec) => [p.symbol, Number(p.qty)]));
+    const rows = list.map(c => { const s = snaps[c.symbol] ?? {}; return {
+      contract: String(c.symbol), strike: Number(c.strike_price), bid: Number(s.latestQuote?.bp ?? 0), ask: Number(s.latestQuote?.ap ?? 0),
+      last: Number(s.latestTrade?.p ?? 0), quote_time: s.latestQuote?.t ?? null, iv: s.impliedVolatility != null ? Number(s.impliedVolatility) : null,
+      delta: s.greeks?.delta != null ? Number(s.greeks.delta) : null, open_interest: c.open_interest != null ? Number(c.open_interest) : null, held: held.get(String(c.symbol)) ?? 0 }; });
+    return { ...base, expirations, expiration, rows, error: null as string | null };
+  });
+
+/** Places a limit option order on a chosen contract. Paper only; sells only close contracts you hold; never touches the IWM bot's contract. */
+export const placeChainOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => chainTicket.parse(i))
+  .handler(async ({ data, context }) => {
+    const { api } = await broker(context.userId);
+    const [clock, account, positions] = await Promise.all([api.clock(), api.account(), api.call("/v2/positions")]);
+    if (!clock.is_open) throw new Error("Options can only be traded while the market is open");
+    const st = await context.supabase.from("iwm_strategy_state").select("open_trade").eq("user_id", context.userId).maybeSingle();
+    if ((st.data?.open_trade as Rec | null)?.optionSymbol === data.contract) throw new Error("The IWM bot holds this contract; use Close on the position so the bot sells it");
+    const snap = await api.call(`/v1beta1/options/snapshots?${new URLSearchParams({ symbols: data.contract, feed: "indicative" })}`, "GET", undefined, true);
+    const q = snap?.snapshots?.[data.contract]?.latestQuote;
+    const problem = optionLimitProblem(data.intent, data.limit_price, Number(q?.bp ?? 0), Number(q?.ap ?? 0));
+    if (problem) throw new Error(problem);
+    if (data.intent === "sell_to_close") {
+      const held = Number((positions ?? []).find((p: Rec) => p.symbol === data.contract)?.qty ?? 0);
+      const p2 = closeQtyProblem(held, data.contracts); if (p2) throw new Error(p2);
+    } else {
+      if (Number(account.options_trading_level ?? 0) < 2) throw new Error("Your paper account needs options level 2 to buy options");
+      const cost = data.limit_price * data.contracts * 100;
+      if (cost > Number(account.options_buying_power ?? account.buying_power)) throw new Error("Not enough options buying power for this order");
+    }
+    return pick(await api.submit({ symbol: data.contract, qty: String(data.contracts), side: data.intent === "buy_to_open" ? "buy" : "sell", type: "limit",
+      limit_price: data.limit_price.toFixed(2), time_in_force: "day", position_intent: data.intent, client_order_id: `manual-${crypto.randomUUID()}` }));
   });
