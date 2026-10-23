@@ -9,12 +9,9 @@ import {
   Bot,
   Search,
   UserRound,
-  Library,
   LogOut,
   Menu,
   Plug,
-  Radio,
-  Settings,
   Wallet,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -145,7 +142,7 @@ export function AppShell() {
             <span className="text-sm font-semibold">Pulse</span>
           </div>
           <MarketStatus />
-          <div className="flex items-center gap-1"><ModeBadge /><Button size="icon" variant="ghost" aria-label="Refresh account" title="Refresh account" disabled={refreshing} onClick={refresh}><RefreshCw className={refreshing ? "animate-spin" : ""} /></Button><Button size="icon" variant="ghost" className="lg:hidden" aria-label="More pages" onClick={() => setMore(true)}><Menu /></Button></div>
+          <div className="flex items-center gap-1"><ModeBadge /><Button asChild size="icon" variant="ghost" aria-label="Trade" title="Trade"><Link to="/trade"><CandlestickChart /></Link></Button><Button size="icon" variant="ghost" aria-label="Refresh account" title="Refresh account" disabled={refreshing} onClick={refresh}><RefreshCw className={refreshing ? "animate-spin" : ""} /></Button><Button size="icon" variant="ghost" className="lg:hidden" aria-label="More pages" onClick={() => setMore(true)}><Menu /></Button></div>
         </header>
         <main className="mx-auto max-w-6xl px-4 pb-28 pt-7 sm:px-6 lg:pb-12"
           onTouchStart={e => setTouchStart(window.scrollY <= 0 ? e.touches[0]?.clientY ?? null : null)}

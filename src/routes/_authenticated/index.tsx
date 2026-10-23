@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { X, CandlestickChart, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useBroker, useHasBroker, useLatestBacktest, useRealtimeInvalidate } from "@/hooks/use-app-data";
 import { isBeforeSignals, nyDate } from "@/lib/market-hours";
@@ -10,6 +10,7 @@ import { strategySetup, parseStrategyId } from "@/lib/strategy-names";
 import { EmptyState, ErrorState, LoadingRows, Panel, SideBadge } from "@/components/common";
 import { SignalRow, type Signal } from "@/components/SignalRow";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -188,6 +189,7 @@ function Today() {
   useRealtimeInvalidate("picks", [["picks"]]);
   return (
     <div className="space-y-6">
+      <header className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-3xl font-semibold">Home</h1><div className="flex gap-2"><Button variant="outline" asChild><Link to="/iwm"><Activity />IWM bot</Link></Button><Button asChild><Link to="/trade"><CandlestickChart />Trade</Link></Button></div></header>
       <AccountStrip />
       <HonestyBanner />
       <Picks />
