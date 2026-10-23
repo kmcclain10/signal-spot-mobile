@@ -13,7 +13,7 @@
 - [x] Published scheduled callback is present and rejects unauthenticated requests (401); weekday one-minute managed schedule is active. Market-open execution remains to be verified.
 - [x] Audit Fix B/C: broker position check, early-close entries, kill switch, $100 daily loss limit (default), 15s quote guard, run history, error log, Bot offline warning; 62 tests pass.
 - [x] P1 — Five-tab shell, black/green/orange design, local market time, refresh gesture and button. All five destinations checked signed-in at phone size; desktop quotes and account loaded; IWM remains enabled; 62 tests pass. Existing routes retained; full destination screens follow in P2–P8.
-- [ ] P2 — In progress: Home portfolio history with scrubbing, buying power, positions, editable watchlist and five-second foreground refresh.
+- [x] P2 — Home paper portfolio chart, all seven periods, hover/slider scrubbing, day dollar/percent return, separate stock/options buying power, positions and editable live watchlist. Real account history and prices verified; add/reorder/remove saved and reopened, original watchlist restored; five-second foreground refresh and background pause verified; 67 tests pass. Account had no open positions, so populated position rendering remains unverified; no orders placed.
 - [ ] P3 — Explore asset search, movers and detailed quote pages.
 - [ ] P4 — Expanded stock ticket and order status; validate new order rules before enabling.
 - [ ] P5 — Options chain and ticket; preserve selected underlying and validate new safety rules.
