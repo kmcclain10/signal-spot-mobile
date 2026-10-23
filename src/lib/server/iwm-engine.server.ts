@@ -40,6 +40,43 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     state.pending_order.id = order.id;
     await checkpoint();
   }
+  async function finishTrade(exit:number,reason:string,orderId:string|null,exitTime:string,underlying:number|null) {
+    const t = state.open_trade;
+    const pnl = money((exit-t.entryPremium)*100*t.contracts - cfg.feePerContract*2*t.contracts);
+    const bank={balance:Number(state.balance),bankedTotal:Number(state.banked_total),cycles:Number(state.cycles)};
+    const banked = settle(bank,pnl,cfg);
+    Object.assign(state,{balance:bank.balance,banked_total:bank.bankedTotal,cycles:bank.cycles,pnl_today:money(Number(state.pnl_today)+pnl),
+      wins_today:Number(state.wins_today)+(pnl>0 ? 1:0),losses_today:Number(state.losses_today)+(pnl<0 ? 1:0)});
+    const gain=(exit/t.entryPremium-1)*100;
+    event("trades",{...t.tradeRow,exit_time:exitTime,exit_premium:exit,exit_underlying:underlying,
+      peak_premium:t.peakPremium,peak_gain_pct:(t.peakPremium/t.entryPremium-1)*100,final_floor_pct:t.floorPct,gain_pct:gain,pnl,exit_reason:reason,
+      bankroll_after:state.balance,alpaca_exit_order_id:orderId,status:"closed"});
+    if (banked !== null) {
+      state.banked_today=money(Number(state.banked_today)+banked);
+      event("banks",record({amount_banked:banked,banked_total:bank.bankedTotal,restart_balance:bank.balance,new_cycle:bank.cycles}));
+      note("BANKED",`$${banked.toFixed(2)} banked in strategy journal • restart $${bank.balance.toFixed(2)}`);
+    }
+    note("EXIT",`IWM $${t.strike} ${t.side} • ${gain.toFixed(1)}% • P&L $${pnl.toFixed(2)} • ${reason}`);
+    state.open_trade=null;state.pending_order=null; await checkpoint();
+  }
+  /** Alpaca is the source of truth: close trades that vanished and stop entries on unknown positions. */
+  async function reconcileBroker() {
+    if (!api.positions) return;
+    const mismatch=positionMismatch(state,await api.positions());
+    if (!mismatch) return;
+    if (mismatch.kind==="missing") {
+      const fill=await api.lastSellFill(mismatch.symbol);
+      if (fill && Number(fill.price)>0 && Date.parse(fill.transaction_time)>=Date.parse(state.open_trade.tradeRow.entry_time)) {
+        await finishTrade(Number(fill.price),"reconciled",fill.order_id ?? null,fill.transaction_time,state.open_trade.liveUnderlying ?? null);
+        return;
+      }
+      state.needs_review=`Bot shows ${mismatch.symbol} open but Alpaca has no position or sell fill`;
+    } else {
+      state.needs_review=`Alpaca holds ${mismatch.symbol}, which the bot did not open`;
+    }
+    logError("reconcile",state.needs_review,{symbol:mismatch.symbol});
+    note("ERROR",state.needs_review); await checkpoint();
+  }
   async function reconcile() {
     const p = state.pending_order;
     if (!p) return;
@@ -54,7 +91,8 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     }
     if (!terminalOrder(order.status)) {
       const age = now.getTime()-Date.parse(p.submitted_at);
-      if (age < (p.side === "buy" ? 60000 : 30000)) return;
+      // Kill switch cancels a working entry immediately.
+      if (age < (p.side === "buy" ? 60000 : 30000) && !(p.side==="buy" && settings.kill_switch)) return;
       order = await api.cancel(order.id);
       if (!terminalOrder(order.status)) return;
     }
@@ -80,23 +118,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     t.exitFilledQty = Number(t.exitFilledQty ?? 0)+filledQty;
     t.exitValue = Number(t.exitValue ?? 0)+filledQty*premium;
     if (t.exitFilledQty >= t.contracts) {
-      const exit = t.exitValue/t.contracts;
-      const pnl = money((exit-t.entryPremium)*100*t.contracts - cfg.feePerContract*2*t.contracts);
-      const bank={balance:Number(state.balance),bankedTotal:Number(state.banked_total),cycles:Number(state.cycles)};
-      const banked = settle(bank,pnl,cfg);
-      Object.assign(state,{balance:bank.balance,banked_total:bank.bankedTotal,cycles:bank.cycles,pnl_today:money(Number(state.pnl_today)+pnl),
-        wins_today:Number(state.wins_today)+(pnl>0 ? 1:0),losses_today:Number(state.losses_today)+(pnl<0 ? 1:0)});
-      const gain=(exit/t.entryPremium-1)*100;
-      event("trades",{...t.tradeRow,exit_time:order.filled_at ?? now.toISOString(),exit_premium:exit,exit_underlying:p.underlying ?? t.liveUnderlying ?? null,
-        peak_premium:t.peakPremium,peak_gain_pct:(t.peakPremium/t.entryPremium-1)*100,final_floor_pct:t.floorPct,gain_pct:gain,pnl,exit_reason:p.reason,
-        bankroll_after:state.balance,alpaca_exit_order_id:order.id,status:"closed"});
-      if (banked !== null) {
-        state.banked_today=money(Number(state.banked_today)+banked);
-        event("banks",record({amount_banked:banked,banked_total:bank.bankedTotal,restart_balance:bank.balance,new_cycle:bank.cycles}));
-        note("BANKED",`$${banked.toFixed(2)} banked in strategy journal • restart $${bank.balance.toFixed(2)}`);
-      }
-      note("EXIT",`IWM $${t.strike} ${t.side} • ${gain.toFixed(1)}% • P&L $${pnl.toFixed(2)} • ${p.reason}`);
-      state.open_trade=null;state.pending_order=null; await checkpoint();
+      await finishTrade(t.exitValue/t.contracts,p.reason,order.id,order.filled_at ?? now.toISOString(),p.underlying ?? t.liveUnderlying ?? null);
     } else {
       // Account for a terminal partially-filled sell before placing only the remainder.
       const remaining=t.contracts-t.exitFilledQty;
