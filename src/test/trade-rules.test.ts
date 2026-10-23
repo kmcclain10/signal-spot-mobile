@@ -34,3 +34,15 @@ describe("expanded stock ticket", () => {
   });
   it("labels partial fills", () => expect(orderStatus("partially_filled", 3, 10)).toMatchObject({ label: "Partly filled 3/10", done: false }));
 });
+import { chainTicket, occRoot, optionLimitProblem, closeQtyProblem, chainStrikeRange } from "@/lib/trade-rules";
+describe("option chain ticket", () => {
+  const t = { symbol: "AAPL", contract: "AAPL261120C00200000", intent: "buy_to_open", contracts: 1, limit_price: 2.5 };
+  it("reads the underlying from the contract", () => { expect(occRoot("AAPL261120C00200000")).toBe("AAPL"); expect(occRoot("IWM261023P00250000")).toBe("IWM"); });
+  it("rejects a contract from a different stock", () => { expect(chainTicket.safeParse(t).success).toBe(true); expect(chainTicket.safeParse({ ...t, symbol: "IWM" }).success).toBe(false); });
+  it("caps contracts at 50 and needs a limit price", () => { expect(chainTicket.safeParse({ ...t, contracts: 51 }).success).toBe(false); expect(chainTicket.safeParse({ ...t, limit_price: 0 }).success).toBe(false); });
+  it("only allows buy to open or sell to close", () => expect(chainTicket.safeParse({ ...t, intent: "sell_to_open" }).success).toBe(false));
+  it("blocks buys far above the ask", () => { expect(optionLimitProblem("buy_to_open", 2.5, 1.9, 2.0)).toBeNull(); expect(optionLimitProblem("buy_to_open", 2.6, 1.9, 2.0)).toMatch(/above the ask/); expect(optionLimitProblem("buy_to_open", 1, 0, 0)).toMatch(/No live ask/); });
+  it("blocks sells far below the bid", () => { expect(optionLimitProblem("sell_to_close", 1.5, 2.0, 2.1)).toBeNull(); expect(optionLimitProblem("sell_to_close", 1.4, 2.0, 2.1)).toMatch(/below the bid/); });
+  it("can't sell more than you hold", () => { expect(closeQtyProblem(2, 3)).toMatch(/only 2/); expect(closeQtyProblem(0, 1)).toMatch(/don't hold/); expect(closeQtyProblem(3, 3)).toBeNull(); });
+  it("shows strikes within 10% of the price, at least $5", () => { expect(chainStrikeRange(30)).toBe(5); expect(chainStrikeRange(250)).toBe(25); });
+});

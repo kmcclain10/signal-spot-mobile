@@ -74,3 +74,38 @@ export function orderStatus(status: string, filled: number, qty: number) {
   if (s === "pending_cancel") return { label: "Canceling", tone: "warning", done: false };
   return { label: "Working", tone: "warning", done: false };
 }
+
+/** Underlying root of an OCC option symbol, e.g. AAPL261120C00200000 → AAPL. */
+export const occRoot = (contract: string) => contract.replace(/\d{6}[CP]\d{8}$/, "");
+export const occContract = z.string().trim().toUpperCase().regex(/^[A-Z]{1,6}\d{6}[CP]\d{8}$/, "Choose a contract from the chain");
+
+/**
+ * Option chain ticket. Limit orders only, no naked short selling (sell only to close),
+ * and the contract must belong to the selected underlying.
+ */
+export const chainTicket = z.object({
+  symbol: tickerSymbol,
+  contract: occContract,
+  intent: z.enum(["buy_to_open", "sell_to_close"]),
+  contracts: z.number().int().min(1).max(50),
+  limit_price: z.number().min(0.01).max(1000),
+}).refine(t => occRoot(t.contract) === t.symbol, { message: "That contract belongs to a different stock", path: ["contract"] });
+export type ChainTicket = z.infer<typeof chainTicket>;
+
+/** Strikes shown around the stock price: ±10% (at least $5). */
+export const chainStrikeRange = (spot: number) => Math.max(5, spot * 0.1);
+
+/** Fat-finger guard against the live quote: buys at most 25% over the ask, sells at least 75% of the bid. */
+export function optionLimitProblem(intent: ChainTicket["intent"], limit: number, bid: number, ask: number) {
+  if (intent === "buy_to_open") {
+    if (!(ask > 0)) return "No live ask price for this contract right now";
+    if (limit > Math.round(ask * 1.25 * 100) / 100 + 0.05) return `Limit is far above the ask (${ask.toFixed(2)})`;
+  } else if (bid > 0 && limit < Math.round(bid * 0.75 * 100) / 100 - 0.05) return `Limit is far below the bid (${bid.toFixed(2)})`;
+  return null;
+}
+
+/** Sell-to-close may not exceed the contracts you hold. */
+export function closeQtyProblem(held: number, qty: number) {
+  if (held <= 0) return "You don't hold this contract";
+  return qty > held ? `You hold only ${held} contract${held === 1 ? "" : "s"}` : null;
+}

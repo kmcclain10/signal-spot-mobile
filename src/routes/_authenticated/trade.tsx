@@ -4,8 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ArrowDownRight, ArrowUpRight, Bot, Minus, Plus, RefreshCw, ShieldCheck, X } from "lucide-react";
-import { getTradeDesk, getTicketQuote, placeManualTrade, cancelPaperOrder, closePaperPosition, getPaperOrder } from "@/lib/trade.functions";
-import { ticketCost, stockTicket, orderStatus, type TradeTicket } from "@/lib/trade-rules";
+import { getTradeDesk, getTicketQuote, placeManualTrade, cancelPaperOrder, closePaperPosition, getPaperOrder, getOptionChain, placeChainOrder } from "@/lib/trade.functions";
+import { ticketCost, stockTicket, orderStatus, chainTicket, optionLimitProblem, closeQtyProblem, type TradeTicket } from "@/lib/trade-rules";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { tradeSearch } from "@/lib/explore-rules";
@@ -57,7 +57,7 @@ function TradePage() {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="w-full"><TabsTrigger value="stock" className="flex-1">Stock / ETF</TabsTrigger><TabsTrigger value="option" className="flex-1">Options</TabsTrigger></TabsList>
           <TabsContent value="stock"><StockTicket key={`${symbol}-${search.side ?? "buy"}`} symbol={symbol} initial={search.side ?? "buy"} onDone={refresh} /></TabsContent>
-          <TabsContent value="option"><OptionTicket key={symbol} symbol={symbol} initial={search.option ?? "CALL"} open={data.clock.is_open} level={data.account.options_level} onDone={refresh} /></TabsContent>
+          <TabsContent value="option"><OptionChain key={symbol} symbol={symbol} initial={search.option ?? "CALL"} open={data.clock.is_open} level={data.account.options_level} botContract={data.positions.find((p: { bot: boolean }) => p.bot)?.symbol ?? null} onDone={refresh} /></TabsContent>
         </Tabs>
       </section>
       <div className="space-y-6">
@@ -157,31 +157,87 @@ function StockTicket({ symbol, initial, onDone }: { symbol: string; initial: "bu
   </form>;
 }
 
-function OptionTicket({ symbol, initial, open, level, onDone }: { symbol: string; initial: "CALL" | "PUT"; open: boolean; level: number; onDone: () => void }) {
+type ChainRow = Awaited<ReturnType<typeof getOptionChain>>["rows"][number];
+const fmtExp = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+function OptionChain({ symbol, initial, open, level, botContract, onDone }: { symbol: string; initial: "CALL" | "PUT"; open: boolean; level: number; botContract: string | null; onDone: () => void }) {
   const [side, setSide] = useState<"CALL" | "PUT">(initial);
-  const [contracts, setContracts] = useState(1);
-  const [confirm, setConfirm] = useState(false);
-  const quoteFn = useServerFn(getTicketQuote);
+  const [exp, setExp] = useState<string | undefined>();
+  const [row, setRow] = useState<ChainRow | null>(null);
+  const fn = useServerFn(getOptionChain);
   const valid = /^[A-Z][A-Z.]{0,9}$/.test(symbol);
-  const quote = useQuery({ queryKey: ["opt-quote", symbol, side], queryFn: () => quoteFn({ data: { symbol, option: side } }), enabled: open && valid, refetchInterval: 10000 });
-  const c = quote.data?.contract;
-  const { busy, run } = useSubmit(onDone);
+  const q = useQuery({ queryKey: ["chain", symbol, side, exp], queryFn: () => fn({ data: { symbol, type: side === "CALL" ? "call" : "put", expiration: exp } }), enabled: valid, refetchInterval: open ? 10000 : false });
+  const d = q.data;
+  const atm = d?.rows.length ? d.rows.reduce((a, r) => Math.abs(r.strike - d.spot) < Math.abs(a.strike - d.spot) ? r : a).contract : null;
   return <div className="space-y-4 pt-4">
-    <h2 className="font-medium">{symbol || "Select a symbol"} options</h2>
+    <div className="flex items-baseline justify-between"><h2 className="font-medium">{symbol || "Select a symbol"} options</h2>{d?.spot ? <span className="num text-sm text-muted-foreground">{symbol} {d.spot.toFixed(2)}</span> : null}</div>
     <div className="grid grid-cols-2 gap-2">
-      <Button variant={side === "CALL" ? "default" : "outline"} className={cn(side === "CALL" && "bg-gain text-primary-foreground hover:bg-gain/90")} onClick={() => setSide("CALL")}><ArrowUpRight />Call</Button>
-      <Button variant={side === "PUT" ? "default" : "outline"} className={cn(side === "PUT" && "bg-loss text-destructive-foreground hover:bg-loss/90")} onClick={() => setSide("PUT")}><ArrowDownRight />Put</Button>
+      <Button variant={side === "CALL" ? "default" : "outline"} className={cn(side === "CALL" && "bg-gain text-primary-foreground hover:bg-gain/90")} onClick={() => setSide("CALL")}><ArrowUpRight />Calls</Button>
+      <Button variant={side === "PUT" ? "default" : "outline"} className={cn(side === "PUT" && "bg-loss text-destructive-foreground hover:bg-loss/90")} onClick={() => setSide("PUT")}><ArrowDownRight />Puts</Button>
     </div>
-    {!open ? <p className="rounded border border-warning/40 bg-warning/10 p-3 text-sm text-warning">Options trade only while the market is open (9:30 AM–4:00 PM ET).</p>
-      : level < 2 ? <p className="rounded border border-warning/40 bg-warning/10 p-3 text-sm text-warning">Your paper account needs options level 2 to buy options.</p>
-      : <div className="rounded border p-3 text-sm">{!valid ? "Enter a valid symbol" : quote.isLoading ? "Finding contract…" : quote.isError ? `Could not load ${symbol} options. Try refreshing.` : c ? <><div className="font-medium">{symbol} ${c.strike} {side} • exp {c.expiry}</div><div className="num mt-1 text-muted-foreground">Bid {c.bid.toFixed(2)} • Ask {c.ask.toFixed(2)} • {symbol} {quote.data?.last.toFixed(2)}</div></> : `No ${symbol} contract with a fresh quote right now`}</div>}
-    <div className="flex items-end justify-between gap-4"><div className="space-y-2"><Label>Contracts</Label><Stepper value={contracts} set={setContracts} max={50} /></div>
-      <div className="text-right text-sm"><div className="text-muted-foreground">Estimated cost</div><div className="num font-semibold">{c ? cash(ticketCost(c.ask, contracts, true)) : "—"}</div></div></div>
-    <Button className="w-full" size="lg" disabled={!valid || !open || level < 2 || !c || busy} onClick={() => setConfirm(true)}>Review {side.toLowerCase()} order</Button>
-    <Confirm open={confirm} setOpen={setConfirm} busy={busy} title={`Buy ${contracts} ${symbol} ${side}${contracts > 1 ? "s" : ""}`}
-      body={c ? `$${c.strike} strike, exp ${c.expiry} • limit at current ask • about ${cash(ticketCost(c.ask, contracts, true))} • paper account` : ""}
-      onYes={async () => { if (await run({ kind: "option", symbol, side, contracts })) setConfirm(false); }} />
+    {!open && <p className="rounded border border-warning/40 bg-warning/10 p-3 text-sm text-warning">Market closed — you can browse the chain, but options orders only go in 9:30 AM–4:00 PM ET.</p>}
+    {open && level < 2 && <p className="rounded border border-warning/40 bg-warning/10 p-3 text-sm text-warning">Your paper account needs options level 2 to buy options.</p>}
+    {symbol === "IWM" && <p className="text-xs text-muted-foreground">Buying IWM options yourself pauses the IWM bot until you confirm on the bot screen.</p>}
+    {!valid ? <p className="text-sm text-muted-foreground">Enter a valid symbol</p> : q.isLoading ? <p className="text-sm text-muted-foreground">Loading chain…</p>
+      : q.isError ? <p className="text-sm text-loss">Could not load {symbol} options. Try refreshing.</p>
+      : d?.error ? <p className="text-sm text-muted-foreground">{d.error}</p>
+      : !d?.expirations.length ? <p className="text-sm text-muted-foreground">{symbol} has no tradable options in the next 60 days.</p> : <>
+      <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">{d.expirations.map(e => <Button key={e} size="sm" variant={e === d.expiration ? "secondary" : "ghost"} className="shrink-0" onClick={() => setExp(e)}>{fmtExp(e)}{e === d.today ? " (today)" : ""}</Button>)}</div>
+      <div className="num text-sm">
+        <div className="grid grid-cols-[1fr_1fr_1fr_1fr] border-b pb-1 text-[10px] uppercase text-muted-foreground"><span>Strike</span><span className="text-right">Bid</span><span className="text-right">Ask</span><span className="text-right">Delta</span></div>
+        {d.rows.map(r => <button key={r.contract} type="button" onClick={() => setRow(r)} className={cn("grid w-full grid-cols-[1fr_1fr_1fr_1fr] border-b py-2.5 text-left", r.contract === atm && "border-b-primary")}>
+          <span className="flex items-center gap-1">{r.strike.toFixed(r.strike % 1 ? 1 : 0)}{r.held > 0 && <span className="rounded bg-secondary px-1 text-[10px]">{r.contract === botContract ? "bot" : `own ${r.held}`}</span>}</span>
+          <span className="text-right">{r.bid ? r.bid.toFixed(2) : "—"}</span><span className="text-right text-gain">{r.ask ? r.ask.toFixed(2) : "—"}</span>
+          <span className="text-right text-muted-foreground">{r.delta != null ? r.delta.toFixed(2) : "—"}</span>
+        </button>)}
+      </div>
+      <p className="text-xs text-muted-foreground">Prices are indicative (free data). Green line = closest to the stock price. Tap a strike to trade.</p>
+    </>}
+    <ContractTicket row={row} symbol={symbol} side={side} expiration={d?.expiration ?? ""} open={open} level={level} bot={row?.contract === botContract} onClose={() => setRow(null)} onDone={() => { onDone(); q.refetch(); }} />
   </div>;
+}
+
+function ContractTicket({ row, symbol, side, expiration, open, level, bot, onClose, onDone }: { row: ChainRow | null; symbol: string; side: "CALL" | "PUT"; expiration: string; open: boolean; level: number; bot: boolean; onClose: () => void; onDone: () => void }) {
+  const [intent, setIntent] = useState<"buy_to_open" | "sell_to_close">("buy_to_open");
+  const [qty, setQty] = useState(1);
+  const [limit, setLimit] = useState("");
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [placed, setPlaced] = useState<string | null>(null);
+  const place = useServerFn(placeChainOrder);
+  useEffect(() => { if (row) { setIntent("buy_to_open"); setQty(1); setLimit(row.ask ? row.ask.toFixed(2) : ""); } }, [row?.contract]);
+  useEffect(() => { if (row) setLimit((intent === "buy_to_open" ? row.ask : row.bid) ? (intent === "buy_to_open" ? row.ask : row.bid).toFixed(2) : ""); }, [intent]);
+  const lp = Number(limit);
+  const t = row ? { symbol, contract: row.contract, intent, contracts: qty, limit_price: lp } : null;
+  const parsed = t ? chainTicket.safeParse(t) : null;
+  const problem = !row ? null : bot ? "The IWM bot holds this contract; use Close on the position" : !open ? "Market is closed" : intent === "buy_to_open" && level < 2 ? "Needs options level 2"
+    : parsed && !parsed.success ? parsed.error.issues[0]?.message : optionLimitProblem(intent, lp, row.bid, row.ask) ?? (intent === "sell_to_close" ? closeQtyProblem(row.held, qty) : null);
+  const title = row ? `${symbol} $${row.strike} ${side} ${fmtExp(expiration)}` : "";
+  return <>
+    <Sheet open={!!row && !placed} onOpenChange={v => !v && onClose()}><SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto">
+      <SheetHeader><SheetTitle>{title}</SheetTitle><SheetDescription className="num">Bid {row?.bid ? row.bid.toFixed(2) : "—"} • Ask {row?.ask ? row.ask.toFixed(2) : "—"}{row?.iv != null ? ` • IV ${(row.iv * 100).toFixed(0)}%` : ""}{row?.open_interest != null ? ` • OI ${row.open_interest}` : ""}</SheetDescription></SheetHeader>
+      {row && <div className="space-y-4 p-4">
+        <div className="grid grid-cols-2 gap-2">
+          <Button type="button" variant={intent === "buy_to_open" ? "secondary" : "outline"} onClick={() => setIntent("buy_to_open")}>Buy to open</Button>
+          <Button type="button" variant={intent === "sell_to_close" ? "secondary" : "outline"} disabled={row.held <= 0} onClick={() => setIntent("sell_to_close")}>Sell to close{row.held > 0 ? ` (${row.held})` : ""}</Button>
+        </div>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-2"><Label>Contracts</Label><Stepper value={qty} set={setQty} max={intent === "sell_to_close" ? Math.max(1, row.held) : 50} /></div>
+          <div className="space-y-2"><Label htmlFor="olimit">Limit price</Label><div className="flex gap-1"><Input id="olimit" inputMode="decimal" className="num w-24" value={limit} onChange={e => setLimit(e.target.value.replace(/[^0-9.]/g, ""))} />
+            {row.bid > 0 && row.ask > 0 && <Button type="button" size="sm" variant="ghost" onClick={() => setLimit(((row.bid + row.ask) / 2).toFixed(2))}>Mid</Button>}</div></div>
+        </div>
+        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Estimated {intent === "buy_to_open" ? "cost" : "proceeds"}</span><span className="num font-semibold">{lp > 0 ? cash(ticketCost(lp, qty, true)) : "—"}</span></div>
+        <p className="text-xs text-muted-foreground">Limit order, today only. 1 contract = 100 shares. Selling is only allowed to close contracts you own.</p>
+        {problem && <p className="text-xs text-warning">{problem}</p>}
+        <Button className="w-full" size="lg" disabled={!!problem || busy} onClick={() => setConfirm(true)}>Review {intent === "buy_to_open" ? "buy" : "sell"}</Button>
+      </div>}
+    </SheetContent></Sheet>
+    <Confirm open={confirm} setOpen={setConfirm} busy={busy} title={`${intent === "buy_to_open" ? "Buy" : "Sell"} ${qty} ${title}`}
+      body={`Limit $${lp.toFixed(2)} • today only • about ${cash(ticketCost(lp || 0, qty, true))} • paper account`}
+      onYes={async () => { if (!parsed?.success) return; setBusy(true);
+        try { const o = await place({ data: parsed.data }); toast.success(`Paper option order sent: ${o.side} ${o.qty}`); setConfirm(false); setPlaced(o.id); onDone(); }
+        catch (e) { toast.error(e instanceof Error ? e.message : "Order failed"); } finally { setBusy(false); } }} />
+    <OrderSheet id={placed} onClose={() => { setPlaced(null); onClose(); }} onDone={onDone} />
+  </>;
 }
 
 function Confirm({ open, setOpen, title, body, busy, onYes }: { open: boolean; setOpen: (v: boolean) => void; title: string; body: string; busy: boolean; onYes: () => void }) {
