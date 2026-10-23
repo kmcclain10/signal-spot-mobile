@@ -215,7 +215,7 @@ function Positions({ rows, onDone }: { rows: Pos[]; onDone: () => void }) {
 type Ord = Awaited<ReturnType<typeof getTradeDesk>>["open"][number];
 const toneClass = (t: string) => t === "gain" ? "text-gain" : t === "loss" ? "text-loss" : t === "warning" ? "text-warning" : "text-muted-foreground";
 const etTime = (v: string | null) => v ? new Date(v).toLocaleString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit" }) + " ET" : null;
-const typeLabel = (o: Ord) => `${o.type.replace("_", " ")}${o.stop_price ? ` stop ${o.stop_price.toFixed(2)}` : ""}${o.limit_price ? ` limit ${o.limit_price.toFixed(2)}` : ""}`;
+const typeLabel = (o: Ord) => o.type === "market" ? "market" : [o.stop_price ? `stop ${o.stop_price.toFixed(2)}` : "", o.limit_price ? `limit ${o.limit_price.toFixed(2)}` : ""].filter(Boolean).join(" → ") || o.type.replace("_", " ");
 
 function OrderSheet({ id, onClose, onDone }: { id: string | null; onClose: () => void; onDone: () => void }) {
   const fn = useServerFn(getPaperOrder);
