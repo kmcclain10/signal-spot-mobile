@@ -42,17 +42,18 @@ function AccountStrip() {
   if (acct.error) return <ErrorState error={acct.error} onRetry={() => acct.refetch()} />;
   const a = acct.data;
   return (
-    <Panel className="grid grid-cols-3 divide-x">
+    <Panel className="grid grid-cols-2 gap-x-4 gap-y-5 border-b pb-6 sm:grid-cols-3">
       {[
         ["Equity", usd(a?.equity)],
         ["Day P&L", a ? signed(a.dayPl) : "—"],
         ["Buying power", usd(a?.buyingPower)],
       ].map(([l, v], i) => (
-        <div key={l} className="p-4">
+        <div key={l} className={cn("min-w-0", i === 0 && "col-span-2 sm:col-span-1")}>
           <div className="text-xs text-muted-foreground">{l}</div>
           <div
             className={cn(
-              "num mt-1 text-lg font-semibold",
+              "num mt-2 break-words font-semibold",
+              i === 0 ? "text-3xl" : "text-lg",
               i === 1 && a && (a.dayPl >= 0 ? "text-gain" : "text-loss"),
             )}
           >
