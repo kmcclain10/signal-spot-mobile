@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
-import { z } from "zod";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ArrowDownRight, ArrowUpRight, Bot, Minus, Plus, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { getTradeDesk, getTicketQuote, placeManualTrade, cancelPaperOrder, closePaperPosition } from "@/lib/trade.functions";
 import { ticketCost, type TradeTicket } from "@/lib/trade-rules";
+import { tradeSearch } from "@/lib/explore-rules";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 const desk = queryOptions({ queryKey: ["trade-desk"], queryFn: () => getTradeDesk(), refetchInterval: 10000 });
 export const Route = createFileRoute("/_authenticated/trade")({
-  validateSearch: z.object({ option: z.enum(["CALL", "PUT"]).optional() }),
+  validateSearch: tradeSearch,
   head: () => ({ meta: [{ title: "Trade — Pulse Signals" }, { name: "description", content: "Place paper stock, ETF and option trades, close positions and manage orders." },
     { property: "og:title", content: "Paper Trade Desk — Pulse Signals" }, { property: "og:description", content: "Manual paper trading on your Alpaca paper account." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
@@ -33,7 +33,8 @@ function TradePage() {
   const qc = useQueryClient();
   const refresh = () => qc.invalidateQueries({ queryKey: desk.queryKey });
   const [tab, setTab] = useState(search.option ? "option" : "stock");
-  const [symbol, setSymbol] = useState("IWM");
+  const [symbol, setSymbol] = useState(search.symbol ?? "IWM");
+  useEffect(() => { setSymbol(search.symbol ?? "IWM"); setTab(search.option ? "option" : "stock"); }, [search.symbol, search.option, search.side]);
   return <div className="mx-auto max-w-5xl space-y-5">
     <header className="flex items-start justify-between gap-3">
       <div><div className="mb-1 flex items-center gap-2 text-xs text-gain"><ShieldCheck className="size-4" />PAPER ACCOUNT</div><h1 className="text-2xl font-semibold">Trade</h1></div>
@@ -53,7 +54,7 @@ function TradePage() {
         </div>
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="w-full"><TabsTrigger value="stock" className="flex-1">Stock / ETF</TabsTrigger><TabsTrigger value="option" className="flex-1">Options</TabsTrigger></TabsList>
-          <TabsContent value="stock"><StockTicket key={symbol} symbol={symbol} onDone={refresh} /></TabsContent>
+          <TabsContent value="stock"><StockTicket key={`${symbol}-${search.side ?? "buy"}`} symbol={symbol} initial={search.side ?? "buy"} onDone={refresh} /></TabsContent>
           <TabsContent value="option"><OptionTicket key={symbol} symbol={symbol} initial={search.option ?? "CALL"} open={data.clock.is_open} level={data.account.options_level} onDone={refresh} /></TabsContent>
         </Tabs>
       </section>
@@ -89,8 +90,8 @@ function useSubmit(onDone: () => void) {
   } };
 }
 
-function StockTicket({ symbol, onDone }: { symbol: string; onDone: () => void }) {
-  const [side, setSide] = useState<"buy" | "sell">("buy");
+function StockTicket({ symbol, initial, onDone }: { symbol: string; initial: "buy" | "sell"; onDone: () => void }) {
+  const [side, setSide] = useState<"buy" | "sell">(initial);
   const [qty, setQty] = useState(1);
   const [type, setType] = useState<"market" | "limit">("market");
   const [limit, setLimit] = useState("");
