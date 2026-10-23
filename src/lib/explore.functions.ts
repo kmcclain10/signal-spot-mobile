@@ -8,7 +8,7 @@ async function apiFor(userId: string) {
   const { iwmAlpaca } = await import("@/lib/server/iwm-alpaca.server");
   return iwmAlpaca(supabaseAdmin, userId);
 }
-function assetDto(a: Rec): Asset { return { symbol: String(a.symbol), name: String(a.name ?? a.symbol), tradable: !!a.tradable && a.status === "active", optionable: (a.attributes ?? []).includes("options_enabled"), fractionable: !!a.fractionable, shortable: !!a.shortable, exchange: String(a.exchange ?? "") }; }
+function assetDto(a: Rec): Asset { return { symbol: String(a.symbol), name: String(a.name ?? a.symbol), tradable: !!a.tradable && a.status === "active", optionable: (a.attributes ?? []).includes("has_options"), fractionable: !!a.fractionable, shortable: !!a.shortable, exchange: String(a.exchange ?? "") }; }
 export const getExploreAssets = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   try { const api = await apiFor(context.userId); const assets: Rec[] = await api.call("/v2/assets?status=active&asset_class=us_equity"); return { assets: assets.filter(a => a.tradable).map(assetDto), error: null }; }
   catch { return { assets: [], error: "Connect an Alpaca paper account to search tradable stocks and ETFs." }; }

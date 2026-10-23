@@ -21,6 +21,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSignalsRouteImport } from './routes/_authenticated/signals'
 import { Route as AuthenticatedStrategiesRouteImport } from './routes/_authenticated/strategies'
 import { Route as AuthenticatedTradeRouteImport } from './routes/_authenticated/trade'
+import { Route as AuthenticatedQuoteSymbolRouteImport } from './routes/_authenticated/quote.$symbol'
 import { Route as ApiPublicJobsIwmWindowStrategyRouteImport } from './routes/api/public/jobs/iwm-window-strategy'
 import { Route as ApiPublicJobsScanRouteImport } from './routes/api/public/jobs/scan'
 
@@ -85,6 +86,12 @@ const AuthenticatedTradeRoute = AuthenticatedTradeRouteImport.update({
   path: '/trade',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedQuoteSymbolRoute =
+  AuthenticatedQuoteSymbolRouteImport.update({
+    id: '/quote/$symbol',
+    path: '/quote/$symbol',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicJobsIwmWindowStrategyRoute =
   ApiPublicJobsIwmWindowStrategyRouteImport.update({
     id: '/api/public/jobs/iwm-window-strategy',
@@ -109,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/signals': typeof AuthenticatedSignalsRoute
   '/strategies': typeof AuthenticatedStrategiesRoute
   '/trade': typeof AuthenticatedTradeRoute
+  '/quote/$symbol': typeof AuthenticatedQuoteSymbolRoute
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
   '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
 }
@@ -124,6 +132,7 @@ export interface FileRoutesByTo {
   '/strategies': typeof AuthenticatedStrategiesRoute
   '/trade': typeof AuthenticatedTradeRoute
   '/': typeof AuthenticatedIndexRoute
+  '/quote/$symbol': typeof AuthenticatedQuoteSymbolRoute
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
   '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
 }
@@ -141,6 +150,7 @@ export interface FileRoutesById {
   '/_authenticated/strategies': typeof AuthenticatedStrategiesRoute
   '/_authenticated/trade': typeof AuthenticatedTradeRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/quote/$symbol': typeof AuthenticatedQuoteSymbolRoute
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
   '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
 }
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/signals'
     | '/strategies'
     | '/trade'
+    | '/quote/$symbol'
     | '/api/public/jobs/iwm-window-strategy'
     | '/api/public/jobs/scan'
   fileRoutesByTo: FileRoutesByTo
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/strategies'
     | '/trade'
     | '/'
+    | '/quote/$symbol'
     | '/api/public/jobs/iwm-window-strategy'
     | '/api/public/jobs/scan'
   id:
@@ -189,6 +201,7 @@ export interface FileRouteTypes {
     | '/_authenticated/strategies'
     | '/_authenticated/trade'
     | '/_authenticated/'
+    | '/_authenticated/quote/$symbol'
     | '/api/public/jobs/iwm-window-strategy'
     | '/api/public/jobs/scan'
   fileRoutesById: FileRoutesById
@@ -286,6 +299,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTradeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/quote/$symbol': {
+      id: '/_authenticated/quote/$symbol'
+      path: '/quote/$symbol'
+      fullPath: '/quote/$symbol'
+      preLoaderRoute: typeof AuthenticatedQuoteSymbolRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/jobs/iwm-window-strategy': {
       id: '/api/public/jobs/iwm-window-strategy'
       path: '/api/public/jobs/iwm-window-strategy'
@@ -314,6 +334,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStrategiesRoute: typeof AuthenticatedStrategiesRoute
   AuthenticatedTradeRoute: typeof AuthenticatedTradeRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedQuoteSymbolRoute: typeof AuthenticatedQuoteSymbolRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -327,6 +348,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStrategiesRoute: AuthenticatedStrategiesRoute,
   AuthenticatedTradeRoute: AuthenticatedTradeRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedQuoteSymbolRoute: AuthenticatedQuoteSymbolRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
