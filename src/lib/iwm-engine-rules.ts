@@ -15,9 +15,29 @@ export function closedRegularBars(bars: Bar[], now: Date, cfg: StrategyConfig) {
       return p.minutes >= 570 && p.minutes < 960 && new Date(b.t).getTime() + cfg.timeframeMin * 60000 <= now.getTime();
     }).sort((a,b) => Date.parse(a.t) - Date.parse(b.t)).slice(-600);
 }
+/** Quotes older than this never trigger entries, stops or floors. */
+export const QUOTE_MAX_AGE_MS = 15000;
 export function freshQuote(quote: any, now: Date) {
-  return Number(quote?.bp) > 0 && Number(quote?.ap) >= Number(quote?.bp) &&
-    Number.isFinite(Date.parse(quote?.t)) && Math.abs(now.getTime() - Date.parse(quote.t)) <= 120000;
+  return Number(quote?.bp) > 0 && Number(quote?.ap) > 0 && Number(quote?.ap) >= Number(quote?.bp) &&
+    Number.isFinite(Date.parse(quote?.t)) && Math.abs(now.getTime() - Date.parse(quote.t)) <= QUOTE_MAX_AGE_MS;
+}
+/** Last entry minute (ET): 15:00, or 60 minutes before an early close. */
+export const sessionEndMinutes = (closeMinutes: number) => Math.min(900, closeMinutes - 60);
+/** New entries are blocked by the kill switch, an unresolved broker mismatch, or the daily loss limit. */
+export function entryBlock(settings: Record<string, any>, state: Record<string, any>) {
+  if (settings.kill_switch) return "kill switch";
+  if (state.needs_review) return "needs review";
+  if (Number(state.pnl_today ?? 0) <= -Math.abs(Number(settings.max_daily_loss ?? 100))) return "daily loss limit";
+  return null;
+}
+/** Compare the bot's records with real broker positions. Alpaca is the source of truth. */
+export function positionMismatch(state: Record<string, any>, positions: { symbol: string; asset_class?: string }[], underlying = "IWM") {
+  const symbols = new Set(positions.filter(p => p.asset_class === "us_option" && p.symbol.startsWith(underlying)).map(p => p.symbol));
+  const mine = state.open_trade?.optionSymbol;
+  if (mine && !symbols.has(mine) && !state.pending_order) return { kind: "missing" as const, symbol: mine };
+  const orphan = [...symbols].find(s => s !== mine && s !== state.pending_order?.contract?.symbol);
+  if (orphan) return { kind: "orphan" as const, symbol: orphan };
+  return null;
 }
 export const terminalOrder = (status: string) => ["filled", "canceled", "expired", "rejected"].includes(status);
 export const forceExitMinutes = (value: string) => { const [h,m] = value.split(":").map(Number); return h*60+m; };

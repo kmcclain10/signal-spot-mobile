@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      bot_errors: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          payload: Json | null
+          user_id: string
+          where: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          payload?: Json | null
+          user_id: string
+          where: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          payload?: Json | null
+          user_id?: string
+          where?: string
+        }
+        Relationships: []
+      }
+      bot_runs: {
+        Row: {
+          duration_ms: number
+          error: string | null
+          finished_at: string
+          id: string
+          ok: boolean
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          duration_ms: number
+          error?: string | null
+          finished_at?: string
+          id?: string
+          ok: boolean
+          started_at: string
+          user_id: string
+        }
+        Update: {
+          duration_ms?: number
+          error?: string | null
+          finished_at?: string
+          id?: string
+          ok?: boolean
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       connections: {
         Row: {
           config: Json
@@ -281,6 +338,8 @@ export type Database = {
           discord_enabled: boolean
           enabled: boolean
           force_exit_time: string
+          kill_switch: boolean
+          max_daily_loss: number
           max_trades_per_day: number
           options_feed: string
           starting_bankroll: number
@@ -294,6 +353,8 @@ export type Database = {
           discord_enabled?: boolean
           enabled?: boolean
           force_exit_time?: string
+          kill_switch?: boolean
+          max_daily_loss?: number
           max_trades_per_day?: number
           options_feed?: string
           starting_bankroll?: number
@@ -307,6 +368,8 @@ export type Database = {
           discord_enabled?: boolean
           enabled?: boolean
           force_exit_time?: string
+          kill_switch?: boolean
+          max_daily_loss?: number
           max_trades_per_day?: number
           options_feed?: string
           starting_bankroll?: number
@@ -326,13 +389,16 @@ export type Database = {
           last_bar_time: string | null
           last_error: string | null
           last_run_at: string | null
+          last_success_at: string | null
           lock_token: string | null
           lock_until: string | null
           losses_today: number
+          needs_review: string | null
           open_trade: Json | null
           pending_order: Json | null
           pnl_today: number
           reported_day: string | null
+          session_close: string | null
           trades_today: number
           trading_day: string | null
           user_id: string
@@ -347,13 +413,16 @@ export type Database = {
           last_bar_time?: string | null
           last_error?: string | null
           last_run_at?: string | null
+          last_success_at?: string | null
           lock_token?: string | null
           lock_until?: string | null
           losses_today?: number
+          needs_review?: string | null
           open_trade?: Json | null
           pending_order?: Json | null
           pnl_today?: number
           reported_day?: string | null
+          session_close?: string | null
           trades_today?: number
           trading_day?: string | null
           user_id: string
@@ -368,13 +437,16 @@ export type Database = {
           last_bar_time?: string | null
           last_error?: string | null
           last_run_at?: string | null
+          last_success_at?: string | null
           lock_token?: string | null
           lock_until?: string | null
           losses_today?: number
+          needs_review?: string | null
           open_trade?: Json | null
           pending_order?: Json | null
           pnl_today?: number
           reported_day?: string | null
+          session_close?: string | null
           trades_today?: number
           trading_day?: string | null
           user_id?: string
@@ -724,13 +796,16 @@ export type Database = {
           last_bar_time: string | null
           last_error: string | null
           last_run_at: string | null
+          last_success_at: string | null
           lock_token: string | null
           lock_until: string | null
           losses_today: number
+          needs_review: string | null
           open_trade: Json | null
           pending_order: Json | null
           pnl_today: number
           reported_day: string | null
+          session_close: string | null
           trades_today: number
           trading_day: string | null
           user_id: string

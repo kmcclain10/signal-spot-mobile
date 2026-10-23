@@ -15,6 +15,13 @@
       "when": 1792222196091,
       "tag": "0001_iwm_window_engine",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792772778507,
+      "tag": "0002_iwm_safety_controls",
+      "breakpoints": true
     }
   ]
 }

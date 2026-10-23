@@ -25,6 +25,9 @@ export const saveIwmSettings = createServerFn({method:"POST"})
   .middleware([requireSupabaseAuth])
   .inputValidator(input=>iwmSettingsInput.parse(input))
   .handler(async({data,context})=> {
+    // Kill switch always stops new entries; the runner exits any open bot position.
+    if (data.kill_switch) data.enabled=false;
+    if (data.enabled) data.kill_switch=false;
     if (data.enabled) {
       const {iwmAlpaca} = await import("@/lib/server/iwm-alpaca.server");
       const {supabaseAdmin} = await import("@/integrations/supabase/client.server");
@@ -72,4 +75,13 @@ export const initializeIwmEngine = createServerFn({method:"POST"})
     const state=await context.supabase.from("iwm_strategy_state").select("open_trade,pending_order").eq("user_id",context.userId).maybeSingle();
     if(state.error || state.data?.open_trade || state.data?.pending_order) throw new Error("Read-only initialization cannot run with an active position or order");
     return runIwmUser(supabaseAdmin,{...settings,enabled:false},api);
+  });
+/** User confirms a broker mismatch was resolved so the bot may open new trades again. */
+export const acknowledgeIwmReview = createServerFn({method:"POST"})
+  .middleware([requireSupabaseAuth])
+  .handler(async({context})=> {
+    const {supabaseAdmin}=await import("@/integrations/supabase/client.server");
+    const {error}=await supabaseAdmin.from("iwm_strategy_state").update({needs_review:null}).eq("user_id",context.userId);
+    if(error) throw new Error("Could not clear the review flag");
+    return {ok:true};
   });
