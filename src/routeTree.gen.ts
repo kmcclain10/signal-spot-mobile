@@ -13,6 +13,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedConnectionsRouteImport } from './routes/_authenticated/connections'
+import { Route as AuthenticatedExploreRouteImport } from './routes/_authenticated/explore'
 import { Route as AuthenticatedIwmRouteImport } from './routes/_authenticated/iwm'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedPerformanceRouteImport } from './routes/_authenticated/performance'
@@ -43,6 +44,11 @@ const AuthenticatedConnectionsRoute =
     path: '/connections',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedExploreRoute = AuthenticatedExploreRouteImport.update({
+  id: '/explore',
+  path: '/explore',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedIwmRoute = AuthenticatedIwmRouteImport.update({
   id: '/iwm',
   path: '/iwm',
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/connections': typeof AuthenticatedConnectionsRoute
+  '/explore': typeof AuthenticatedExploreRoute
   '/iwm': typeof AuthenticatedIwmRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/performance': typeof AuthenticatedPerformanceRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/connections': typeof AuthenticatedConnectionsRoute
+  '/explore': typeof AuthenticatedExploreRoute
   '/iwm': typeof AuthenticatedIwmRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/performance': typeof AuthenticatedPerformanceRoute
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/connections': typeof AuthenticatedConnectionsRoute
+  '/_authenticated/explore': typeof AuthenticatedExploreRoute
   '/_authenticated/iwm': typeof AuthenticatedIwmRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
   '/_authenticated/performance': typeof AuthenticatedPerformanceRoute
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/connections'
+    | '/explore'
     | '/iwm'
     | '/orders'
     | '/performance'
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/connections'
+    | '/explore'
     | '/iwm'
     | '/orders'
     | '/performance'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/connections'
+    | '/_authenticated/explore'
     | '/_authenticated/iwm'
     | '/_authenticated/orders'
     | '/_authenticated/performance'
@@ -216,6 +228,13 @@ declare module '@tanstack/react-router' {
       path: '/connections'
       fullPath: '/connections'
       preLoaderRoute: typeof AuthenticatedConnectionsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/explore': {
+      id: '/_authenticated/explore'
+      path: '/explore'
+      fullPath: '/explore'
+      preLoaderRoute: typeof AuthenticatedExploreRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/iwm': {
@@ -286,6 +305,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedConnectionsRoute: typeof AuthenticatedConnectionsRoute
+  AuthenticatedExploreRoute: typeof AuthenticatedExploreRoute
   AuthenticatedIwmRoute: typeof AuthenticatedIwmRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
   AuthenticatedPerformanceRoute: typeof AuthenticatedPerformanceRoute
@@ -298,6 +318,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConnectionsRoute: AuthenticatedConnectionsRoute,
+  AuthenticatedExploreRoute: AuthenticatedExploreRoute,
   AuthenticatedIwmRoute: AuthenticatedIwmRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
   AuthenticatedPerformanceRoute: AuthenticatedPerformanceRoute,
