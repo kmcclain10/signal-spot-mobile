@@ -57,7 +57,7 @@ function TradePage() {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="w-full"><TabsTrigger value="stock" className="flex-1">Stock / ETF</TabsTrigger><TabsTrigger value="option" className="flex-1">Options</TabsTrigger></TabsList>
           <TabsContent value="stock"><StockTicket key={`${symbol}-${search.side ?? "buy"}`} symbol={symbol} initial={search.side ?? "buy"} onDone={refresh} /></TabsContent>
-          <TabsContent value="option"><OptionChain key={symbol} symbol={symbol} initial={search.option ?? "CALL"} open={data.clock.is_open} level={data.account.options_level} botContract={data.positions.find(p => p.bot)?.symbol ?? null} onDone={refresh} /></TabsContent>
+          <TabsContent value="option"><OptionChain key={symbol} symbol={symbol} initial={search.option ?? "CALL"} open={data.clock.is_open} level={data.account.options_level} botContract={data.positions.find((p: { bot: boolean }) => p.bot)?.symbol ?? null} onDone={refresh} /></TabsContent>
         </Tabs>
       </section>
       <div className="space-y-6">
