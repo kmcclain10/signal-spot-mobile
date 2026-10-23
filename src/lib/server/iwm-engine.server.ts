@@ -250,7 +250,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     return {status:"error",error:message,paper:true};
   } finally {
     const finished=new Date().toISOString();
-    await db.from("iwm_strategy_state").update({lock_until:null,lock_token:null,...(ok ? {last_success_at:finished}:{})}).eq("user_id",userId).eq("lock_token",token);
+    await db.from("iwm_strategy_state").update({lock_until:null,lock_token:null,...(ok ? {last_success_at:finished}:{}),...(state.session_close ? {session_close:state.session_close}:{})}).eq("user_id",userId).eq("lock_token",token);
     // Monitoring writes must never break trading; failures here are logged only.
     try {
       const r=await db.from("bot_runs").insert({user_id:userId,started_at:new Date(started).toISOString(),finished_at:finished,ok,error:runError,duration_ms:Date.now()-started});
