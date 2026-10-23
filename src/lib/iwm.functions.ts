@@ -25,6 +25,9 @@ export const saveIwmSettings = createServerFn({method:"POST"})
   .middleware([requireSupabaseAuth])
   .inputValidator(input=>iwmSettingsInput.parse(input))
   .handler(async({data,context})=> {
+    // Kill switch always stops new entries; the runner exits any open bot position.
+    if (data.kill_switch) data.enabled=false;
+    if (data.enabled) data.kill_switch=false;
     if (data.enabled) {
       const {iwmAlpaca} = await import("@/lib/server/iwm-alpaca.server");
       const {supabaseAdmin} = await import("@/integrations/supabase/client.server");
