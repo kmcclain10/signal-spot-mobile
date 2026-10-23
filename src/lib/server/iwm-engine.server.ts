@@ -1,5 +1,5 @@
 import { addIndicators, evaluate, onPremium, emaDisrespect, contractsFor, settle, etParts, DEFAULT_CONFIG, type StrategyConfig } from "@/lib/iwmWindowStrategy";
-import { closedRegularBars, freshQuote, terminalOrder, forceExitMinutes } from "@/lib/iwm-engine-rules";
+import { closedRegularBars, freshQuote, terminalOrder, forceExitMinutes, sessionEndMinutes, entryBlock, positionMismatch } from "@/lib/iwm-engine-rules";
 import { iwmAlpaca } from "@/lib/server/iwm-alpaca.server";
 import { iwmDiscord } from "@/lib/server/iwm-discord.server";
 
@@ -29,6 +29,9 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
   }
   const event = (kind:string,row:Rec)=> { (events[kind] ??= []).push(row); };
   const note = (type:string,body:string)=>notifications.push({type,body});
+  let ok=false, runError:string|null=null;
+  const errorRows:Rec[]=[];
+  const logError=(where:string,message:string,payload?:Rec)=>errorRows.push({user_id:userId,where,message,payload:payload ?? null});
   let api:Api;
   let now:Date;
   async function submitIntent(pending:Rec) {
@@ -157,16 +160,20 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     state.last_run_at=now.toISOString();state.last_error=null;
     await checkpoint();
     await reconcile();deadline();
+    await reconcileBroker();deadline();
     if (!clock.is_open) {
       await dailyReport(date,minutes);
       if (state.open_trade) { state.last_error="Market is closed with an unresolved position; exit will be retried when open"; await checkpoint(); }
+      ok=true;
       return {status:"market closed",paper:true};
     }
-    // Handle early exchange closing days too: force exit at least 10 minutes before close.
+    // Calendar-driven: force exit 10 minutes before the real close; no entries in the last hour of an early close.
     const closeMinutes=etParts(clock.next_close).minutes;
-    const forced=minutes>=Math.min(forceExitMinutes(settings.force_exit_time),closeMinutes-10);
+    const sessionEnd=sessionEndMinutes(closeMinutes);
+    state.session_close=clock.next_close;
+    const forced=minutes>=Math.min(forceExitMinutes(settings.force_exit_time),closeMinutes-10) || !!settings.kill_switch;
     if (state.open_trade) {
-      if (forced) state.open_trade.exitRequested="Force exit before market close";
+      if (forced) state.open_trade.exitRequested=settings.kill_switch ? "Kill switch":"Force exit before market close";
       let quote:any;
       try { quote=await api.quote(state.open_trade.optionSymbol,settings.options_feed); }
       catch { state.last_error="Option quote unavailable; position monitoring will retry"; }
@@ -205,8 +212,9 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
             ema8:ind.emaFast,ema20:ind.emaSlow,osc:Number.isFinite(ind.osc) ? ind.osc:null,detail:signal.detail,action:signal.kind==="potential" ? "alert":"evaluating"});
           await checkpoint();
           if (signal.kind==="potential") { note("POTENTIAL ENTRY",`IWM $${signal.price.toFixed(2)} ${signal.side} • Window ${signal.window}/15`); continue; }
-          let action="daily limit";
-          if (state.trades_today<settings.max_trades_per_day) {
+          const block=entryBlock(settings,state) ?? (minutes>=sessionEnd ? "early close":null);
+          let action=block ?? "daily limit";
+          if (!block && state.trades_today<settings.max_trades_per_day) {
             deadline();
             const contract=await api.chooseContract(signal.side,signal.price,date,settings.options_feed,now);
             action="no valid option quote";
@@ -230,15 +238,25 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
       await checkpoint();
     }
     await dailyReport(date,minutes);
+    ok=true;
     return {status:state.pending_order ? "order pending":state.open_trade ? "in trade":"scanning",paper:true};
   } catch(error) {
     const message=error instanceof Error ? error.message:"IWM run failed";
+    runError=message;
     console.error("IWM run:",message);
+    logError("run",message);
     // Never write uncommitted bookkeeping after a failed checkpoint; retained intent enables safe recovery.
     await db.from("iwm_strategy_state").update({last_error:message,last_run_at:new Date().toISOString()}).eq("user_id",userId).eq("lock_token",token);
     return {status:"error",error:message,paper:true};
   } finally {
-    await db.from("iwm_strategy_state").update({lock_until:null,lock_token:null}).eq("user_id",userId).eq("lock_token",token);
+    const finished=new Date().toISOString();
+    await db.from("iwm_strategy_state").update({lock_until:null,lock_token:null,...(ok ? {last_success_at:finished}:{})}).eq("user_id",userId).eq("lock_token",token);
+    // Monitoring writes must never break trading; failures here are logged only.
+    try {
+      const r=await db.from("bot_runs").insert({user_id:userId,started_at:new Date(started).toISOString(),finished_at:finished,ok,error:runError,duration_ms:Date.now()-started});
+      if (r?.error) console.error("IWM bot_runs write failed");
+      if (errorRows.length) { const e=await db.from("bot_errors").insert(errorRows); if (e?.error) console.error("IWM bot_errors write failed"); }
+    } catch { console.error("IWM monitoring write failed"); }
     for (const n of notifications) await iwmDiscord(settings.discord_enabled,n.type,n.body);
   }
 }
