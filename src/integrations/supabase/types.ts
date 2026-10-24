@@ -785,6 +785,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_recent_password_auth: { Args: never; Returns: boolean }
       iwm_acquire_lock: {
         Args: { p_token: string; p_user_id: string }
         Returns: {
