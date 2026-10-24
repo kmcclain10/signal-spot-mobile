@@ -25,7 +25,7 @@ import { RefreshCw } from "lucide-react";
 const NAV = [
   { to: "/", label: "Home", icon: Home },
   { to: "/explore", label: "Explore", icon: Search },
-  { to: "/strategies", label: "Bots", icon: Bot },
+  { to: "/bots", label: "Bots", icon: Bot },
   { to: "/orders", label: "Activity", icon: Wallet },
   { to: "/settings", label: "Account", icon: UserRound },
 ] as const;
@@ -33,6 +33,7 @@ const SECONDARY = [
   { to: "/signals", label: "Signals", icon: Activity },
   { to: "/trade", label: "Trade", icon: CandlestickChart },
   { to: "/iwm", label: "IWM 20-Min Window", icon: Activity },
+  { to: "/strategies", label: "Strategy library", icon: BarChart3 },
   { to: "/performance", label: "Performance", icon: BarChart3 },
   { to: "/connections", label: "Connections", icon: Plug },
 ] as const;

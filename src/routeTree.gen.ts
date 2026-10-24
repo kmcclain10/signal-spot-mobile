@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedBotsRouteImport } from './routes/_authenticated/bots'
 import { Route as AuthenticatedConnectionsRouteImport } from './routes/_authenticated/connections'
 import { Route as AuthenticatedExploreRouteImport } from './routes/_authenticated/explore'
 import { Route as AuthenticatedIwmRouteImport } from './routes/_authenticated/iwm'
@@ -37,6 +38,11 @@ const AuthRoute = AuthRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedBotsRoute = AuthenticatedBotsRouteImport.update({
+  id: '/bots',
+  path: '/bots',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedConnectionsRoute =
@@ -107,6 +113,7 @@ const ApiPublicJobsScanRoute = ApiPublicJobsScanRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/bots': typeof AuthenticatedBotsRoute
   '/connections': typeof AuthenticatedConnectionsRoute
   '/explore': typeof AuthenticatedExploreRoute
   '/iwm': typeof AuthenticatedIwmRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/bots': typeof AuthenticatedBotsRoute
   '/connections': typeof AuthenticatedConnectionsRoute
   '/explore': typeof AuthenticatedExploreRoute
   '/iwm': typeof AuthenticatedIwmRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/bots': typeof AuthenticatedBotsRoute
   '/_authenticated/connections': typeof AuthenticatedConnectionsRoute
   '/_authenticated/explore': typeof AuthenticatedExploreRoute
   '/_authenticated/iwm': typeof AuthenticatedIwmRoute
@@ -159,6 +168,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/bots'
     | '/connections'
     | '/explore'
     | '/iwm'
@@ -174,6 +184,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
+    | '/bots'
     | '/connections'
     | '/explore'
     | '/iwm'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/bots'
     | '/_authenticated/connections'
     | '/_authenticated/explore'
     | '/_authenticated/iwm'
@@ -234,6 +246,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/bots': {
+      id: '/_authenticated/bots'
+      path: '/bots'
+      fullPath: '/bots'
+      preLoaderRoute: typeof AuthenticatedBotsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/connections': {
@@ -324,6 +343,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBotsRoute: typeof AuthenticatedBotsRoute
   AuthenticatedConnectionsRoute: typeof AuthenticatedConnectionsRoute
   AuthenticatedExploreRoute: typeof AuthenticatedExploreRoute
   AuthenticatedIwmRoute: typeof AuthenticatedIwmRoute
@@ -338,6 +358,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBotsRoute: AuthenticatedBotsRoute,
   AuthenticatedConnectionsRoute: AuthenticatedConnectionsRoute,
   AuthenticatedExploreRoute: AuthenticatedExploreRoute,
   AuthenticatedIwmRoute: AuthenticatedIwmRoute,
