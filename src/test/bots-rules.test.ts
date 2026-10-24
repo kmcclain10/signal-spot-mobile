@@ -17,7 +17,7 @@ describe("botHealth", () => {
   });
   it("is paused once today's loss reaches the limit", () => {
     expect(botHealth(marketOpen, settings, { pnl_today: -100 }).status).toBe("paused");
-    expect(botHealth(marketOpen, settings, { pnl_today: -99 }).detail).toBe("Checking every minute");
+    expect(botHealth(marketOpen, settings, { pnl_today: -99, last_success_at: "2026-10-19T14:59:30Z" }).detail).toBe("Checking every minute");
   });
   it("is offline during market hours without a recent success", () => {
     expect(botHealth(marketOpen, settings, { last_success_at: "2026-10-19T14:50:00Z" }).status).toBe("offline");
