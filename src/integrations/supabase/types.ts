@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_disclosure_acceptance: {
+        Row: {
+          accepted_at: string
+          user_id: string
+          version: string
+        }
+        Insert: {
+          accepted_at?: string
+          user_id: string
+          version?: string
+        }
+        Update: {
+          accepted_at?: string
+          user_id?: string
+          version?: string
+        }
+        Relationships: []
+      }
       bot_errors: {
         Row: {
           created_at: string
