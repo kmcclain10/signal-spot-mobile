@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useAccountConfirmation } from "@/components/AccountSecurity";
 import { sensitiveIwmChange } from "@/lib/account-rules";
+import { SeparateBots, separateBotsOptions } from "@/components/SeparateBots";
 
 const options = queryOptions({ queryKey: ["bots-overview"], queryFn: () => getBotsOverview(), refetchInterval: 30000 });
 export const Route = createFileRoute("/_authenticated/bots")({
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/bots")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(options),
+  loader: async ({ context }) => { await Promise.all([context.queryClient.ensureQueryData(options),context.queryClient.ensureQueryData(separateBotsOptions)]); },
   component: BotsPage,
 });
 
@@ -155,6 +156,7 @@ function BotsPage() {
         </Button>
       </section>
 
+      <SeparateBots userId={user.id} />
       <Button asChild variant="ghost" className="h-auto w-full justify-start gap-3 border py-4">
         <Link to="/strategies">
           <Library className="size-5 text-primary" />
