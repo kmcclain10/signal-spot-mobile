@@ -18,3 +18,5 @@
 - The shared shell groups existing routes into five primary destinations and keeps Trade plus secondary pages accessible; UI redesign stages must reuse trading functions without changing broker or strategy behavior.
 - Home portfolio reads use separate authenticated paper-only functions and foreground-aware queries; persist watchlist changes only to the owner's existing settings row, never fabricate missing broker prices or history.
 - Explore uses authenticated read-only Alpaca asset and market functions; quote routes pass validated symbols and sides to the existing Trade desk, while market-wide screeners remain distinct from IEX quotes and unavailable data is explicitly labeled.
+- Account sensitive updates are guarded by database triggers using verified password AMR timestamps; shared confirmation supplies fresh authentication across Account, Bots and IWM, without changing broker behavior.
+- The shared shell owns first-launch disclosure acceptance and background device sign-out; home-screen support is manifest-only with no offline caching of trading data or credentials.

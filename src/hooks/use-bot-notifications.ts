@@ -6,7 +6,8 @@ export const notificationsSupported = () => typeof window !== "undefined" && "No
 
 /** Browser notifications for new IWM bot trades. Opt-in; stored on this device only. */
 export function useBotNotifications(userId: string | undefined) {
-  const [enabled, setEnabled] = useState(() => (typeof window !== "undefined" ? localStorage.getItem(KEY) === "1" : false));
+  const [enabled, setEnabled] = useState(false);
+  useEffect(() => { try { setEnabled(localStorage.getItem(KEY) === "1"); } catch { setEnabled(false); } }, []);
 
   async function toggle(next: boolean) {
     if (next && notificationsSupported() && Notification.permission === "default") {

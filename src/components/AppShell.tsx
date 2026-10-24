@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { AccountSecurity } from "@/components/AccountSecurity";
 
 const NAV = [
   { to: "/", label: "Home", icon: Home },
@@ -152,7 +153,7 @@ export function AppShell() {
           onTouchEnd={() => { setTouchStart(null); if (pull) void refresh(); }}
           onTouchCancel={() => { setTouchStart(null); setPull(false); }}>
           {(pull || refreshing) && <div role="status" className="flex items-center justify-center gap-2 pb-4 text-xs text-primary"><RefreshCw className={refreshing ? "size-4 animate-spin" : "size-4"} />{refreshing ? "Refreshing…" : "Release to refresh"}</div>}
-          <Outlet />
+          <AccountSecurity><Outlet /></AccountSecurity>
         </main>
       </div>
 
