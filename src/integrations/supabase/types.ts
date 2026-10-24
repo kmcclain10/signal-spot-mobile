@@ -676,6 +676,118 @@ export type Database = {
           },
         ]
       }
+      pulse_bot_configs: {
+        Row: {
+          config: Json
+          created_at: string
+          enabled: boolean
+          id: string
+          kill_switch: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          kill_switch?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          kill_switch?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pulse_bot_events: {
+        Row: {
+          bot_id: string
+          created_at: string
+          detail: Json
+          id: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          bot_id: string
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind: string
+          user_id: string
+        }
+        Update: {
+          bot_id?: string
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pulse_bot_events_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "pulse_bot_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pulse_bot_leases: {
+        Row: {
+          lease_until: string | null
+          token: string | null
+          user_id: string
+        }
+        Insert: {
+          lease_until?: string | null
+          token?: string | null
+          user_id: string
+        }
+        Update: {
+          lease_until?: string | null
+          token?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pulse_bot_states: {
+        Row: {
+          bot_id: string
+          state: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bot_id: string
+          state?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bot_id?: string
+          state?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pulse_bot_states_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: true
+            referencedRelation: "pulse_bot_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       settings: {
         Row: {
           lookback_days: number
@@ -840,6 +952,19 @@ export type Database = {
       iwm_save_state: {
         Args: {
           p_events?: Json
+          p_state: Json
+          p_token: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      pulse_acquire_lease: {
+        Args: { p_token: string; p_user_id: string }
+        Returns: boolean
+      }
+      pulse_checkpoint: {
+        Args: {
+          p_bot_id: string
           p_state: Json
           p_token: string
           p_user_id: string
