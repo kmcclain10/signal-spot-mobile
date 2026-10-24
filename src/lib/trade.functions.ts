@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { tradeTicket, toBrokerOrder, chainTicket, chainStrikeRange, optionLimitProblem, closeQtyProblem } from "@/lib/trade-rules";
+import { assertNoPulseOwnership, isBotOrder } from "@/lib/bot-ownership";
 
 type Rec = Record<string, any>;
 async function broker(userId: string) {
@@ -12,7 +13,7 @@ async function broker(userId: string) {
 const pick = (o: Rec) => ({
   id: o.id, symbol: o.symbol, side: o.side, qty: Number(o.qty ?? 0), filled_qty: Number(o.filled_qty ?? 0), type: o.type,
   limit_price: o.limit_price ? Number(o.limit_price) : null, filled_avg_price: o.filled_avg_price ? Number(o.filled_avg_price) : null,
-  status: o.status, submitted_at: o.submitted_at, asset_class: o.asset_class, bot: String(o.client_order_id ?? "").startsWith("iwm-"),
+  status: o.status, submitted_at: o.submitted_at, asset_class: o.asset_class, bot: isBotOrder(o.client_order_id),
   stop_price: o.stop_price ? Number(o.stop_price) : null, notional: o.notional ? Number(o.notional) : null,
   time_in_force: o.time_in_force, extended_hours: !!o.extended_hours, filled_at: o.filled_at ?? null,
   canceled_at: o.canceled_at ?? null, expired_at: o.expired_at ?? null, failed_at: o.failed_at ?? null,
@@ -29,6 +30,9 @@ export const getTradeDesk = createServerFn({ method: "POST" })
     ]);
     const state = await context.supabase.from("iwm_strategy_state").select("open_trade").eq("user_id", context.userId).maybeSingle();
     const botSymbol = (state.data?.open_trade as Rec | null)?.optionSymbol ?? null;
+    const pulse=await context.supabase.from("pulse_bot_states").select("state").eq("user_id",context.userId);
+    if(pulse.error) throw new Error("Could not read bot ownership");
+    const pulseSymbols=new Set((pulse.data??[]).map(r=>(r.state as Rec)?.position?.symbol));
     return {
       account: { equity: Number(account.equity), cash: Number(account.cash), buying_power: Number(account.buying_power),
         options_buying_power: Number(account.options_buying_power ?? account.buying_power), options_level: Number(account.options_trading_level ?? 0),
@@ -36,7 +40,7 @@ export const getTradeDesk = createServerFn({ method: "POST" })
       clock: { is_open: !!clock.is_open, next_open: clock.next_open, next_close: clock.next_close },
       positions: (positions ?? []).map((p: Rec) => ({ symbol: p.symbol, qty: Number(p.qty), side: p.side, asset_class: p.asset_class,
         avg_entry: Number(p.avg_entry_price), current: Number(p.current_price), market_value: Number(p.market_value),
-        pnl: Number(p.unrealized_pl), pnl_pct: Number(p.unrealized_plpc) * 100, bot: p.symbol === botSymbol })),
+        pnl: Number(p.unrealized_pl), pnl_pct: Number(p.unrealized_plpc) * 100, bot: p.symbol === botSymbol || pulseSymbols.has(p.symbol) })),
       open: (open ?? []).map(pick), recent: (recent ?? []).map(pick),
     };
   });
@@ -64,6 +68,7 @@ export const placeManualTrade = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { api } = await broker(context.userId);
     const clientId = `manual-${crypto.randomUUID()}`;
+    await assertNoPulseOwnership(context.supabase,context.userId,data.symbol);
     if (data.kind === "stock") {
       if (data.notional != null) {
         const asset = await api.call(`/v2/assets/${data.symbol}`);
@@ -90,7 +95,7 @@ export const cancelPaperOrder = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { api } = await broker(context.userId);
     const order = await api.order(data.id);
-    if (String(order.client_order_id ?? "").startsWith("iwm-")) throw new Error("This order belongs to the IWM bot; it manages its own orders");
+    if (isBotOrder(order.client_order_id)) throw new Error("This order belongs to a bot; stop it from Bots instead");
     return pick(await api.cancel(data.id));
   });
 
@@ -103,6 +108,7 @@ export const closePaperPosition = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => z.object({ symbol: z.string().regex(/^[A-Z0-9.]{1,25}$/) }).parse(i))
   .handler(async ({ data, context }) => {
     const { api, db } = await broker(context.userId);
+    await assertNoPulseOwnership(context.supabase,context.userId,data.symbol);
     const st = await context.supabase.from("iwm_strategy_state").select("open_trade").eq("user_id", context.userId).maybeSingle();
     if ((st.data?.open_trade as Rec | null)?.optionSymbol !== data.symbol) {
       await api.call(`/v2/positions/${encodeURIComponent(data.symbol)}`, "DELETE");
@@ -179,6 +185,7 @@ export const placeChainOrder = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { api } = await broker(context.userId);
     const [clock, account, positions] = await Promise.all([api.clock(), api.account(), api.call("/v2/positions")]);
+    await assertNoPulseOwnership(context.supabase,context.userId,data.contract);
     if (!clock.is_open) throw new Error("Options can only be traded while the market is open");
     const st = await context.supabase.from("iwm_strategy_state").select("open_trade").eq("user_id", context.userId).maybeSingle();
     if ((st.data?.open_trade as Rec | null)?.optionSymbol === data.contract) throw new Error("The IWM bot holds this contract; use Close on the position so the bot sells it");

@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getProviderDef } from "@/lib/providers";
 import { nyDate } from "@/lib/market-hours";
 import { positionSize } from "@/lib/format";
+import { assertNoPulseOwnership, isBotOrder } from "@/lib/bot-ownership";
 
 type Rec = Record<string, any>;
 
@@ -170,6 +171,19 @@ export const providerProxy = createServerFn({ method: "POST" })
     const sec = await p.decryptJson(c.secret_cipher, c.secret_iv);
     const conn = { provider: c.provider, environment: c.environment, config: c.config as Rec };
     const args = data.args ?? [];
+    if(data.capability==="broker" && (data.action==="cancelOrder"||data.action==="closePosition")){
+      if(c.provider!=="alpaca"||c.environment!=="paper") throw new Error("Use the paper Trade desk for protected position actions");
+      const {iwmAlpaca}=await import("@/lib/server/iwm-alpaca.server");
+      const api=await iwmAlpaca(await admin(),context.userId,c.id);
+      if(data.action==="cancelOrder"){
+        const order=await api.order(String(args[0]));if(isBotOrder(order.client_order_id)) throw new Error("Bot orders must be stopped from Bots");
+      }else{
+        await assertNoPulseOwnership(context.supabase,context.userId,String(args[0]));
+        const st=await context.supabase.from("iwm_strategy_state").select("open_trade").eq("user_id",context.userId).maybeSingle();
+        if(st.error) throw new Error("Could not verify bot ownership");
+        if((st.data?.open_trade as Rec|null)?.optionSymbol===args[0]) throw new Error("Close the IWM bot position from the Trade desk");
+      }
+    }
     let result: unknown;
     if (data.capability === "broker") result = await (p.brokerAdapter(conn, sec) as any)[data.action](...args);
     else if (data.capability === "data") result = await (p.dataAdapter(conn, sec) as any)[data.action](...args);
@@ -191,6 +205,7 @@ export const placeSignalOrder = createServerFn({ method: "POST" })
     const uid = context.userId;
     const { data: sig } = await db.from("signals").select("*").eq("id", data.signal_id).eq("user_id", uid).maybeSingle();
     if (!sig) throw new Error("Signal not found");
+    await assertNoPulseOwnership(context.supabase,uid,sig.symbol);
     if (sig.trade_date !== nyDate()) throw new Error("Only today's signals can be traded");
     if (sig.status !== "new") throw new Error(`Signal is already ${sig.status}`);
     const { data: settings } = await db.from("settings").select("*").eq("user_id", uid).maybeSingle();

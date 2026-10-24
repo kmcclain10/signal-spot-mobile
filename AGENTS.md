@@ -20,3 +20,5 @@
 - Explore uses authenticated read-only Alpaca asset and market functions; quote routes pass validated symbols and sides to the existing Trade desk, while market-wide screeners remain distinct from IEX quotes and unavailable data is explicitly labeled.
 - Account sensitive updates are guarded by database triggers using verified password AMR timestamps; shared confirmation supplies fresh authentication across Account, Bots and IWM, without changing broker behavior.
 - The shared shell owns first-launch disclosure acceptance and background device sign-out; home-screen support is manifest-only with no offline caching of trading data or credentials.
+- Additional Pulse bots use an isolated imported library and owner-wide service-only leases with write-before-submit intents; existing IWM math and execution remain independent to prevent strategy regressions.
+- Manual broker mutations verify additional bot underlying ownership and bot order prefixes server-side; positions are flattened through bot controls to preserve execution accounting.
