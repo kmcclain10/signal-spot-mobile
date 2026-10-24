@@ -24,6 +24,7 @@ import { Route as AuthenticatedStrategiesRouteImport } from './routes/_authentic
 import { Route as AuthenticatedTradeRouteImport } from './routes/_authenticated/trade'
 import { Route as AuthenticatedQuoteSymbolRouteImport } from './routes/_authenticated/quote.$symbol'
 import { Route as ApiPublicJobsIwmWindowStrategyRouteImport } from './routes/api/public/jobs/iwm-window-strategy'
+import { Route as ApiPublicJobsPulseBotsRouteImport } from './routes/api/public/jobs/pulse-bots'
 import { Route as ApiPublicJobsScanRouteImport } from './routes/api/public/jobs/scan'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -104,6 +105,11 @@ const ApiPublicJobsIwmWindowStrategyRoute =
     path: '/api/public/jobs/iwm-window-strategy',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicJobsPulseBotsRoute = ApiPublicJobsPulseBotsRouteImport.update({
+  id: '/api/public/jobs/pulse-bots',
+  path: '/api/public/jobs/pulse-bots',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicJobsScanRoute = ApiPublicJobsScanRouteImport.update({
   id: '/api/public/jobs/scan',
   path: '/api/public/jobs/scan',
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/trade': typeof AuthenticatedTradeRoute
   '/quote/$symbol': typeof AuthenticatedQuoteSymbolRoute
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
+  '/api/public/jobs/pulse-bots': typeof ApiPublicJobsPulseBotsRoute
   '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
 }
 export interface FileRoutesByTo {
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/quote/$symbol': typeof AuthenticatedQuoteSymbolRoute
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
+  '/api/public/jobs/pulse-bots': typeof ApiPublicJobsPulseBotsRoute
   '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
 }
 export interface FileRoutesById {
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/quote/$symbol': typeof AuthenticatedQuoteSymbolRoute
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
+  '/api/public/jobs/pulse-bots': typeof ApiPublicJobsPulseBotsRoute
   '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
 }
 export interface FileRouteTypes {
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/trade'
     | '/quote/$symbol'
     | '/api/public/jobs/iwm-window-strategy'
+    | '/api/public/jobs/pulse-bots'
     | '/api/public/jobs/scan'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/'
     | '/quote/$symbol'
     | '/api/public/jobs/iwm-window-strategy'
+    | '/api/public/jobs/pulse-bots'
     | '/api/public/jobs/scan'
   id:
     | '__root__'
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/quote/$symbol'
     | '/api/public/jobs/iwm-window-strategy'
+    | '/api/public/jobs/pulse-bots'
     | '/api/public/jobs/scan'
   fileRoutesById: FileRoutesById
 }
@@ -222,6 +234,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiPublicJobsIwmWindowStrategyRoute: typeof ApiPublicJobsIwmWindowStrategyRoute
+  ApiPublicJobsPulseBotsRoute: typeof ApiPublicJobsPulseBotsRoute
   ApiPublicJobsScanRoute: typeof ApiPublicJobsScanRoute
 }
 
@@ -332,6 +345,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicJobsIwmWindowStrategyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/jobs/pulse-bots': {
+      id: '/api/public/jobs/pulse-bots'
+      path: '/api/public/jobs/pulse-bots'
+      fullPath: '/api/public/jobs/pulse-bots'
+      preLoaderRoute: typeof ApiPublicJobsPulseBotsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/jobs/scan': {
       id: '/api/public/jobs/scan'
       path: '/api/public/jobs/scan'
@@ -379,6 +399,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiPublicJobsIwmWindowStrategyRoute: ApiPublicJobsIwmWindowStrategyRoute,
+  ApiPublicJobsPulseBotsRoute: ApiPublicJobsPulseBotsRoute,
   ApiPublicJobsScanRoute: ApiPublicJobsScanRoute,
 }
 export const routeTree = rootRouteImport

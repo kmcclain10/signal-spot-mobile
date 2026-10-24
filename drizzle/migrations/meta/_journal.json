@@ -36,6 +36,13 @@
       "when": 1792823285024,
       "tag": "0004_account_disclosure_acceptance",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792826284000,
+      "tag": "0005_separate_paper_bots",
+      "breakpoints": true
     }
   ]
 }

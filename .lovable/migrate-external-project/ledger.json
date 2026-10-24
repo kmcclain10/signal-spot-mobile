@@ -1,0 +1,14 @@
+{
+  "source": "pulse_bots.zip",
+  "capabilities": [
+    {"capability":"strategy library","source":"five pure TypeScript files","outcome":"add nine separate paper bots","status":"in_progress","next_action":"import and test"},
+    {"capability":"existing IWM","source":"existing application","outcome":"preserve unchanged","status":"in_progress","next_action":"regression tests"},
+    {"capability":"schema and records","source":"no schema or records in archive","outcome":"extend existing Lovable Cloud without replacing data","status":"in_progress","next_action":"add owner-scoped bot configuration and execution state"},
+    {"capability":"auth identities and authorization","source":"existing application","outcome":"retain existing authentication and owner boundaries","status":"in_progress","next_action":"verify isolation and fresh-auth controls"},
+    {"capability":"uploaded file bytes","source":"source-only archive","outcome":"not applicable","status":"verified","next_action":null},
+    {"capability":"external providers and secrets","source":"existing Alpaca paper connection","outcome":"reuse encrypted connection","status":"in_progress","next_action":"verify read and paper order guard"},
+    {"capability":"callbacks and schedules","source":"existing managed runner","outcome":"extend with separate authenticated scheduled callback","status":"in_progress","next_action":"wire service-only lease and scheduled execution"},
+    {"capability":"webhooks and cutover","source":"no new external callers or GitHub URL supplied","outcome":"retain existing endpoints; publish separately","status":"pending","next_action":"published callback verification requires publishing"},
+    {"capability":"verification","source":"new bot settings and execution","outcome":"test rules and signed-in configuration flow","status":"in_progress","next_action":"tests and browser checks"}
+  ]
+}

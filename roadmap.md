@@ -22,5 +22,6 @@
 - [x] P8 web — Account profile, masked Alpaca paper account/options level, IWM kill confirmation, device notifications, disclosures and home-screen icons. Fresh password confirmation across Account/Bots/IWM; database rejects unconfirmed risk changes. Verified saved disclosure acceptance, incorrect-password rejection, canceled bot change, phone layout, icon delivery and sign-out at 15 minutes in background; 106 tests pass, no orders placed. Native delivery remains separate; no MFA/Face ID claim.
 - [ ] P8 native iOS — Face ID, native push and App Store package require a separate supported native project, Mac/Xcode, Apple signing and physical-device testing. Delivery steps recorded in docs/iphone-delivery.md; not implemented or tested.
 # Trade desk
+- [ ] ZIP bot additions — nine separate configurable paper bots; preserve IWM; owner-scoped settings/state, safe execution and schedule, tests and signed-in checks.
 - [x] Manual Options follow the selected stock/ETF; verified live SPY and IWM contracts on the phone-sized page, with 38 tests passing and no orders placed.
 - [x] Trade tab: stock/ETF and IWM option tickets, positions with Close (bot positions handed to bot), working/recent orders with Cancel. Page verified on phone; no test order placed.
