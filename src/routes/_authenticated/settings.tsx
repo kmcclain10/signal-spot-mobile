@@ -11,14 +11,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { AccountOverview } from "@/components/AccountOverview";
+import { useAccountConfirmation } from "@/components/AccountSecurity";
+import { sensitiveAccountChange } from "@/lib/account-rules";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — Pulse Signals" },
-      { name: "description", content: "Watchlist, selection rule, risk limits and trading mode." },
-      { property: "og:title", content: "Settings — Pulse Signals" },
-      { property: "og:description", content: "Watchlist, selection rule, risk limits and trading mode." },
+      { title: "Account & Security — Pulse Signals" },
+      { name: "description", content: "Your connected paper account, security, disclosures, notifications and risk settings." },
+      { property: "og:title", content: "Account & Security — Pulse Signals" },
+      { property: "og:description", content: "Manage account security and paper trading safeguards." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -51,6 +54,7 @@ function NumField({ label, value, onChange, step = 1, suffix }: { label: string;
 }
 
 function SettingsPage() {
+  const confirmation = useAccountConfirmation();
   const s = useSettings();
   const qc = useQueryClient();
   const [f, setF] = useState<Form | null>(null);
@@ -75,7 +79,9 @@ function SettingsPage() {
 
   const save = useMutation({
     mutationFn: async (form: Form) => {
+      if (s.data && sensitiveAccountChange(s.data, form) && !await confirmation()) return false;
       const { data: u } = await supabase.auth.getUser();
+      if (!u.user) throw new Error("Sign in again to save your settings.");
       const { error } = await supabase
         .from("settings")
         .update({
@@ -90,10 +96,12 @@ function SettingsPage() {
           trading_mode: form.trading_mode,
           updated_at: new Date().toISOString(),
         })
-        .eq("user_id", u.user!.id);
+        .eq("user_id", u.user.id);
       if (error) throw error;
+      return true;
     },
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      if (!saved) return;
       qc.invalidateQueries({ queryKey: ["settings"] });
       toast.success("Saved — the engine uses these on its next run.");
     },
@@ -105,10 +113,11 @@ function SettingsPage() {
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF({ ...f, [k]: v });
 
   function addTicker() {
+    if (!f) return;
     const parts = ticker.toUpperCase().split(/[\s,]+/).filter(Boolean);
     const bad = parts.filter((p) => !/^[A-Z]{1,5}$/.test(p));
     if (bad.length) { toast.error(`Invalid ticker: ${bad.join(", ")}`); return; }
-    const next = Array.from(new Set([...f!.watchlist, ...parts]));
+    const next = Array.from(new Set([...f.watchlist, ...parts]));
     if (next.length > 50) { toast.error("Max 50 tickers"); return; }
     set("watchlist", next);
     setTicker("");
@@ -116,7 +125,9 @@ function SettingsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Settings" sub="The engine reads these on every run." />
+      <PageHeader title="Account" />
+      <AccountOverview />
+      <h2 className="border-t pt-6 text-xl font-semibold">Trading preferences</h2>
 
       <Panel className="p-4">
         <h2 className="mb-3 text-sm font-semibold">Watchlist <span className="num text-xs font-normal text-muted-foreground">{f.watchlist.length}/50</span></h2>
@@ -124,7 +135,7 @@ function SettingsPage() {
           {f.watchlist.map((t) => (
             <span key={t} className="num inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs">
               {t}
-              <button aria-label={`Remove ${t}`} onClick={() => set("watchlist", f.watchlist.filter((x) => x !== t))}><X className="size-3" /></button>
+              <Button size="icon" variant="ghost" className="size-7" aria-label={`Remove ${t}`} onClick={() => set("watchlist", f.watchlist.filter((x) => x !== t))}><X className="size-3" /></Button>
             </span>
           ))}
         </div>
@@ -158,8 +169,8 @@ function SettingsPage() {
       <Panel className="p-4">
         <h2 className="mb-3 text-sm font-semibold">Trading mode</h2>
         <div className="grid max-w-xs grid-cols-2 gap-1 rounded-md border p-1">
-          <button onClick={() => set("trading_mode", "paper")} className={cn("rounded px-3 py-1.5 text-sm", f.trading_mode === "paper" ? "bg-accent" : "text-muted-foreground")}>Paper</button>
-          <button onClick={() => { setConfirmText(""); setLiveOpen(true); }} className={cn("rounded px-3 py-1.5 text-sm", f.trading_mode === "live" ? "bg-loss text-destructive-foreground" : "text-muted-foreground")}>Live</button>
+          <Button variant="ghost" onClick={() => set("trading_mode", "paper")} className={cn(f.trading_mode === "paper" ? "bg-accent" : "text-muted-foreground")}>Paper</Button>
+          <Button variant="ghost" onClick={() => { setConfirmText(""); setLiveOpen(true); }} className={cn(f.trading_mode === "live" ? "bg-loss text-destructive-foreground" : "text-muted-foreground")}>Live</Button>
         </div>
       </Panel>
 

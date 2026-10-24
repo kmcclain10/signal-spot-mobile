@@ -22,6 +22,20 @@
       "when": 1792772778507,
       "tag": "0002_iwm_safety_controls",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792823257605,
+      "tag": "0003_account_sensitive_change_reauth",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792823285024,
+      "tag": "0004_account_disclosure_acceptance",
+      "breakpoints": true
     }
   ]
 }

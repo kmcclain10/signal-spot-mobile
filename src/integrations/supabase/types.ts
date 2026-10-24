@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_disclosure_acceptance: {
+        Row: {
+          accepted_at: string
+          user_id: string
+          version: string
+        }
+        Insert: {
+          accepted_at?: string
+          user_id: string
+          version?: string
+        }
+        Update: {
+          accepted_at?: string
+          user_id?: string
+          version?: string
+        }
+        Relationships: []
+      }
       bot_errors: {
         Row: {
           created_at: string
@@ -785,6 +803,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_recent_password_auth: { Args: never; Returns: boolean }
       iwm_acquire_lock: {
         Args: { p_token: string; p_user_id: string }
         Returns: {

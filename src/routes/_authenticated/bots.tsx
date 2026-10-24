@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { useAccountConfirmation } from "@/components/AccountSecurity";
+import { sensitiveIwmChange } from "@/lib/account-rules";
 
 const options = queryOptions({ queryKey: ["bots-overview"], queryFn: () => getBotsOverview(), refetchInterval: 30000 });
 export const Route = createFileRoute("/_authenticated/bots")({
@@ -36,6 +38,7 @@ const time = (v: string) => new Date(v).toLocaleString("en-US", { timeZone: "Ame
 const HEALTH_TONE: Record<string, string> = { running: "text-gain", paused: "text-warning", offline: "text-destructive", disabled: "text-muted-foreground" };
 
 function BotsPage() {
+  const confirmation = useAccountConfirmation();
   const { data } = useSuspenseQuery(options);
   const qc = useQueryClient();
   const user = Route.useRouteContext().user;
@@ -55,6 +58,7 @@ function BotsPage() {
   }, [user.id, qc]);
 
   async function persist(values: Record<string, unknown>) {
+    if (sensitiveIwmChange(settings, values) && !await confirmation()) return;
     setBusy(true);
     try { await save({ data: values }); await qc.invalidateQueries({ queryKey: options.queryKey }); toast.success("Bot settings saved"); }
     catch (e) { toast.error(e instanceof Error ? e.message : "Could not save settings"); }

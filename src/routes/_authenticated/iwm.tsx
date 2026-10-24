@@ -19,6 +19,8 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Progress } from "@/components/ui/progress";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { useAccountConfirmation } from "@/components/AccountSecurity";
+import { sensitiveIwmChange } from "@/lib/account-rules";
 
 const options = queryOptions({queryKey:["iwm-screen"],queryFn:()=>getIwmScreen(),refetchInterval:30000});
 export const Route = createFileRoute("/_authenticated/iwm")({
@@ -31,6 +33,7 @@ const time=(v:string)=>new Date(v).toLocaleString("en-US",{timeZone:"America/New
 function Stat({label,value,tone}:{label:string;value:string;tone?:string}) {return <div className="min-w-0"><p className="text-xs text-muted-foreground">{label}</p><p className={cn("num mt-1 break-words text-lg font-semibold",tone)}>{value}</p></div>;}
 
 function IwmPage(){
+  const confirmation=useAccountConfirmation();
   const {data}=useSuspenseQuery(options), qc=useQueryClient(), user=Route.useRouteContext().user;
   const save=useServerFn(saveIwmSettings), verify=useServerFn(verifyIwmConnection), acknowledge=useServerFn(acknowledgeIwmReview);
   const [lossDraft,setLossDraft]=useState(String(data.settings?.max_daily_loss ?? 100));
@@ -45,7 +48,7 @@ function IwmPage(){
     for(const table of ["iwm_signals","iwm_trades","iwm_strategy_state"]) ch.on("postgres_changes",{event:"*",schema:"public",table,filter:`user_id=eq.${user.id}`},()=>{qc.invalidateQueries({queryKey:options.queryKey});});
     ch.subscribe();return ()=>{supabase.removeChannel(ch);};
   },[user.id,qc]);
-  async function persist(values:z.infer<typeof iwmSettingsInput>){setBusy(true);try{await save({data:values});await qc.invalidateQueries({queryKey:options.queryKey});toast.success("IWM settings saved");}catch(e){toast.error(e instanceof Error?e.message:"Could not save settings");}finally{setBusy(false);}}
+  async function persist(values:z.infer<typeof iwmSettingsInput>){if(sensitiveIwmChange(settings,values)&&!await confirmation())return;setBusy(true);try{await save({data:values});await qc.invalidateQueries({queryKey:options.queryKey});toast.success("IWM settings saved");}catch(e){toast.error(e instanceof Error?e.message:"Could not save settings");}finally{setBusy(false);}}
   const state=data.state, trade=state?.open_trade as Record<string,any>|null;
   const status=iwmScreenStatus(now,state,settings.enabled,settings.max_trades_per_day);
   const today=etParts(now.toISOString()).date, isToday=state?.trading_day===today;
