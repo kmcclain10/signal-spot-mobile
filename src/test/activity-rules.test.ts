@@ -45,7 +45,9 @@ describe("activityCsv", () => {
     const lines = csv.split("\n");
     expect(lines[0]).toBe("when,type,what,detail,amount");
     expect(lines).toHaveLength(7);
-    expect(csv).toContain('"2 contracts @ $1.00"');
+    expect(csv).toContain("2 contracts @ $1.00");
     expect(csv).toContain("-62.00");
+    const quoted = activityCsv([{ id: "x", at: "2026-10-23T15:00:00Z", kind: "order", title: 'Buy, "now"', detail: "a,b", amount: null }]);
+    expect(quoted).toContain('"Buy, ""now""","a,b"');
   });
 });
