@@ -1,5 +1,5 @@
 import { iwmAlpaca } from "./iwm-alpaca.server";
-import { resolveBotSettings, onMark, strategyExit, positionSize, hm, etParts, bankSettle } from "@/lib/pulse-bots";
+import { resolveBotSettings, onMark, strategyExit, positionSize, hm, etParts, bankSettle, type StrategySignal } from "@/lib/pulse-bots";
 import { pulseConfigSchema, evaluatePulseBars, pulseEntryBlock } from "@/lib/pulse-bots/config";
 import { freshQuote, terminalOrder } from "@/lib/iwm-engine-rules";
 
@@ -96,7 +96,7 @@ export async function runPulseOwner(db:any,userId:string,apiOverride?:Api){
         if(state.position){
           const p=state.position;
           let reason=row.kill_switch?"Kill switch":!row.enabled?"Bot stopped":flat!==null&&minutes>=flat?"Session flatten":expiryDue?"Option expiry flatten":null;
-          let sig={note:"Position open"};
+          let sig:StrategySignal={note:"Position open"};
           // Mandatory exits must not depend on quotes or history being available.
           if(!reason){
             let quote:Rec;if(p.instrument==="options") quote=await api.quote(p.symbol,"indicative");else{const r=await api.call(`/v2/stocks/quotes/latest?${new URLSearchParams({symbols:p.symbol,feed:"iex"})}`,"GET",undefined,true);quote=r.quotes?.[p.symbol];}

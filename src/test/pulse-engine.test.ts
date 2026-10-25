@@ -28,6 +28,7 @@ describe("separate paper bot lifecycle",()=>{
   it("reconciles an existing broker client ID without duplicate submission",async()=>{
     const h=harness({pending:{kind:"entry",clientId:"pulse-existing",at:"2026-10-23T14:10:00Z",barTime:"2026-10-23T14:05:00Z",body:{symbol:"SPY"},position:{symbol:"SPY",underlying:"SPY",instrument:"shares",side:"long"}}});
     h.api.findOrder.mockResolvedValue({id:"existing",status:"filled",filled_qty:"2",filled_avg_price:"10"});
+    h.api.call.mockImplementation(async(path:string)=>path.includes("/bars?")?{bars:{SPY:[]}}:{quotes:{SPY:{bp:10,ap:10.1,t:"2026-10-23T14:10:00Z"}}});
     await runPulseOwner(h.db,"owner",h.api);expect(h.api.submit).not.toHaveBeenCalled();expect(h.state().position.qty).toBe(2);expect(h.state().trades).toBe(1);
   });
   it("waits for terminal cancellation before accounting a partial fill",async()=>{
@@ -37,7 +38,7 @@ describe("separate paper bot lifecycle",()=>{
   });
   it("accounts filled exit quantities once and preserves remaining exposure",async()=>{
     const h=harness({position:{...position,qty:2},pending:{kind:"exit",id:"exit",clientId:"pulse-exit",at:"2026-10-23T14:10:00Z",reason:"stop",body:{symbol:"SPY"}}},{enabled:false});
-    h.api.order.mockResolvedValue({id:"exit",status:"canceled",filled_qty:"1",filled_avg_price:"9"});
+    h.api.order.mockImplementation(async(id:string)=>id==="exit"?{id:"exit",status:"canceled",filled_qty:"1",filled_avg_price:"9"}:{id,status:"new",filled_qty:"0"});
     await runPulseOwner(h.db,"owner",h.api);expect(h.state().balance).toBe(199);expect(h.state().pnlToday).toBe(-1);expect(h.state().position.qty).toBe(1);expect(h.api.submit).toHaveBeenCalledWith(expect.objectContaining({qty:"1"}));
   });
   it("uses the early-close time to flatten ten minutes before close",async()=>{
