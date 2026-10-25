@@ -30,6 +30,14 @@ describe("buildActivity", () => {
 });
 
 describe("filterActivity", () => {
+  it("includes separate bot fills, banking, alerts and errors",()=>{
+    const kinds=["entry","exit","bank","signal","error"];
+    const events=kinds.map((kind,i)=>({id:String(i),kind,created_at:`2026-10-24T15:0${i}:00Z`,detail:{symbol:"SPY",pnl:12.34,amount:25000}}));
+    const items=buildActivity({fills:[],sent:[],botTrades:[],botBanks:[],pulseEvents:events});
+    expect(filterActivity(items,"bot")).toHaveLength(5);
+    expect(items.find(i=>i.kind==="bot-exit")?.amount).toBe(12.34);
+    expect(items.find(i=>i.kind==="bot-bank")?.amount).toBe(25000);
+  });
   const items = buildActivity(input);
   it("filters trades, bot and orders", () => {
     expect(filterActivity(items, "trades")).toHaveLength(1);

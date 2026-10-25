@@ -1,4 +1,4 @@
-export type ActivityKind = "fill" | "order" | "bot-entry" | "bot-exit" | "bot-bank";
+export type ActivityKind = "fill" | "order" | "bot-entry" | "bot-exit" | "bot-bank" | "bot-signal" | "bot-error";
 export type ActivityItem = { id: string; at: string; kind: ActivityKind; title: string; detail: string; amount: number | null };
 export type ActivityFilter = "all" | "trades" | "bot" | "orders";
 
@@ -10,6 +10,7 @@ export function buildActivity(input: {
   sent: any[];
   botTrades: any[];
   botBanks: any[];
+  pulseEvents?: any[];
 }): ActivityItem[] {
   const items: ActivityItem[] = [];
   for (const o of input.fills) {
@@ -52,6 +53,11 @@ export function buildActivity(input: {
       detail: `Cycle ${b.new_cycle} · restart ${money(Number(b.restart_balance))}`,
       amount: Number(b.amount_banked ?? 0),
     });
+  }
+  for(const e of input.pulseEvents??[]){
+    if(!["entry","exit","bank","signal","error"].includes(e.kind)) continue;
+    const d=e.detail??{},kind:ActivityKind=e.kind==="bank"?"bot-bank":e.kind==="entry"?"bot-entry":e.kind==="exit"?"bot-exit":e.kind==="signal"?"bot-signal":"bot-error";
+    items.push({id:`pulse-${e.id}`,at:e.created_at,kind,title:e.kind==="bank"?"Separate bot banked profits":e.kind==="error"?"Separate bot check failed":`Separate bot ${e.kind} · ${d.symbol??""}`,detail:String(d.reason??d.message??(d.qty?`${d.qty} @ ${money(Number(d.price??0))}`:"")),amount:e.kind==="exit"?Number(d.pnl??0):e.kind==="bank"?Number(d.amount??0):null});
   }
   return items.sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
 }
