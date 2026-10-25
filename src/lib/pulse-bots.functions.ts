@@ -24,6 +24,7 @@ export const savePulseBot=createServerFn({method:"POST"}).middleware([requireSup
   const account=await api.account();
   if(account.trading_blocked || account.account_blocked) throw new Error("Paper account is blocked from trading");
   if(data.config.instrument==="options" && Number(account.options_trading_level)<2) throw new Error("Paper account needs options level 2");
+  if(!Number.isFinite(Number(account.equity))) throw new Error("Paper account equity unavailable");
   const peers=await context.supabase.from("pulse_bot_configs").select("id,config,enabled").eq("user_id",context.userId);
   if(peers.error) throw new Error("Could not verify bot allocations");
   if(!data.id && (peers.data?.length??0)>=9) throw new Error("Maximum nine separate bots per account");
@@ -42,8 +43,19 @@ export const savePulseBot=createServerFn({method:"POST"}).middleware([requireSup
 
 export const controlPulseBot=createServerFn({method:"POST"}).middleware([requireSupabaseAuth]).inputValidator(z.object({id:z.string().uuid(),action:z.enum(["enable","stop","kill","delete"])})).handler(async({data,context})=>{
   if(data.action==="delete"){
-    const r=await context.supabase.from("pulse_bot_configs").delete().eq("id",data.id).eq("user_id",context.userId);
-    if(r.error) throw new Error(r.error.message); return {ok:true};
+    const owner=await context.supabase.from("pulse_bot_configs").select("id,enabled").eq("id",data.id).eq("user_id",context.userId).single();
+    if(owner.error||!owner.data||owner.data.enabled) throw new Error("Stop the bot before removing it");
+    const {supabaseAdmin:db}=await import("@/integrations/supabase/client.server");
+    const token=crypto.randomUUID(),lease=await db.rpc("pulse_acquire_lease",{p_user_id:context.userId,p_token:token});
+    if(lease.error||!lease.data) throw new Error("Bot is mid-check; retry shortly");
+    try{
+      const st=await db.from("pulse_bot_states").select("state").eq("bot_id",data.id).eq("user_id",context.userId).maybeSingle();
+      const state=st.data?.state as Record<string,any>|undefined;
+      if(st.error||state?.position||state?.pending) throw new Error("Flatten the bot before removing it");
+      for(const table of ["pulse_bot_events","pulse_bot_states"] as const){const r=await db.from(table).delete().eq("bot_id",data.id).eq("user_id",context.userId);if(r.error) throw new Error("Could not remove bot history");}
+      const r=await context.supabase.from("pulse_bot_configs").delete().eq("id",data.id).eq("user_id",context.userId);if(r.error) throw new Error("Could not remove bot");
+    }finally{await db.from("pulse_bot_leases").update({token:null,lease_until:null}).eq("user_id",context.userId).eq("token",token);}
+    return {ok:true};
   }
   const r=await context.supabase.from("pulse_bot_configs").update(data.action==="enable"?{enabled:true,kill_switch:false}:{enabled:false,kill_switch:data.action==="kill"}).eq("id",data.id).eq("user_id",context.userId).select("id").single();
   if(r.error) throw new Error(r.error.message); return {ok:true};

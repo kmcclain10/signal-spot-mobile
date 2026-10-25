@@ -22,7 +22,9 @@ export async function runPulseOwner(db:any,userId:string,apiOverride?:Api){
     const stored=await db.from("pulse_bot_states").select("*").eq("user_id",userId);
     if(rows.error||stored.error) throw new Error("Could not read paper bots");
     const stateMap=new Map<string,Rec>((stored.data??[]).map((r:Rec)=>[r.bot_id,r.state]));
-    for(const row of rows.data??[]){
+    // Oldest checks first prevents early bots starving later bots at the time budget.
+    const ordered=[...(rows.data??[])].sort((a:Rec,b:Rec)=>Date.parse(stateMap.get(a.id)?.lastCheck??"1970-01-01")-Date.parse(stateMap.get(b.id)?.lastCheck??"1970-01-01"));
+    for(const row of ordered){
       if(Date.now()-started>33000) break;
       let state:Rec=stateMap.get(row.id)??{};
       if(!row.enabled&&!state.position&&!state.pending) continue;
@@ -35,7 +37,8 @@ export async function runPulseOwner(db:any,userId:string,apiOverride?:Api){
       };
       try{
         const parsed=pulseConfigSchema.parse(row.config),s=resolveBotSettings(parsed,{isPaper:true});
-        if(!state.initialized){state={...state,initialized:true,balance:parsed.allocation,bankedTotal:0,cycles:0,memo:{},lastBars:{},trades:0,pnlToday:0};}
+        if(!state.initialized){state={...state,initialized:true,allocation:parsed.allocation,balance:parsed.allocation,bankedTotal:0,cycles:0,memo:{},lastBars:{},trades:0,pnlToday:0};}
+        if(!state.position&&!state.pending&&state.allocation!==parsed.allocation){state.balance=cash(state.balance+parsed.allocation-(state.allocation??parsed.allocation));state.allocation=parsed.allocation;}
         if(state.day!==today){state.day=today;state.dayBalance=state.balance;state.pnlToday=0;state.trades=0;state.memo={};}
         const submit=async(p:Rec)=>{
           state.pending=p;await checkpoint();budget();
@@ -46,7 +49,8 @@ export async function runPulseOwner(db:any,userId:string,apiOverride?:Api){
           const p=state.pending;if(!p) return;
           let o=p.id?await api.order(p.id):await api.findOrder(p.clientId);
           if(!o){
-            if(p.kind==="entry" && (!row.enabled||row.kill_switch||now.getTime()-Date.parse(p.at)>60000)){state.pending=null;await checkpoint();return;}
+            if(p.kind==="entry" && (!clock.is_open||!row.enabled||row.kill_switch||now.getTime()-Date.parse(p.at)>60000)){state.pending=null;await checkpoint();return;}
+            if(!clock.is_open) return;
             budget();o=await api.submit(p.body);p.id=o.id;await checkpoint();
           }
           if(!terminalOrder(o.status)){
@@ -79,6 +83,7 @@ export async function runPulseOwner(db:any,userId:string,apiOverride?:Api){
         const minutes=etParts(now.toISOString()).minutes;
         const closeDate=new Date(clock.next_close),closeMinutes=etParts(closeDate.toISOString()).minutes;
         const flat=s.flatAt?Math.min(hm(s.flatAt),closeMinutes-10):null;
+        const expiryDue=state.position?.instrument==="options"&&String(state.position.symbol).slice(-15,-9)<=today.slice(2).replaceAll("-","")&&minutes>=closeMinutes-10;
         async function barsFor(symbol:string){
           const days=s.timeframe===1440?750:14;
           const query=new URLSearchParams({symbols:symbol,timeframe:s.timeframe===1440?"1Day":`${s.timeframe}Min`,start:new Date(now.getTime()-days*86400000).toISOString(),end:now.toISOString(),feed:"iex",adjustment:"raw",limit:"10000",sort:"desc"});
@@ -90,16 +95,20 @@ export async function runPulseOwner(db:any,userId:string,apiOverride?:Api){
         }
         if(state.position){
           const p=state.position;
-          let quote:Rec;if(p.instrument==="options") quote=await api.quote(p.symbol,"indicative");else{const r=await api.call(`/v2/stocks/quotes/latest?${new URLSearchParams({symbols:p.symbol,feed:"iex"})}`,"GET",undefined,true);quote=r.quotes?.[p.symbol];}
-          let reason=row.kill_switch?"Kill switch":!row.enabled?"Bot stopped":flat!==null&&minutes>=flat?"Session flatten":null;
-          const bars=await barsFor(p.underlying),last=bars.at(-1);
-          const memo=new Set<string>(state.memo[p.underlying]??[]),sig=evaluatePulseBars(bars,s,memo);
-          if(freshQuote(quote,now)){
+          let reason=row.kill_switch?"Kill switch":!row.enabled?"Bot stopped":flat!==null&&minutes>=flat?"Session flatten":expiryDue?"Option expiry flatten":null;
+          let sig={note:"Position open"};
+          // Mandatory exits must not depend on quotes or history being available.
+          if(!reason){
+            let quote:Rec;if(p.instrument==="options") quote=await api.quote(p.symbol,"indicative");else{const r=await api.call(`/v2/stocks/quotes/latest?${new URLSearchParams({symbols:p.symbol,feed:"iex"})}`,"GET",undefined,true);quote=r.quotes?.[p.symbol];}
+            const bars=await barsFor(p.underlying),last=bars.at(-1);
+            const memo=new Set<string>(state.memo[p.underlying]??[]);sig=evaluatePulseBars(bars,s,memo);
+            if(freshQuote(quote,now)){
             const mark=p.instrument==="shares"&&p.side==="short"?Number(quote.ap):Number(quote.bp);
             reason??=onMark(p,mark,last?.c??null,s).exit;
             if(last) reason??=strategyExit(p,sig,last.t,s);
             p.mark=mark;
-          }else if(!reason){state.note="Position quote stale; entries paused";await checkpoint();continue;}
+            }else {state.note="Position quote stale; entries paused";await checkpoint();continue;}
+          }
           if(reason){
             const body={symbol:p.symbol,qty:String(p.qty),side:p.instrument==="shares"&&p.side==="short"?"buy":"sell",type:"market",time_in_force:"day",client_order_id:`pulse-${row.id.slice(0,8)}-${crypto.randomUUID().slice(0,20)}`,...(p.instrument==="options"?{position_intent:"sell_to_close"}: {})};
             await submit({kind:"exit",body,clientId:body.client_order_id,reason,at:now.toISOString()});await reconcile();
@@ -107,7 +116,7 @@ export async function runPulseOwner(db:any,userId:string,apiOverride?:Api){
           state.lastCheck=now.toISOString();await checkpoint();processed++;continue;
         }
         let blocked=state.review??pulseEntryBlock({enabled:row.enabled,kill:row.kill_switch,balance:state.balance,pnlToday:state.pnlToday,dayBalance:state.dayBalance,trades:state.trades,s});
-        if(flat!==null&&minutes>=flat-5) blocked="Near session close";
+        if(minutes>=closeMinutes-15 || flat!==null&&minutes>=flat-5) blocked="Near session close";
         if(blocked){state.note=blocked;await checkpoint();continue;}
         const account=await api.account();
         if(account.trading_blocked||account.account_blocked) throw new Error("Paper account blocked");
@@ -145,7 +154,7 @@ export async function runPulseOwner(db:any,userId:string,apiOverride?:Api){
           if(!freshQuote(quote,now)||!(price>0)){state.note="Fresh quote unavailable";continue;}
           const qty=Math.min(parsed.instrument==="options"?50:10000,positionSize(state.balance,price,s));
           const cost=qty*price*(parsed.instrument==="options"?100:1),buyingPower=Number(parsed.instrument==="options"?account.options_buying_power:account.buying_power);
-          if(qty<1||cost>buyingPower){state.note="Allocation or buying power too small";continue;}
+          if(!Number.isFinite(buyingPower)||qty<1||cost>buyingPower){state.note="Allocation or buying power too small";continue;}
           const body={symbol:contract,qty:String(qty),side:parsed.instrument==="shares"&&side==="short"?"sell":"buy",type:"limit",limit_price:price.toFixed(2),time_in_force:"day",client_order_id:`pulse-${row.id.slice(0,8)}-${crypto.randomUUID().slice(0,20)}`,...(parsed.instrument==="options"?{position_intent:"buy_to_open"}: {})};
           await submit({kind:"entry",body,clientId:body.client_order_id,at:now.toISOString(),barTime:last.t,reason:sig.entry.reason,position:{symbol:contract,underlying:symbol,instrument:parsed.instrument,side,underlyingStop:sig.entry.stop,underlyingTarget:sig.entry.target}});
           await reconcile();break;
