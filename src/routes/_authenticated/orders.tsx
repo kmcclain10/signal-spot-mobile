@@ -57,9 +57,11 @@ function Confirm({ label, title, onConfirm }: { label: string; title: string; on
 
 const KIND_LABEL: Record<ActivityItem["kind"], string> = {
   fill: "Fill", order: "Order", "bot-entry": "Bot entry", "bot-exit": "Bot exit", "bot-bank": "Banked",
+  "bot-signal":"Bot signal", "bot-error":"Bot error",
 };
 const KIND_TONE: Record<ActivityItem["kind"], string> = {
   fill: "text-foreground", order: "text-muted-foreground", "bot-entry": "text-gain", "bot-exit": "text-warning", "bot-bank": "text-banked",
+  "bot-signal":"text-muted-foreground", "bot-error":"text-destructive",
 };
 const FILTERS: { id: ActivityFilter; label: string }[] = [
   { id: "all", label: "All" }, { id: "trades", label: "Fills" }, { id: "bot", label: "Bot" }, { id: "orders", label: "Orders" },
@@ -87,12 +89,13 @@ function OrdersPage() {
   const botEvents = useQuery({
     queryKey: ["activity", "bot"],
     queryFn: async () => {
-      const [trades, banks] = await Promise.all([
+      const [trades, banks, pulse] = await Promise.all([
         supabase.from("iwm_trades").select("id,strike,side,contracts,entry_premium,entry_time,exit_time,exit_reason,pnl").order("entry_time", { ascending: false }).limit(100),
         supabase.from("iwm_bank_events").select("id,amount_banked,new_cycle,restart_balance,created_at").order("created_at", { ascending: false }).limit(50),
+        supabase.from("pulse_bot_events").select("id,kind,detail,created_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(100),
       ]);
-      if (trades.error || banks.error) throw trades.error ?? banks.error;
-      return { trades: trades.data ?? [], banks: banks.data ?? [] };
+      if (trades.error || banks.error || pulse.error) throw trades.error ?? banks.error ?? pulse.error;
+      return { trades: trades.data ?? [], banks: banks.data ?? [], pulse:pulse.data??[] };
     },
   });
 
@@ -103,7 +106,7 @@ function OrdersPage() {
   });
 
   const feed = useMemo(
-    () => buildActivity({ fills: closed.data ?? [], sent: ours.data ?? [], botTrades: botEvents.data?.trades ?? [], botBanks: botEvents.data?.banks ?? [] }),
+    () => buildActivity({ fills: closed.data ?? [], sent: ours.data ?? [], botTrades: botEvents.data?.trades ?? [], botBanks: botEvents.data?.banks ?? [],pulseEvents:botEvents.data?.pulse??[] }),
     [closed.data, ours.data, botEvents.data],
   );
   const shown = useMemo(() => filterActivity(feed, filter), [feed, filter]);
