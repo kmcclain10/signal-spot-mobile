@@ -38,8 +38,10 @@ export function SeparateBots({userId}:{userId:string}){
   async function persist(){
     if(!draft) return;
     const parsed=pulseConfigSchema.safeParse(draft);if(!parsed.success){toast.error(parsed.error.issues[0]?.message??"Check settings");return;}
-    if(!await confirm()) return;
-    setBusy(true);try{await save({data:{...(editId?{id:editId}:{}),config:parsed.data}});setDraft(null);await qc.invalidateQueries({queryKey:separateBotsOptions.queryKey});toast.success("Paper bot saved");}catch(e){toast.error(e instanceof Error?e.message:"Could not save bot");}finally{setBusy(false);}
+    // Close the settings modal before opening shared confirmation so dialogs never overlap.
+    const restore=draft;setDraft(null);
+    if(!await confirm()){setDraft(restore);return;}
+    setBusy(true);try{await save({data:{...(editId?{id:editId}:{}),config:parsed.data}});await qc.invalidateQueries({queryKey:separateBotsOptions.queryKey});toast.success("Paper bot saved");}catch(e){setDraft(restore);toast.error(e instanceof Error?e.message:"Could not save bot");}finally{setBusy(false);}
   }
   const selected=catalog.find(s=>s.id===draft?.strategyId);
   const resolved=draft?resolveBotSettings(draft,{isPaper:true}):null;
