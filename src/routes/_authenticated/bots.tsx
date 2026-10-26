@@ -160,7 +160,7 @@ function BotsPage() {
       <Button asChild variant="ghost" className="h-auto w-full justify-start gap-3 border py-4">
         <Link to="/strategies">
           <Library className="size-5 text-primary" />
-          <span className="text-left">Strategy library<span className="mt-0.5 block text-xs font-normal text-muted-foreground">864 setups the engine tests nightly — research only, they don't trade</span></span>
+          <span className="min-w-0 whitespace-normal text-left">Strategy library<span className="mt-0.5 block text-xs font-normal text-muted-foreground">864 setups the engine tests nightly — research only, they don't trade</span></span>
         </Link>
       </Button>
     </div>
