@@ -43,6 +43,13 @@
       "when": 1792826284000,
       "tag": "0005_separate_paper_bots",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792981857683,
+      "tag": "0006_customer_profiles",
+      "breakpoints": true
     }
   ]
 }
