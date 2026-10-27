@@ -1,5 +1,6 @@
 # IWM 20-Min Window
-- [ ] Account access repair — explicit magic-link signup, customer profiles, password setup/recovery from Settings, and signup/login verification without changing bot safeguards.
+- [x] Account access repair — explicit magic-link signup/login modes, owner-only customer profiles with lifecycle creation/backfill, Settings password setup email and current-password change, public recovery page; real profile save/reload and password-email request verified; 134 tests pass. Bot safeguards unchanged.
+- [ ] Account email completion verification — requires a real customer's confirmation/recovery email link and chosen password; placeholder signup emails are rejected by hosted auth, so new signup confirmation and subsequent password login remain unverified. Publish is needed for the new reset page on the public app.
 - [x] Refresh stale runner access binding; closed-market run processed the enabled account (1 user, 0 errors), saved a fresh heartbeat, and passed 35 IWM tests. Next published market-hours callback still needs verification.
 - [x] Market-day check: runner ran every minute and found 7 setups but no exact 3rd-candle entry on the free IEX feed (full SIP data would have entered one PUT at 12:08 ET; real-time SIP needs a paid Alpaca data plan). Screen now shows window ranges and bar close times.
 - [x] Enable Kevin's account opt-in and verify it persists after reopening; active weekday schedule and published callback present (401 without credentials).

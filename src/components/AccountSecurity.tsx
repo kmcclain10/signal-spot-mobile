@@ -55,7 +55,7 @@ export function AccountSecurity({ children }: { children: ReactNode }) {
       const { data } = await supabase.auth.getUser();
       if (!data.user?.email) throw new Error("Sign in again to confirm your account.");
       const r = await supabase.auth.signInWithPassword({ email: data.user.email, password });
-      if (r.error) throw new Error("Password confirmation failed. Try again.");
+      if (r.error) throw new Error("Password confirmation failed. If you use magic links, add a password in Settings first.");
       close(true);
     } catch (e) { setError(e instanceof Error ? e.message : "Confirmation failed"); }
     finally { setBusy(false); }
