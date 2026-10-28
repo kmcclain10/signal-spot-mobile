@@ -19,6 +19,24 @@ function harness(initial:any={}) {
 const intent={id:"buy-order",side:"buy",client_id:"iwm-buy",submitted_at:"2026-10-16T14:08:00Z",connection_id:"paper-connection",trade_id:"trade-a",signal_id:"signal-a",
   signal:{side:"CALL",window:1,price:273,barTime:"2026-10-16T14:04:00Z"},contract:{symbol:"IWM261016C00273000",strike:273,expiry:"2026-10-16"},body:{side:"buy"}};
 describe("paper IWM order lifecycle",()=> {
+  it('market-exits in the final minute of the entry window even without quotes or bars',async()=> {
+    const h=harness({pending_order:intent});
+    h.api.order.mockResolvedValue({id:'buy-order',status:'filled',filled_qty:'1',filled_avg_price:'1',filled_at:'2026-10-16T14:08:00Z'});
+    h.api.clock.mockResolvedValue({timestamp:'2026-10-16T14:19:00Z',is_open:true,next_close:'2026-10-16T20:00:00Z'});
+    h.api.quote.mockRejectedValue(new Error('no quote'));
+    await runIwmUser(h.db,settings,h.api);
+    expect(h.api.submit).toHaveBeenCalledWith(expect.objectContaining({side:'sell',type:'market',qty:'1'}));
+    expect(h.state().pending_order.reason).toBe('20-minute window closing');
+  });
+  it('cancels an unfilled entry before the window closes instead of adding exposure',async()=> {
+    const h=harness({pending_order:{...intent,submitted_at:'2026-10-16T14:18:45Z'}});
+    h.api.clock.mockResolvedValue({timestamp:'2026-10-16T14:19:00Z',is_open:true,next_close:'2026-10-16T20:00:00Z'});
+    h.api.order.mockResolvedValue({id:'buy-order',status:'new',filled_qty:'0'});
+    h.api.cancel.mockResolvedValue({id:'buy-order',status:'canceled',filled_qty:'0'});
+    await runIwmUser(h.db,settings,h.api);
+    expect(h.api.cancel).toHaveBeenCalledWith('buy-order'); expect(h.api.submit).not.toHaveBeenCalled();
+    expect(h.state().pending_order).toBeNull();
+  });
   it("creates a position only from a confirmed buy fill and exits at -30%",async()=> {
     const h=harness({pending_order:intent});h.api.order.mockResolvedValue({id:"buy-order",status:"filled",filled_qty:"2",filled_avg_price:"1",filled_at:"2026-10-16T14:08:00Z"});
     await runIwmUser(h.db,settings,h.api);
