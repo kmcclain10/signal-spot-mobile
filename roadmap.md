@@ -1,4 +1,5 @@
 # IWM 20-Min Window
+- [ ] Diagnose missed automatic entries and enforce entry-window exits without altering protected strategy math or increasing risk limits.
 - [x] Correct IWM signal candles to one minute: existing account already saved at 1; new-account default corrected, runtime and read-only verification use 1, settings prevent other intervals. Supplied math unchanged; 42 IWM tests passed and signed-in screen shows 1 min. Publish needed for updated runtime code; no orders placed.
 - [x] Account access repair — explicit magic-link signup/login modes, owner-only customer profiles with lifecycle creation/backfill, Settings password setup email and current-password change, public recovery page; real profile save/reload and password-email request verified; 134 tests pass. Bot safeguards unchanged.
 - [ ] Account email completion verification — requires a real customer's confirmation/recovery email link and chosen password; placeholder signup emails are rejected by hosted auth, so new signup confirmation and subsequent password login remain unverified. Publish is needed for the new reset page on the public app.
