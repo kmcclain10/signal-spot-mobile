@@ -1,5 +1,5 @@
 import { addIndicators, evaluate, onPremium, emaDisrespect, contractsFor, settle, etParts, DEFAULT_CONFIG, type StrategyConfig } from "@/lib/iwmWindowStrategy";
-import { closedRegularBars, freshQuote, terminalOrder, forceExitMinutes, sessionEndMinutes, entryBlock, positionMismatch } from "@/lib/iwm-engine-rules";
+import { closedRegularBars, freshQuote, terminalOrder, forceExitMinutes, sessionEndMinutes, entryBlock, positionMismatch, iwmWindowExitAt } from "@/lib/iwm-engine-rules";
 import { iwmAlpaca } from "@/lib/server/iwm-alpaca.server";
 import { iwmDiscord } from "@/lib/server/iwm-discord.server";
 import { iwmConfigFor } from '@/lib/iwm-config';
@@ -84,10 +84,12 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
   async function reconcile() {
     const p = state.pending_order;
     if (!p) return;
+    const buyDeadline = p.side === 'buy' ? iwmWindowExitAt(p.signal?.barTime, cfg, p.signal?.window) : null;
+    const windowExpired = buyDeadline !== null && now.getTime() >= buyDeadline;
     let order = p.id ? await api.order(p.id) : await api.findOrder(p.client_id);
     if (!order) {
       // If the entry intent outlived its signal, do not enter on stale data.
-      if (p.side === "buy" && now.getTime()-Date.parse(p.submitted_at)>60000) {
+      if (p.side === "buy" && (windowExpired || now.getTime()-Date.parse(p.submitted_at)>60000)) {
         state.pending_order=null; await checkpoint(); return;
       }
       order = await api.submit(p.body);
@@ -96,7 +98,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     if (!terminalOrder(order.status)) {
       const age = now.getTime()-Date.parse(p.submitted_at);
       // Kill switch cancels a working entry immediately.
-      if (age < (p.side === "buy" ? 60000 : 30000) && !(p.side==="buy" && settings.kill_switch)) return;
+      if (age < (p.side === "buy" ? 60000 : 30000) && !(p.side==="buy" && (settings.kill_switch || windowExpired))) return;
       order = await api.cancel(order.id);
       if (!terminalOrder(order.status)) return;
     }
@@ -109,7 +111,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
           peak_premium:premium,peak_gain_pct:0,final_floor_pct:null,cycle:state.cycles,alpaca_entry_order_id:order.id,status:"open",
         };
         state.open_trade = {side:p.signal.side,optionSymbol:p.contract.symbol,strike:p.contract.strike,contracts:filledQty,entryPremium:premium,peakPremium:premium,floorPct:null,
-          entryCloseTime:new Date(Date.parse(p.signal.barTime)+cfg.timeframeMin*60000).toISOString(),connectionId:p.connection_id,tradeRow:row,exitFilledQty:0,exitValue:0};
+          entryCloseTime:new Date(Date.parse(p.signal.barTime)+cfg.timeframeMin*60000).toISOString(),windowExitAt:iwmWindowExitAt(p.signal.barTime,cfg,p.signal.window),connectionId:p.connection_id,tradeRow:row,exitFilledQty:0,exitValue:0};
         state.trades_today++;
         event("trades",row); note("ENTRY",`IWM $${p.contract.strike} ${p.signal.side} • ${filledQty} contracts @ $${premium.toFixed(2)}`);
       }
@@ -175,6 +177,9 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     const forced=minutes>=Math.min(forceExitMinutes(settings.force_exit_time),closeMinutes-10) || !!settings.kill_switch;
     if (state.open_trade) {
       if (forced) state.open_trade.exitRequested=settings.kill_switch ? "Kill switch":"Force exit before market close";
+      const windowDeadline = state.open_trade.windowExitAt ?? iwmWindowExitAt(state.open_trade.tradeRow?.entry_time, cfg, state.open_trade.tradeRow?.window);
+      const windowExit = windowDeadline !== null && now.getTime() >= windowDeadline;
+      if (!forced && windowExit) state.open_trade.exitRequested='20-minute window closing';
       let quote:any;
       try { quote=await api.quote(state.open_trade.optionSymbol,settings.options_feed); }
       catch { state.last_error="Option quote unavailable; position monitoring will retry"; }
@@ -187,10 +192,10 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
           event("protection",record({trade_id:t.tradeRow.id,premium,peak_gain_pct:(t.peakPremium/t.entryPremium-1)*100,floor_locked_pct:newFloor}));
           note("PROTECTED",`IWM $${t.strike} ${t.side} • +${newFloor}% LOCKED`);
         }
-        if (exitReason) t.exitRequested=exitReason;
+        if (exitReason && !t.exitRequested) t.exitRequested=exitReason;
         await checkpoint();
       }
-      if (state.open_trade.exitRequested) await requestExit(state.open_trade.exitRequested,valid ? Number(quote.bp):undefined);
+      if (state.open_trade.exitRequested) await requestExit(state.open_trade.exitRequested,windowExit ? undefined : valid ? Number(quote.bp):undefined);
     }
     deadline();
     const bars=closedRegularBars(await api.bars(cfg,settings.data_feed,now),now,cfg);
@@ -213,7 +218,8 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
             ema8:ind.emaFast,ema20:ind.emaSlow,osc:Number.isFinite(ind.osc) ? ind.osc:null,detail:signal.detail,action:signal.kind==="potential" ? "alert":"evaluating"});
           await checkpoint();
           if (signal.kind==="potential") { note("POTENTIAL ENTRY",`IWM $${signal.price.toFixed(2)} ${signal.side} • Window ${signal.window}/15`); continue; }
-          const block=entryBlock(settings,state) ?? (minutes>=sessionEnd ? "early close":null);
+          const windowDeadline = iwmWindowExitAt(signal.barTime,cfg,signal.window);
+          const block=entryBlock(settings,state) ?? (minutes>=sessionEnd ? "early close":null) ?? (windowDeadline !== null && now.getTime()>=windowDeadline ? 'window closing':null);
           let action=block ?? "daily limit";
           if (!block && state.trades_today<settings.max_trades_per_day) {
             deadline();

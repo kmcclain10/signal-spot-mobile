@@ -1,4 +1,4 @@
-import { etParts, type Bar, type StrategyConfig } from "@/lib/iwmWindowStrategy";
+import { etParts, windowOf, type Bar, type StrategyConfig } from "@/lib/iwmWindowStrategy";
 
 export const IWM_PAPER_URL = "https://paper-api.alpaca.markets";
 export function requireIwmPaper(connection: { provider: string; environment: string; config?: Record<string, any> }) {
@@ -41,6 +41,16 @@ export function positionMismatch(state: Record<string, any>, positions: { symbol
 }
 export const terminalOrder = (status: string) => ["filled", "canceled", "expired", "rejected"].includes(status);
 export const forceExitMinutes = (value: string) => { const [h,m] = value.split(":").map(Number); return h*60+m; };
+/** Start liquidation in the final minute, leaving one scheduled interval for fills. */
+export function iwmWindowExitAt(barTime: string, cfg: StrategyConfig, entryWindow?: number): number | null {
+  const stamp = Date.parse(barTime);
+  if (!Number.isFinite(stamp)) return null;
+  const window = entryWindow ?? windowOf(barTime, cfg);
+  if (window == null) return null;
+  const endMinute = forceExitMinutes(cfg.sessionStart) + window * cfg.windowMin;
+  const minuteStart = Math.floor(stamp / 60000) * 60000;
+  return minuteStart + (endMinute - etParts(barTime).minutes - 1) * 60000;
+}
 export function iwmScheduleTime(now: Date) {
   const wd = new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",weekday:"short"}).format(now);
   const {minutes} = etParts(now.toISOString());
