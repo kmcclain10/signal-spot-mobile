@@ -2,11 +2,12 @@ import { addIndicators, evaluate, onPremium, emaDisrespect, contractsFor, settle
 import { closedRegularBars, freshQuote, terminalOrder, forceExitMinutes, sessionEndMinutes, entryBlock, positionMismatch } from "@/lib/iwm-engine-rules";
 import { iwmAlpaca } from "@/lib/server/iwm-alpaca.server";
 import { iwmDiscord } from "@/lib/server/iwm-discord.server";
+import { iwmConfigFor } from '@/lib/iwm-config';
 
 type Rec = Record<string, any>;
 type Api = Awaited<ReturnType<typeof iwmAlpaca>>;
 export function configFor(settings:Rec):StrategyConfig {
-  return {...DEFAULT_CONFIG,timeframeMin:Number(settings.timeframe_min),startingBankroll:Number(settings.starting_bankroll),bankTrigger:Number(settings.bank_trigger),stopLossPct:Number(settings.stop_loss_pct)};
+  return iwmConfigFor(settings);
 }
 const money = (n:number)=>Math.round(n*100)/100;
 const record = (values:Rec)=>({id:crypto.randomUUID(),created_at:new Date().toISOString(),...values});
