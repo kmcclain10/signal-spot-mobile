@@ -1,7 +1,7 @@
 import { describe,it,expect } from "vitest";
 import {iwmSettingsInput,iwmScreenStatus, windowRange,journalDay,journalColumns} from "@/lib/iwm-screen-rules";
 describe("IWM screen rules",()=>{
-  it("supports the requested bar intervals",()=>{for(const timeframe_min of [1,2,4,5,10]) expect(iwmSettingsInput.parse({timeframe_min})).toEqual({timeframe_min});expect(iwmSettingsInput.safeParse({timeframe_min:3}).success).toBe(false);});
+  it("requires one-minute IWM signal candles",()=>{expect(iwmSettingsInput.parse({timeframe_min:1})).toEqual({timeframe_min:1});for(const timeframe_min of [2,3,4,5,10]) expect(iwmSettingsInput.safeParse({timeframe_min}).success).toBe(false);});
   it("does not allow starting bankroll or bank trigger edits",()=>{expect(iwmSettingsInput.safeParse({starting_bankroll:300}).success).toBe(false);expect(iwmSettingsInput.safeParse({bank_trigger:1000}).success).toBe(false);});
   it("does not permit exit later than 15:50",()=>{expect(iwmSettingsInput.safeParse({force_exit_time:"15:50"}).success).toBe(true);expect(iwmSettingsInput.safeParse({force_exit_time:"15:51"}).success).toBe(false);});
   it("waits until 10 ET",()=>{expect(iwmScreenStatus(new Date("2026-10-19T13:59:00Z"),null,true).label).toBe("Waiting for 10:00 ET");});

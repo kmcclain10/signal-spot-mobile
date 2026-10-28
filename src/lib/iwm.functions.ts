@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { DEFAULT_CONFIG } from "@/lib/iwmWindowStrategy";
 import { iwmSettingsInput } from "@/lib/iwm-screen-rules";
+import { IWM_TIMEFRAME_MIN } from '@/lib/iwm-config';
 
 export const getIwmScreen = createServerFn({method:"POST"})
   .middleware([requireSupabaseAuth])
@@ -51,7 +52,7 @@ export const verifyIwmConnection = createServerFn({method:"POST"})
     const {iwmAlpaca} = await import("@/lib/server/iwm-alpaca.server");
     const {supabaseAdmin} = await import("@/integrations/supabase/client.server");
     const api=await iwmAlpaca(supabaseAdmin,context.userId);
-    return api.verify(DEFAULT_CONFIG,"iex","indicative");
+    return api.verify({...DEFAULT_CONFIG,timeframeMin:IWM_TIMEFRAME_MIN},"iex","indicative");
   });
 
 /** Initialize disabled defaults and exercise a market-closed run without any broker order. */

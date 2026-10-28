@@ -50,6 +50,13 @@
       "when": 1792981857683,
       "tag": "0006_customer_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793146319352,
+      "tag": "0007_iwm_one_minute_default",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE public.iwm_strategy_settings ALTER COLUMN timeframe_min SET DEFAULT 1;
