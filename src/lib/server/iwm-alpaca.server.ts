@@ -2,6 +2,7 @@ import { decryptJson } from "@/lib/server/providers.server";
 import { requireIwmPaper, freshQuote } from "@/lib/iwm-engine-rules";
 import { etParts, type Side, type Bar, type StrategyConfig } from "@/lib/iwmWindowStrategy";
 import { optionContractParams } from "@/lib/trade-rules";
+import { nearestAtmContracts } from '@/lib/iwm-trade-policy';
 
 type Rec = Record<string, any>;
 export class IwmAlpacaError extends Error {
@@ -46,12 +47,13 @@ export async function iwmAlpaca(db: any, userId: string, connectionId?: string) 
     }
     throw new Error("Alpaca pagination exceeded the safe run budget; no order submitted");
   }
-  async function chooseContract(side: Side, spot: number, today: string, feed: string, now: Date, underlying = "IWM") {
+  async function chooseContract(side: Side, spot: number, today: string, feed: string, now: Date, underlying = "IWM", atmOnly=false) {
     const end = new Date(Date.parse(`${today}T12:00:00Z`) + 14*86400000).toISOString().slice(0,10);
     const contracts = await pages("/v2/options/contracts", optionContractParams(underlying, side, spot, today, end),"option_contracts");
     const expiries = [...new Set<string>(contracts.filter(c=>c.tradable).map(c=>String(c.expiration_date)))].sort();
     for (const expiry of expiries) {
-      const candidates = contracts.filter(c=>c.tradable && c.expiration_date === expiry).sort((a,b)=>Math.abs(+a.strike_price-spot)-Math.abs(+b.strike_price-spot));
+      const available = contracts.filter(c=>c.tradable && c.expiration_date === expiry).sort((a,b)=>Math.abs(+a.strike_price-spot)-Math.abs(+b.strike_price-spot));
+      const candidates = atmOnly ? nearestAtmContracts(available,spot) : available;
       for (let i=0;i<candidates.length;i+=100) {
         const chunk = candidates.slice(i,i+100);
         const snapshots = await pages("/v1beta1/options/snapshots", {symbols:chunk.map(c=>c.symbol).join(","),feed,limit:"1000"},"snapshots",true);
