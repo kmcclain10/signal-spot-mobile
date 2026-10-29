@@ -11,6 +11,7 @@
 - TypeScript runs with strict on but index-signature/unchecked-index/exact-optional flags off; trading payloads are loose JSON from brokers and the engine.
 - Keep supplied IWM math isolated in src/lib/iwmWindowStrategy.ts; callers guard invalid or empty inputs without changing calculations.
 - IWM runtime configuration overrides supplied defaults through a shared caller-side module so requested candle intervals never require changes to protected strategy math.
+- Latest IWM entry/exit overrides live in a separate pure policy module; staged sell intents persist cumulative target quantities and actual fill proceeds so restarts and partial orders cannot duplicate profit-taking or distort final P&L.
 - IWM callers persist entry-window liquidation deadlines, stop late entry intents, and request market liquidation in the final minute independently of quote/bar availability; broker reconciliation remains authoritative because fills cannot be guaranteed.
 - IWM automation uses managed TanStack callbacks and service-only atomic lease/checkpoint RPCs; persist order intents with broker client IDs before submissions to avoid duplicate exposure after interruption.
 - IWM screen reads use authenticated query-backed server functions; subscribe to owner-filtered realtime changes and retain polling to detect stopped runners.

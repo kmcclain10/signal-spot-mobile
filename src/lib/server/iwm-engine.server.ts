@@ -1,8 +1,9 @@
-import { addIndicators, evaluate, onPremium, emaDisrespect, contractsFor, settle, etParts, DEFAULT_CONFIG, type StrategyConfig } from "@/lib/iwmWindowStrategy";
+import { addIndicators, contractsFor, settle, etParts, type StrategyConfig } from "@/lib/iwmWindowStrategy";
 import { closedRegularBars, freshQuote, terminalOrder, forceExitMinutes, sessionEndMinutes, entryBlock, positionMismatch, iwmWindowExitAt } from "@/lib/iwm-engine-rules";
 import { iwmAlpaca } from "@/lib/server/iwm-alpaca.server";
 import { iwmDiscord } from "@/lib/server/iwm-discord.server";
 import { iwmConfigFor } from '@/lib/iwm-config';
+import { crossEntry, profitAction, profitableReversal } from '@/lib/iwm-trade-policy';
 
 type Rec = Record<string, any>;
 type Api = Awaited<ReturnType<typeof iwmAlpaca>>;
@@ -71,7 +72,9 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     if (mismatch.kind==="missing") {
       const fill=await api.lastSellFill(mismatch.symbol);
       if (fill && Number(fill.price)>0 && Date.parse(fill.transaction_time)>=Date.parse(state.open_trade.tradeRow.entry_time)) {
-        await finishTrade(Number(fill.price),"reconciled",fill.order_id ?? null,fill.transaction_time,state.open_trade.liveUnderlying ?? null);
+        const t=state.open_trade;
+        const average=(Number(t.exitValue ?? 0)+Number(fill.price)*(t.contracts-Number(t.exitFilledQty ?? 0)))/t.contracts;
+        await finishTrade(average,"reconciled",fill.order_id ?? null,fill.transaction_time,t.liveUnderlying ?? null);
         return;
       }
       state.needs_review=`Bot shows ${mismatch.symbol} open but Alpaca has no position or sell fill`;
@@ -125,22 +128,30 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     t.exitValue = Number(t.exitValue ?? 0)+filledQty*premium;
     if (t.exitFilledQty >= t.contracts) {
       await finishTrade(t.exitValue/t.contracts,p.reason,order.id,order.filled_at ?? now.toISOString(),p.underlying ?? t.liveUnderlying ?? null);
+    } else if (p.partial && t.exitFilledQty>=p.targetFilledQty) {
+      t.partialTaken=true;
+      t.exitRequested=null;
+      state.pending_order=null;
+      note('PARTIAL PROFIT',`IWM ${t.side} • ${t.exitFilledQty}/${t.contracts} contracts sold • +35% target`);
+      await checkpoint();
     } else {
       // Account for a terminal partially-filled sell before placing only the remainder.
-      const remaining=t.contracts-t.exitFilledQty;
+      const remaining=(p.partial ? p.targetFilledQty : t.contracts)-t.exitFilledQty;
       state.pending_order=null; await checkpoint();
       const replacementId=`iwm-${crypto.randomUUID()}`;
       await submitIntent({...p,id:undefined,client_id:replacementId,submitted_at:now.toISOString(),body:{...p.body,client_order_id:replacementId,qty:String(remaining),type:"market",limit_price:undefined}});
     }
   }
-  async function requestExit(reason:string,bid?:number) {
+  async function requestExit(reason:string,bid?:number,qty?:number,partial=false) {
     const t = state.open_trade;
     if (!t || state.pending_order) return;
-    t.exitRequested=reason;
+    if (!partial) t.exitRequested=reason;
     const clientId=`iwm-${crypto.randomUUID()}`;
-    const body:Rec={symbol:t.optionSymbol,qty:String(t.contracts-Number(t.exitFilledQty ?? 0)),side:"sell",type:bid && bid>0 ? "limit":"market",time_in_force:"day",position_intent:"sell_to_close",client_order_id:clientId};
+    const sellQty=Math.min(qty ?? t.contracts-Number(t.exitFilledQty ?? 0),t.contracts-Number(t.exitFilledQty ?? 0));
+    if (!(sellQty>0)) return;
+    const body:Rec={symbol:t.optionSymbol,qty:String(sellQty),side:"sell",type:bid && bid>0 ? "limit":"market",time_in_force:"day",position_intent:"sell_to_close",client_order_id:clientId};
     if (body.type === "limit") body.limit_price=money(Number(bid)).toFixed(2);
-    await submitIntent({side:"sell",client_id:clientId,submitted_at:now.toISOString(),reason,underlying:t.liveUnderlying,body,connection_id:t.connectionId});
+    await submitIntent({side:"sell",client_id:clientId,submitted_at:now.toISOString(),reason,underlying:t.liveUnderlying,body,connection_id:t.connectionId,partial,targetFilledQty:Number(t.exitFilledQty ?? 0)+sellQty});
   }
   async function dailyReport(date:string,minutes:number) {
     if (minutes<965 || state.reported_day===date || state.trading_day!==date || !state.last_bar_time || etParts(state.last_bar_time).date!==date || state.open_trade || state.pending_order) return;
@@ -186,13 +197,13 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
       const valid=freshQuote(quote,now);
       if (valid) {
         const t=state.open_trade, premium=Number(quote.bp);
-        const {exitReason,newFloor}=onPremium(t,premium,cfg);
         t.livePremium=premium;t.quoteTime=quote.t;
-        if (newFloor!==null) {
-          event("protection",record({trade_id:t.tradeRow.id,premium,peak_gain_pct:(t.peakPremium/t.entryPremium-1)*100,floor_locked_pct:newFloor}));
-          note("PROTECTED",`IWM $${t.strike} ${t.side} • +${newFloor}% LOCKED`);
+        t.peakPremium=Math.max(t.peakPremium,premium); t.floorPct=null;
+        const action=profitAction(t,premium);
+        if (action && !t.exitRequested && !state.pending_order) {
+          if (action.partial) await requestExit(action.reason,premium,action.qty,true);
+          else t.exitRequested=action.reason;
         }
-        if (exitReason && !t.exitRequested) t.exitRequested=exitReason;
         await checkpoint();
       }
       if (state.open_trade.exitRequested) await requestExit(state.open_trade.exitRequested,windowExit ? undefined : valid ? Number(quote.bp):undefined);
@@ -206,11 +217,13 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
       state.last_bar_time=last.t;
       if (state.open_trade) {
         state.open_trade.liveUnderlying=last.c;
-        const reason=emaDisrespect(state.open_trade,ind);
-        if (reason) { state.open_trade.exitRequested=reason; await checkpoint(); await requestExit(reason,state.open_trade.livePremium); }
+        const t=state.open_trade;
+        if (freshQuote({bp:t.livePremium,ap:t.livePremium,t:t.quoteTime},now) && profitableReversal(t,ind,t.livePremium)) {
+          t.exitRequested='Profitable first reversal candle'; await checkpoint(); await requestExit(t.exitRequested,t.livePremium);
+        }
       } else if (!state.pending_order && settings.enabled && !forced && now.getTime()-Date.parse(last.t)<=cfg.timeframeMin*60000+90000) {
         const keys=new Set<string>(state.alerted_keys ?? []);
-        const signals=evaluate(rows,keys,cfg);
+        const signals=crossEntry(ind,keys,cfg);
         state.alerted_keys=[...keys];
         for (const signal of signals) {
           const id=crypto.randomUUID();
@@ -223,7 +236,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
           let action=block ?? "daily limit";
           if (!block && state.trades_today<settings.max_trades_per_day) {
             deadline();
-            const contract=await api.chooseContract(signal.side,signal.price,date,settings.options_feed,now);
+            const contract=await api.chooseContract(signal.side,signal.price,date,settings.options_feed,now,'IWM',true);
             action="no valid option quote";
             if (contract) {
               const bank={balance:Number(state.balance),bankedTotal:Number(state.banked_total),cycles:Number(state.cycles)};

@@ -4,7 +4,7 @@ import { etParts, windowOf } from "@/lib/iwmWindowStrategy";
 export const iwmSettingsInput = z.object({
   enabled: z.boolean().optional(),
   timeframe_min: z.literal(1).optional(),
-  stop_loss_pct: z.number().positive().max(100).optional(),
+  stop_loss_pct: z.literal(20).optional(),
   max_trades_per_day: z.number().int().min(1).max(100).optional(),
   force_exit_time: z.string().regex(/^1[0-5]:[0-5][0-9]$/).refine(v => v <= "15:50", "Must be no later than 15:50 ET").optional(),
   data_feed: z.enum(["iex", "sip"]).optional(),
