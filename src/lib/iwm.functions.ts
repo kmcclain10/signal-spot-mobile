@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { DEFAULT_CONFIG } from "@/lib/iwmWindowStrategy";
 import { iwmSettingsInput } from "@/lib/iwm-screen-rules";
 import { IWM_TIMEFRAME_MIN } from '@/lib/iwm-config';
+import { IWM_STOP_PCT } from '@/lib/iwm-trade-policy';
 
 export const getIwmScreen = createServerFn({method:"POST"})
   .middleware([requireSupabaseAuth])
@@ -19,7 +20,7 @@ export const getIwmScreen = createServerFn({method:"POST"})
       db.from("iwm_daily_reports").select("*").eq("user_id",context.userId).order("day",{ascending:false}).limit(200),
     ]);
     if ([state,signals,trades,protection,banks,reports].some(r=>r.error)) throw new Error("Could not read the IWM journal");
-    return {settings:settings.data, state:state.data, signals:signals.data ?? [],trades:trades.data ?? [],protection:protection.data ?? [],banks:banks.data ?? [],reports:reports.data ?? []};
+    return {settings:settings.data ? {...settings.data,stop_loss_pct:IWM_STOP_PCT}:null, state:state.data, signals:signals.data ?? [],trades:trades.data ?? [],protection:protection.data ?? [],banks:banks.data ?? [],reports:reports.data ?? []};
   });
 
 export const saveIwmSettings = createServerFn({method:"POST"})
