@@ -31,4 +31,16 @@ export function nearestAtmContracts<T extends {strike_price: string | number}>(c
   const distances=contracts.map(c=>Math.abs(Number(c.strike_price)-spot)).filter(Number.isFinite);
   const nearest=Math.min(...distances);
   return contracts.filter(c=>Math.abs(Number(c.strike_price)-spot)<=nearest+1e-8);
+}/** Trend failure: a closed one-minute bar on the wrong side of the 8 EMA, after the entry bar. */
+export function emaCloseBreak(trade: Record<string,any>, row: IndRow): boolean {
+  if (!(Date.parse(row.t)>=Date.parse(trade.entryCloseTime)) || !Number.isFinite(row.emaFast)) return false;
+  return trade.side==='CALL' ? row.c<row.emaFast : row.c>row.emaFast;
+}
+export const IWM_SAVINGS_SYMBOL = 'WMT';
+export const IWM_SAVINGS_SHARE = 0.5;
+/** Half of a positive day's net profit, rounded down to cents; Alpaca fractional orders need at least $1. */
+export function savingsAmount(pnlToday: number): number {
+  if (!(pnlToday>0)) return 0;
+  const amt = Math.floor(pnlToday*IWM_SAVINGS_SHARE*100)/100;
+  return amt>=1 ? amt : 0;
 }

@@ -3,7 +3,7 @@ import { closedRegularBars, freshQuote, terminalOrder, forceExitMinutes, session
 import { iwmAlpaca } from "@/lib/server/iwm-alpaca.server";
 import { iwmDiscord } from "@/lib/server/iwm-discord.server";
 import { iwmConfigFor } from '@/lib/iwm-config';
-import { crossEntry, profitAction, profitableReversal } from '@/lib/iwm-trade-policy';
+import { crossEntry, profitAction, profitableReversal, emaCloseBreak, savingsAmount, IWM_SAVINGS_SYMBOL } from '@/lib/iwm-trade-policy';
 
 type Rec = Record<string, any>;
 type Api = Awaited<ReturnType<typeof iwmAlpaca>>;
@@ -153,6 +153,41 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     if (body.type === "limit") body.limit_price=money(Number(bid)).toFixed(2);
     await submitIntent({side:"sell",client_id:clientId,submitted_at:now.toISOString(),reason,underlying:t.liveUnderlying,body,connection_id:t.connectionId,partial,targetFilledQty:Number(t.exitFilledQty ?? 0)+sellQty});
   }
+  /** Sweep half of a profitable day into fractional WMT. Write-before-submit; errors never interrupt option handling. */
+  async function savingsSweep(date:string,canSubmit:boolean) {
+    try {
+      const s=state.savings_intent;
+      if (s) {
+        let order=await api.findOrder(s.client_id);
+        if (!order) {
+          if (!(canSubmit && s.day===date)) { event("savings",{day:s.day,amount:s.amount,status:"not submitted"}); state.savings_intent=null; await checkpoint(); return; }
+          order=await api.submit(s.body);
+        }
+        if (!terminalOrder(order.status)) return;
+        const qty=Number(order.filled_qty||0), price=Number(order.filled_avg_price||0);
+        state.savings_total=money(Number(state.savings_total ?? 0)+qty*price);
+        event("savings",{day:s.day,amount:s.amount,filled_qty:qty,filled_avg_price:price||null,status:order.status,alpaca_order_id:order.id});
+        state.savings_intent=null; await checkpoint();
+        if (qty>0) note("SAVINGS",`$${(qty*price).toFixed(2)} saved in ${IWM_SAVINGS_SYMBOL} • ${qty.toFixed(4)} shares`);
+        return;
+      }
+      if (!canSubmit || state.savings_day===date || state.trading_day!==date) return;
+      const amount=savingsAmount(Number(state.pnl_today));
+      state.savings_day=date;
+      if (!amount) { await checkpoint(); return; }
+      const clientId=`iwm-save-${crypto.randomUUID()}`;
+      const body={symbol:IWM_SAVINGS_SYMBOL,notional:amount.toFixed(2),side:"buy",type:"market",time_in_force:"day",client_order_id:clientId};
+      state.savings_intent={client_id:clientId,day:date,amount,body};
+      event("savings",{day:date,amount,status:"submitting"});
+      await checkpoint();
+      const order=(await api.findOrder(clientId)) ?? await api.submit(body);
+      event("savings",{day:date,amount,status:order.status ?? "submitted",alpaca_order_id:order.id});
+      await checkpoint();
+    } catch(e) {
+      const message=e instanceof Error ? e.message : "WMT savings sweep failed";
+      logError("savings",message);
+    }
+  }
   async function dailyReport(date:string,minutes:number) {
     if (minutes<965 || state.reported_day===date || state.trading_day!==date || !state.last_bar_time || etParts(state.last_bar_time).date!==date || state.open_trade || state.pending_order) return;
     event("reports",{id:crypto.randomUUID(),day:date,trades:state.trades_today,wins:state.wins_today,losses:state.losses_today,
@@ -176,6 +211,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     await reconcile();deadline();
     await reconcileBroker();deadline();
     if (!clock.is_open) {
+      await savingsSweep(date,false);
       await dailyReport(date,minutes);
       if (state.open_trade) { state.last_error="Market is closed with an unresolved position; exit will be retried when open"; await checkpoint(); }
       ok=true;
@@ -186,6 +222,8 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     const sessionEnd=sessionEndMinutes(closeMinutes);
     state.session_close=clock.next_close;
     const forced=minutes>=Math.min(forceExitMinutes(settings.force_exit_time),closeMinutes-10) || !!settings.kill_switch;
+    const pastForceExit=minutes>=Math.min(forceExitMinutes(settings.force_exit_time),closeMinutes-10);
+    await savingsSweep(date,pastForceExit && !settings.kill_switch && !state.open_trade && !state.pending_order);
     if (state.open_trade) {
       if (forced) state.open_trade.exitRequested=settings.kill_switch ? "Kill switch":"Force exit before market close";
       const windowDeadline = state.open_trade.windowExitAt ?? iwmWindowExitAt(state.open_trade.tradeRow?.entry_time, cfg, state.open_trade.tradeRow?.window);
@@ -220,6 +258,8 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
         const t=state.open_trade;
         if (freshQuote({bp:t.livePremium,ap:t.livePremium,t:t.quoteTime},now) && profitableReversal(t,ind,t.livePremium)) {
           t.exitRequested='Profitable first reversal candle'; await checkpoint(); await requestExit(t.exitRequested,t.livePremium);
+        } else if (!t.exitRequested && emaCloseBreak(t,ind)) {
+          t.exitRequested=`8 EMA close break (close ${ind.c.toFixed(2)} vs ${ind.emaFast.toFixed(2)})`; await checkpoint(); await requestExit(t.exitRequested);
         }
       } else if (!state.pending_order && settings.enabled && !forced && now.getTime()-Date.parse(last.t)<=cfg.timeframeMin*60000+90000) {
         const keys=new Set<string>(state.alerted_keys ?? []);
