@@ -57,6 +57,13 @@
       "when": 1793146319352,
       "tag": "0007_iwm_one_minute_default",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793335301623,
+      "tag": "0008_iwm_wmt_savings",
+      "breakpoints": true
     }
   ]
 }
