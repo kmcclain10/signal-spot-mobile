@@ -301,6 +301,45 @@ export type Database = {
           },
         ]
       }
+      iwm_savings_sweeps: {
+        Row: {
+          alpaca_order_id: string | null
+          amount: number
+          created_at: string
+          day: string
+          filled_avg_price: number | null
+          filled_qty: number | null
+          id: string
+          status: string
+          symbol: string
+          user_id: string
+        }
+        Insert: {
+          alpaca_order_id?: string | null
+          amount: number
+          created_at?: string
+          day: string
+          filled_avg_price?: number | null
+          filled_qty?: number | null
+          id?: string
+          status: string
+          symbol?: string
+          user_id: string
+        }
+        Update: {
+          alpaca_order_id?: string | null
+          amount?: number
+          created_at?: string
+          day?: string
+          filled_avg_price?: number | null
+          filled_qty?: number | null
+          id?: string
+          status?: string
+          symbol?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       iwm_signals: {
         Row: {
           action: string | null
@@ -416,6 +455,9 @@ export type Database = {
           pending_order: Json | null
           pnl_today: number
           reported_day: string | null
+          savings_day: string | null
+          savings_intent: Json | null
+          savings_total: number
           session_close: string | null
           trades_today: number
           trading_day: string | null
@@ -440,6 +482,9 @@ export type Database = {
           pending_order?: Json | null
           pnl_today?: number
           reported_day?: string | null
+          savings_day?: string | null
+          savings_intent?: Json | null
+          savings_total?: number
           session_close?: string | null
           trades_today?: number
           trading_day?: string | null
@@ -464,6 +509,9 @@ export type Database = {
           pending_order?: Json | null
           pnl_today?: number
           reported_day?: string | null
+          savings_day?: string | null
+          savings_intent?: Json | null
+          savings_total?: number
           session_close?: string | null
           trades_today?: number
           trading_day?: string | null
@@ -957,6 +1005,9 @@ export type Database = {
           pending_order: Json | null
           pnl_today: number
           reported_day: string | null
+          savings_day: string | null
+          savings_intent: Json | null
+          savings_total: number
           session_close: string | null
           trades_today: number
           trading_day: string | null
