@@ -17,3 +17,14 @@ describe('latest IWM trade policy',()=> {
   it('exits profitable PUT on its first green candle',()=>expect(profitableReversal({...trade,side:'PUT'},{...row,t:'2026-10-16T14:04:00Z'},1.01)).toBe(true));
   it('only selects the closest ATM strike rather than substituting farther strikes',()=>expect(nearestAtmContracts([{strike_price:279},{strike_price:280},{strike_price:281}],280.2)).toEqual([{strike_price:280}]));
 });
+import { emaCloseBreak, savingsAmount } from '@/lib/iwm-trade-policy';
+describe('8 EMA close break and WMT savings', () => {
+  const trade = { side: 'CALL', entryCloseTime: '2026-10-29T15:12:00Z' };
+  const row = (c: number, t = '2026-10-29T15:13:00Z') => ({ t, c, emaFast: 280 } as any);
+  it('exits a CALL when a closed bar closes below the 8 EMA', () => { expect(emaCloseBreak(trade, row(279.99))).toBe(true); });
+  it('holds a CALL closing above the 8 EMA', () => { expect(emaCloseBreak(trade, row(280.01))).toBe(false); });
+  it('exits a PUT closing above the 8 EMA', () => { expect(emaCloseBreak({ ...trade, side: 'PUT' }, row(280.01))).toBe(true); });
+  it('ignores bars before the entry bar closed', () => { expect(emaCloseBreak(trade, row(279, '2026-10-29T15:10:00Z'))).toBe(false); });
+  it('saves half of a profitable day, e.g. $94 -> $47', () => { expect(savingsAmount(94)).toBe(47); });
+  it('saves nothing on a losing day or under $1', () => { expect(savingsAmount(-16)).toBe(0); expect(savingsAmount(1.5)).toBe(0); });
+});
