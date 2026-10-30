@@ -19,6 +19,24 @@ function harness(initial:any={}) {
 const intent={id:"buy-order",side:"buy",client_id:"iwm-buy",submitted_at:"2026-10-16T14:08:00Z",connection_id:"paper-connection",trade_id:"trade-a",signal_id:"signal-a",
   signal:{side:"CALL",window:1,price:273,barTime:"2026-10-16T14:04:00Z"},contract:{symbol:"IWM261016C00273000",strike:273,expiry:"2026-10-16"},body:{side:"buy"}};
 describe("paper IWM order lifecycle",()=> {
+  it('submits an ATM paper order on the first confirmed one-minute cross',async()=> {
+    const h=harness();
+    const bars=Array.from({length:30},(_,i)=>({t:new Date(Date.parse('2026-10-16T13:40:00Z')+i*60000).toISOString(),o:i===29?100:101,h:i===29?110:102,l:99,c:i===29?110:100}));
+    h.api.bars.mockResolvedValue(bars);h.api.chooseContract=vi.fn(async()=>({symbol:'IWM261016C00110000',strike:110,expiry:'2026-10-16',ask:1,bid:0.99}));
+    await runIwmUser(h.db,settings,h.api);
+    expect(h.api.chooseContract).toHaveBeenCalledWith('CALL',110,'2026-10-16','indicative',expect.any(Date),'IWM',true);
+    expect(h.api.submit).toHaveBeenCalledWith(expect.objectContaining({side:'buy',qty:'2',position_intent:'buy_to_open'}));
+    expect(h.writes.signals[0]).toMatchObject({kind:'entry',bar_time:'2026-10-16T14:09:00.000Z'});
+  });
+  it('retries only the unfilled half-profit quantity, not the whole position',async()=> {
+    const trade={side:'CALL',optionSymbol:intent.contract.symbol,strike:273,contracts:4,entryPremium:1,peakPremium:1.35,entryCloseTime:'2026-10-16T14:05:00Z',connectionId:'paper-connection',tradeRow:{id:'trade-a',entry_time:'2026-10-16T14:08:00Z',window:1},exitFilledQty:0,exitValue:0};
+    const h=harness({open_trade:trade,pending_order:{id:'partial-order',side:'sell',client_id:'partial-client',submitted_at:'2026-10-16T14:08:00Z',reason:'+35% partial profit',partial:true,targetFilledQty:2,body:{side:'sell',qty:'2'}}});
+    h.api.order.mockResolvedValue({id:'partial-order',status:'canceled',filled_qty:'1',filled_avg_price:'1.35'});
+    h.api.quote.mockResolvedValue({bp:1.35,ap:1.36,t:'2026-10-16T14:10:00Z'});
+    await runIwmUser(h.db,settings,h.api);
+    expect(h.state().pending_order.body.qty).toBe('1');expect(h.state().pending_order.targetFilledQty).toBe(2);
+    expect(h.state().open_trade.exitFilledQty).toBe(1);
+  });
   it('sells half at +35%, retains the runner, then accounts for all fills at +50%',async()=> {
     const h=harness({pending_order:intent});
     h.api.order.mockResolvedValue({id:'buy-order',status:'filled',filled_qty:'4',filled_avg_price:'1',filled_at:'2026-10-16T14:08:00Z'});
