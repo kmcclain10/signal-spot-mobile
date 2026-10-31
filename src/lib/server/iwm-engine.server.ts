@@ -1,5 +1,5 @@
 import { addIndicators, contractsFor, settle, etParts, type StrategyConfig } from "@/lib/iwmWindowStrategy";
-import { closedRegularBars, freshQuote, terminalOrder, forceExitMinutes, sessionEndMinutes, entryBlock, positionMismatch, iwmWindowExitAt } from "@/lib/iwm-engine-rules";
+import { closedRegularBars, freshQuote, terminalOrder, forceExitMinutes, iwmForceExitAt, openingRange, sessionEndMinutes, entryBlock, positionMismatch, iwmWindowExitAt } from "@/lib/iwm-engine-rules";
 import { iwmAlpaca } from "@/lib/server/iwm-alpaca.server";
 import { iwmDiscord } from "@/lib/server/iwm-discord.server";
 import { iwmConfigFor } from '@/lib/iwm-config';
@@ -221,8 +221,8 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     const closeMinutes=etParts(clock.next_close).minutes;
     const sessionEnd=sessionEndMinutes(closeMinutes);
     state.session_close=clock.next_close;
-    const forced=minutes>=Math.min(forceExitMinutes(settings.force_exit_time),closeMinutes-10) || !!settings.kill_switch;
-    const pastForceExit=minutes>=Math.min(forceExitMinutes(settings.force_exit_time),closeMinutes-10);
+    const forced=minutes>=iwmForceExitAt(settings.force_exit_time,closeMinutes) || !!settings.kill_switch;
+    const pastForceExit=minutes>=iwmForceExitAt(settings.force_exit_time,closeMinutes);
     await savingsSweep(date,pastForceExit && !settings.kill_switch && !state.open_trade && !state.pending_order);
     if (state.open_trade) {
       if (forced) state.open_trade.exitRequested=settings.kill_switch ? "Kill switch":"Force exit before market close";
@@ -260,7 +260,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
         }
       } else if (!state.pending_order && settings.enabled && !forced && now.getTime()-Date.parse(last.t)<=cfg.timeframeMin*60000+90000) {
         const keys=new Set<string>(state.alerted_keys ?? []);
-        const signals=crossEntry(ind,keys,cfg);
+        const signals=crossEntry(ind,keys,cfg,openingRange(bars,date));
         state.alerted_keys=[...keys];
         for (const signal of signals) {
           const id=crypto.randomUUID();

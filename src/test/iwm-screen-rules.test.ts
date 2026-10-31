@@ -3,7 +3,7 @@ import {iwmSettingsInput,iwmScreenStatus, windowRange,journalDay,journalColumns}
 describe("IWM screen rules",()=>{
   it("requires one-minute IWM signal candles",()=>{expect(iwmSettingsInput.parse({timeframe_min:1})).toEqual({timeframe_min:1});for(const timeframe_min of [2,3,4,5,10]) expect(iwmSettingsInput.safeParse({timeframe_min}).success).toBe(false);});
   it("does not allow starting bankroll or bank trigger edits",()=>{expect(iwmSettingsInput.safeParse({starting_bankroll:300}).success).toBe(false);expect(iwmSettingsInput.safeParse({bank_trigger:1000}).success).toBe(false);});
-  it("does not permit exit later than 15:50",()=>{expect(iwmSettingsInput.safeParse({force_exit_time:"15:50"}).success).toBe(true);expect(iwmSettingsInput.safeParse({force_exit_time:"15:51"}).success).toBe(false);});
+  it("does not permit exit later than 15:40",()=>{expect(iwmSettingsInput.safeParse({force_exit_time:"15:40"}).success).toBe(true);expect(iwmSettingsInput.safeParse({force_exit_time:"15:41"}).success).toBe(false);});
   it("waits until 10 ET",()=>{expect(iwmScreenStatus(new Date("2026-10-19T13:59:00Z"),null,true).label).toBe("Waiting for 10:00 ET");});
   it("ends entry windows at 15 ET",()=>{expect(iwmScreenStatus(new Date("2026-10-19T19:00:00Z"),null,true).label).toBe("Done for today");});
   it("shows seventh window and countdown",()=>{expect(iwmScreenStatus(new Date("2026-10-19T16:05:30Z"),{last_run_at:"2026-10-19T16:05:00Z"},true)).toEqual({label:"Scanning • Window 7/15 (12:00–12:20 ET)",remaining:870});});
