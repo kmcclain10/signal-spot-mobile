@@ -37,7 +37,7 @@ describe("paper IWM order lifecycle",()=> {
     expect(h.state().pending_order.body.qty).toBe('1');expect(h.state().pending_order.targetFilledQty).toBe(2);
     expect(h.state().open_trade.exitFilledQty).toBe(1);
   });
-  it('sells half at +35%, retains the runner, then accounts for all fills at +50%',async()=> {
+  it('sells half at +35%, retains the runner, and keeps the runner open past +50%',async()=> {
     const h=harness({pending_order:intent});
     h.api.order.mockResolvedValue({id:'buy-order',status:'filled',filled_qty:'4',filled_avg_price:'1',filled_at:'2026-10-16T14:08:00Z'});
     h.api.quote.mockResolvedValue({bp:1.35,ap:1.36,t:'2026-10-16T14:10:00Z'});
@@ -49,20 +49,16 @@ describe("paper IWM order lifecycle",()=> {
     expect(h.state().pending_order).toBeNull(); expect(h.api.submit).toHaveBeenCalledTimes(1);
     h.api.quote.mockResolvedValue({bp:1.5,ap:1.51,t:'2026-10-16T14:10:00Z'});
     await runIwmUser(h.db,settings,h.api);
-    expect(h.state().pending_order.body.qty).toBe('2');
-    h.api.order.mockResolvedValue({id:'final-order',status:'filled',filled_qty:'2',filled_avg_price:'1.5',filled_at:'2026-10-16T14:10:10Z'});
-    await runIwmUser(h.db,settings,h.api);
-    expect(h.state().open_trade).toBeNull(); expect(h.state().balance).toBe(370);
-    expect(h.writes.trades.at(-1)).toMatchObject({contracts:4,pnl:170,exit_premium:1.425,status:'closed'});
+    expect(h.state().pending_order).toBeNull(); expect(h.state().open_trade.exitFilledQty).toBe(2);
   });
-  it('market-exits in the final minute of the entry window even without quotes or bars',async()=> {
+  it('keeps the trade open past the entry window end (window filters entries only)',async()=> {
     const h=harness({pending_order:intent});
     h.api.order.mockResolvedValue({id:'buy-order',status:'filled',filled_qty:'1',filled_avg_price:'1',filled_at:'2026-10-16T14:08:00Z'});
     h.api.clock.mockResolvedValue({timestamp:'2026-10-16T14:19:00Z',is_open:true,next_close:'2026-10-16T20:00:00Z'});
     h.api.quote.mockRejectedValue(new Error('no quote'));
     await runIwmUser(h.db,settings,h.api);
-    expect(h.api.submit).toHaveBeenCalledWith(expect.objectContaining({side:'sell',type:'market',qty:'1'}));
-    expect(h.state().pending_order.reason).toBe('20-minute window closing');
+    expect(h.api.submit).not.toHaveBeenCalledWith(expect.objectContaining({side:'sell'}));
+    expect(h.state().open_trade).not.toBeNull();
   });
   it('cancels an unfilled entry before the window closes instead of adding exposure',async()=> {
     const h=harness({pending_order:{...intent,submitted_at:'2026-10-16T14:18:45Z'}});
