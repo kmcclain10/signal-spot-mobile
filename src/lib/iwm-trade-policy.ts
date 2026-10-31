@@ -3,11 +3,13 @@ import { isFinalBar, windowOf, type IndRow, type Signal, type StrategyConfig } f
 export const IWM_STOP_PCT = 20;
 export const IWM_PARTIAL_TARGET_PCT = 35;
 export const IWM_PROFIT_TARGET_PCT = 50;
-export function crossEntry(row: IndRow, seen: Set<string>, cfg: StrategyConfig): Signal[] {
+export function crossEntry(row: IndRow, seen: Set<string>, cfg: StrategyConfig, orb?: {high:number;low:number}|null): Signal[] {
   const window = windowOf(row.t,cfg);
   if (window === null || isFinalBar(row.t,cfg)) return [];
   const side = row.bullCross ? 'CALL' : row.bearCross ? 'PUT' : null;
   if (!side) return [];
+  // Window 1 (10:00–10:20 ET) needs an opening-range breakout in the cross direction.
+  if (window === 1 && (!orb || (side==='CALL' ? !(row.c>orb.high) : !(row.c<orb.low)))) return [];
   const key = `cross|${row.t}|${side}`;
   if (seen.has(key)) return [];
   seen.add(key);

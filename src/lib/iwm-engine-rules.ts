@@ -40,6 +40,15 @@ export function positionMismatch(state: Record<string, any>, positions: { symbol
   return null;
 }
 export const terminalOrder = (status: string) => ["filled", "canceled", "expired", "rejected"].includes(status);
+/** Latest close-out: 3:40 PM ET (before broker 0DTE auto-liquidation), or 20 minutes before an early close. */
+export const IWM_LATEST_EXIT_MIN = 940;
+export const iwmForceExitAt = (value: string, closeMinutes: number) => Math.min(forceExitMinutes(value || "15:40"), IWM_LATEST_EXIT_MIN, closeMinutes - 20);
+/** Opening range: high/low of today's 9:30–9:59 ET regular bars. */
+export function openingRange(bars: Bar[], date: string) {
+  const r = bars.filter(b => { const p = etParts(b.t); return p.date === date && p.minutes >= 570 && p.minutes < 600; });
+  if (!r.length) return null;
+  return { high: Math.max(...r.map(b => b.h)), low: Math.min(...r.map(b => b.l)) };
+}
 export const forceExitMinutes = (value: string) => { const [h,m] = value.split(":").map(Number); return h*60+m; };
 /** Start liquidation in the final minute, leaving one scheduled interval for fills. */
 export function iwmWindowExitAt(barTime: string, cfg: StrategyConfig, entryWindow?: number): number | null {
