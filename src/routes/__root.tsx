@@ -85,7 +85,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-status-bar-style", content: "black" },
       { name: "apple-mobile-web-app-title", content: "Pulse Signals" },
       { title: "Pulse Signals" },
-      { name: "description", content: "Holly-style AI day-trading assistant: nightly picks, live signals, paper trades." },
+      { name: "description", content: "AI-powered day-trading signals, automated paper-trading bots and a full trade desk, all in your pocket." },
     ],
     links: [
       {
