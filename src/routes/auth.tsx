@@ -12,12 +12,16 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in — Pulse Signals" },
-      { name: "description", content: "Sign in to Pulse Signals, your Holly-style day-trading assistant." },
+      { name: "description", content: "Sign in to Pulse Signals — AI-powered day-trading signals, automated paper-trading bots and a full trade desk, all in your pocket." },
       { property: "og:title", content: "Sign in — Pulse Signals" },
-      { property: "og:description", content: "Nightly strategy picks, live signals and one-tap paper trades." },
+      { property: "og:description", content: "AI-powered day-trading signals, automated paper-trading bots and a full trade desk, all in your pocket." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://signal-spot-mobile.lovable.app/auth" },
+      { property: "og:image", content: "https://signal-spot-mobile.lovable.app/icons/og-image.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "https://signal-spot-mobile.lovable.app/icons/og-image.png" },
     ],
+    links: [{ rel: "canonical", href: "https://signal-spot-mobile.lovable.app/auth" }],
   }),
   component: AuthPage,
 });
