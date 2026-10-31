@@ -3,7 +3,7 @@ import { closedRegularBars, freshQuote, terminalOrder, forceExitMinutes, session
 import { iwmAlpaca } from "@/lib/server/iwm-alpaca.server";
 import { iwmDiscord } from "@/lib/server/iwm-discord.server";
 import { iwmConfigFor } from '@/lib/iwm-config';
-import { crossEntry, profitAction, profitableReversal, emaCloseBreak, savingsAmount, IWM_SAVINGS_SYMBOL } from '@/lib/iwm-trade-policy';
+import { crossEntry, profitAction, emaCloseBreak, savingsAmount, IWM_SAVINGS_SYMBOL } from '@/lib/iwm-trade-policy';
 
 type Rec = Record<string, any>;
 type Api = Awaited<ReturnType<typeof iwmAlpaca>>;
@@ -226,9 +226,8 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     await savingsSweep(date,pastForceExit && !settings.kill_switch && !state.open_trade && !state.pending_order);
     if (state.open_trade) {
       if (forced) state.open_trade.exitRequested=settings.kill_switch ? "Kill switch":"Force exit before market close";
-      const windowDeadline = state.open_trade.windowExitAt ?? iwmWindowExitAt(state.open_trade.tradeRow?.entry_time, cfg, state.open_trade.tradeRow?.window);
-      const windowExit = windowDeadline !== null && now.getTime() >= windowDeadline;
-      if (!forced && windowExit) state.open_trade.exitRequested='20-minute window closing';
+      // The 20-minute window filters entries only; open trades ride past it until the 8 EMA close break.
+      const windowExit = false;
       let quote:any;
       try { quote=await api.quote(state.open_trade.optionSymbol,settings.options_feed); }
       catch { state.last_error="Option quote unavailable; position monitoring will retry"; }
@@ -256,9 +255,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
       if (state.open_trade) {
         state.open_trade.liveUnderlying=last.c;
         const t=state.open_trade;
-        if (freshQuote({bp:t.livePremium,ap:t.livePremium,t:t.quoteTime},now) && profitableReversal(t,ind,t.livePremium)) {
-          t.exitRequested='Profitable first reversal candle'; await checkpoint(); await requestExit(t.exitRequested,t.livePremium);
-        } else if (!t.exitRequested && emaCloseBreak(t,ind)) {
+        if (!t.exitRequested && emaCloseBreak(t,ind)) {
           t.exitRequested=`8 EMA close break (close ${ind.c.toFixed(2)} vs ${ind.emaFast.toFixed(2)})`; await checkpoint(); await requestExit(t.exitRequested);
         }
       } else if (!state.pending_order && settings.enabled && !forced && now.getTime()-Date.parse(last.t)<=cfg.timeframeMin*60000+90000) {
