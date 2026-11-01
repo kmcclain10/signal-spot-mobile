@@ -26,3 +26,4 @@
 - The shared shell owns first-launch disclosure acceptance and background device sign-out; home-screen support is manifest-only with no offline caching of trading data or credentials.
 - Additional Pulse bots use an isolated imported library and owner-wide service-only leases with write-before-submit intents; existing IWM math and execution remain independent to prevent strategy regressions.
 - Manual broker mutations verify additional bot underlying ownership and bot order prefixes server-side; positions are flattened through bot controls to preserve execution accounting.
+- Face ID unlock is a per-device local gate on the background lock only (no server credential); sensitive actions still need password confirmation because the database checks password authentication.
