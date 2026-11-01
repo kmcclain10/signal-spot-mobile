@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { LockKeyhole } from "lucide-react";
+import { LockKeyhole, ScanFace } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { BACKGROUND_LOCK_MS, backgroundLockDue, DISCLOSURE_VERSION } from "@/lib/account-rules";
+import { readUnlock, verifyDeviceUnlock } from "@/lib/device-unlock";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,7 @@ export function Disclosures() {
 export function AccountSecurity({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false), [password, setPassword] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState("");
   const [legal, setLegal] = useState<"loading" | "required" | "accepted">("loading");
+  const [locked, setLocked] = useState(false);
   const pending = useRef<((ok: boolean) => void) | null>(null);
   const qc = useQueryClient(), navigate = useNavigate();
   useEffect(() => {
@@ -35,6 +37,8 @@ export function AccountSecurity({ children }: { children: ReactNode }) {
     async function lock() {
       if (locking) return;
       locking = true;
+      const { data } = await supabase.auth.getSession();
+      if (readUnlock(data.session?.user.id)) { setLocked(true); locking = false; return; }
       await qc.cancelQueries(); qc.clear();
       await supabase.auth.signOut({ scope: "local" });
       await navigate({ to: "/auth", replace: true });
@@ -70,8 +74,31 @@ export function AccountSecurity({ children }: { children: ReactNode }) {
       setLegal("accepted");
     } catch (e) { setError(e instanceof Error ? e.message : "Could not save acceptance"); } finally { setBusy(false); }
   }
+  async function unlock() {
+    setBusy(true); setError("");
+    try {
+      const { data } = await supabase.auth.getSession();
+      const stored = readUnlock(data.session?.user.id);
+      if (!stored) return await signOutFully();
+      if (await verifyDeviceUnlock(stored)) setLocked(false);
+    } catch { setError("Face ID didn't work. Try again or sign in another way."); }
+    finally { setBusy(false); }
+  }
+  async function signOutFully() {
+    await qc.cancelQueries(); qc.clear();
+    await supabase.auth.signOut({ scope: "local" });
+    setLocked(false);
+    await navigate({ to: "/auth", replace: true });
+  }
+  if (locked) return <section className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-6 text-center">
+    <ScanFace className="size-14 text-primary" /><h1 className="text-2xl font-semibold">Pulse Signals is locked</h1>
+    <p className="text-sm text-muted-foreground">Your paper bots keep running while the app is locked.</p>
+    <Button className="w-full max-w-xs" disabled={busy} onClick={unlock}>{busy ? "Checking…" : "Unlock with Face ID"}</Button>
+    <Button variant="ghost" disabled={busy} onClick={signOutFully}>Sign in another way</Button>
+    {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+  </section>;
   return <Confirmation.Provider value={confirm}>
-    {legal === "accepted" ? children : <section className="mx-auto max-w-lg space-y-5 py-8"><h1 className="text-2xl font-semibold">Before you continue</h1><Disclosures />{legal === "loading" ? <p role="status">Checking acceptance…</p> : <Button onClick={accept} disabled={busy}>I understand and accept</Button>}{error && <p role="alert" className="text-destructive">{error}</p>}</section>}
+    {legal === "accepted" ? children :  <section className="mx-auto max-w-lg space-y-5 py-8"><h1 className="text-2xl font-semibold">Before you continue</h1><Disclosures />{legal === "loading" ? <p role="status">Checking acceptance…</p> : <Button onClick={accept} disabled={busy}>I understand and accept</Button>}{error && <p role="alert" className="text-destructive">{error}</p>}</section>}
     <Dialog open={open} onOpenChange={v => { if (!v && !busy) close(false); }}><DialogContent><DialogHeader><DialogTitle className="flex items-center gap-2"><LockKeyhole className="size-5 text-primary" />Confirm your password</DialogTitle><DialogDescription>Required before changing risk limits, enabling LIVE, or turning off the kill switch.</DialogDescription></DialogHeader><form onSubmit={verify} className="space-y-4"><Label htmlFor="confirm-password">Current password</Label><Input id="confirm-password" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} />{error && <p role="alert" className="text-sm text-destructive">{error}</p>}<div className="flex gap-2"><Button type="button" variant="outline" disabled={busy} onClick={() => close(false)}>Cancel</Button><Button type="submit" disabled={busy}>{busy ? "Verifying…" : "Confirm password"}</Button></div></form></DialogContent></Dialog>
   </Confirmation.Provider>;
 }
