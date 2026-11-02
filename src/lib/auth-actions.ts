@@ -1,8 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export function magicLinkOptions(origin: string, creating: boolean, name: string) {
-  return { emailRedirectTo: origin, shouldCreateUser: creating, ...(creating ? { data: { full_name: name.trim() } } : {}) };
-}
 export function passwordUpdate(password: string, confirmation: string, current?: string) {
   if (password.length < 6) throw new Error('Use at least 6 characters.');
   if (password !== confirmation) throw new Error('Passwords do not match.');
