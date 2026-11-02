@@ -3,6 +3,7 @@ import { isFinalBar, windowOf, type IndRow, type Signal, type StrategyConfig } f
 export const IWM_STOP_PCT = 20;
 export const IWM_PARTIAL_TARGET_PCT = 35;
 export const IWM_PROFIT_TARGET_PCT = 50;
+export const IWM_TRAIL_GIVEBACK_PTS = 15;
 export function crossEntry(row: IndRow, seen: Set<string>, cfg: StrategyConfig, orb?: {high:number;low:number}|null): Signal[] {
   const window = windowOf(row.t,cfg);
   if (window === null || isFinalBar(row.t,cfg)) return [];
@@ -23,6 +24,12 @@ export function profitAction(trade: Record<string,any>, bid: number) {
   // No upper cap: after the +35% partial, the runner trails the 8 EMA close break.
   if (!trade.partialTaken && trade.contracts>1 && bid >= trade.entryPremium*(1+IWM_PARTIAL_TARGET_PCT/100)) {
     return {reason:'+35% partial profit',qty:Math.min(remaining,Math.max(1,Math.floor(trade.contracts/2))),partial:true};
+  }
+  // Profit lock: once the peak reaches +35%, exit the rest if it gives back 15 points from the peak.
+  const peak = Math.max(Number(trade.peakPremium) || 0, bid);
+  const peakPct = (peak/trade.entryPremium-1)*100;
+  if (peakPct >= IWM_PARTIAL_TARGET_PCT && bid <= trade.entryPremium*(1+(peakPct-IWM_TRAIL_GIVEBACK_PTS)/100)) {
+    return {reason:`Trailing profit lock (peak +${Math.round(peakPct)}%)`,qty:remaining,partial:false};
   }
   return null;
 }

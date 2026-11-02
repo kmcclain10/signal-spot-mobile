@@ -13,6 +13,8 @@ describe('latest IWM trade policy',()=> {
   it('lets the runner ride past +50% with no cap',()=>expect(profitAction({...trade,exitFilledQty:2,partialTaken:true},2)).toBeNull());
   it('holds at -15% and requests the theoretical stop at -20%',()=>{expect(profitAction(trade,0.85)).toBeNull();expect(profitAction(trade,0.8)).toMatchObject({qty:5,reason:'-20% option stop'});});
   it('cannot partially sell one contract',()=>expect(profitAction({...trade,contracts:1},1.35)).toBeNull());
+  it('locks profit when an +80% peak gives back 15 points',()=>{const t={...trade,contracts:1,peakPremium:1.8};expect(profitAction(t,1.66)).toBeNull();expect(profitAction(t,1.65)).toMatchObject({qty:1,partial:false});});
+  it('trails the runner after the partial',()=>expect(profitAction({...trade,exitFilledQty:2,partialTaken:true,peakPremium:2},1.85)).toMatchObject({qty:3}));
   it('exits first CALL reversal only when profitable',()=>{const reversal={...row,t:'2026-10-16T14:04:00Z',red:true,green:false};expect(profitableReversal(trade,reversal,1.01)).toBe(true);expect(profitableReversal(trade,reversal,0.9)).toBe(false);});
   it('exits profitable PUT on its first green candle',()=>expect(profitableReversal({...trade,side:'PUT'},{...row,t:'2026-10-16T14:04:00Z'},1.01)).toBe(true));
   it('only selects the closest ATM strike rather than substituting farther strikes',()=>expect(nearestAtmContracts([{strike_price:279},{strike_price:280},{strike_price:281}],280.2)).toEqual([{strike_price:280}]));

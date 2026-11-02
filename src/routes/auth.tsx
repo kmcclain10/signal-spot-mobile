@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { magicLinkOptions } from '@/lib/auth-actions';
 import { lovable } from '@/integrations/lovable';
 
 export const Route = createFileRoute("/auth")({
@@ -34,7 +33,6 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState('');
-  const [method, setMethod] = useState<'password' | 'magic'>('password');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -49,12 +47,6 @@ function AuthPage() {
     setBusy(true);
     setMessage('');
     try {
-      if (method === 'magic') {
-        const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: magicLinkOptions(window.location.origin, mode === 'up', name) });
-        if (error) throw error;
-        setMessage(mode === 'up' ? 'Check your email to confirm your account and sign in. You can add a password in Settings.' : 'Check your email for your sign-in link.');
-        return;
-      }
       if (mode === "in") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -101,19 +93,18 @@ function AuthPage() {
           <Button type="button" variant="outline" className="w-full" disabled={busy} onClick={() => social('google')}><svg viewBox="0 0 24 24" className="size-4" aria-hidden><path fill="currentColor" d="M21.6 12.23c0-.68-.06-1.36-.18-2.02H12v3.83h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.24c1.9-1.75 2.98-4.33 2.98-7.33zM12 22c2.7 0 4.97-.9 6.62-2.43l-3.24-2.5c-.9.6-2.04.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H3.08v2.58A10 10 0 0 0 12 22zM6.41 13.9a6 6 0 0 1 0-3.8V7.52H3.08a10 10 0 0 0 0 8.96l3.33-2.58zM12 5.98c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.92 5.52l3.33 2.58C7.2 7.74 9.4 5.98 12 5.98z"/></svg>Continue with Google</Button>
           <p className="text-center text-xs text-muted-foreground">or use email</p>
         </div>
-        <div className="mb-4 grid grid-cols-2 gap-1 rounded-md border p-1"><Button variant={method === 'password' ? 'secondary' : 'ghost'} disabled={busy} onClick={() => setMethod('password')}>Password</Button><Button variant={method === 'magic' ? 'secondary' : 'ghost'} disabled={busy} onClick={() => setMethod('magic')}>Magic link</Button></div>
         <form onSubmit={submit} className="space-y-4">
           {mode === 'up' && <div className="space-y-1.5"><Label htmlFor="signup-name">Full name</Label><Input id="signup-name" autoComplete="name" maxLength={100} required value={name} onChange={e => setName(e.target.value)} /></div>}
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
-          {method === 'password' && <div className="space-y-1.5">
+          <div className="space-y-1.5">
             <Label htmlFor="pw">Password</Label>
-            <Input id="pw" type="password" autoComplete={mode === 'up' ? 'new-password' : 'current-password'} required minLength={mode === 'up' ? 8 : 1} value={password} onChange={(e) => setPassword(e.target.value)} />
-          </div>}
+            <Input id="pw" type="password" autoComplete={mode === 'up' ? 'new-password' : 'current-password'} required minLength={mode === 'up' ? 6 : 1} value={password} onChange={(e) => setPassword(e.target.value)} />
+          </div>
           <Button type="submit" className="w-full" disabled={busy}>
-            {busy ? 'Please wait…' : method === 'magic' ? (mode === 'up' ? 'Create account with magic link' : 'Send sign-in link') : mode === "in" ? "Sign in" : "Create account"}
+            {busy ? 'Please wait…' : mode === "in" ? "Sign in" : "Create account"}
           </Button>
         </form>
         {message && <p role="status" className="mt-4 text-sm text-gain">{message}</p>}
