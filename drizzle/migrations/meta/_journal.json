@@ -64,6 +64,13 @@
       "when": 1793335301623,
       "tag": "0008_iwm_wmt_savings",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793722526006,
+      "tag": "0009_subscriptions_paywall",
+      "breakpoints": true
     }
   ]
 }
