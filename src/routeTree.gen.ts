@@ -27,6 +27,7 @@ import { Route as AuthenticatedQuoteSymbolRouteImport } from './routes/_authenti
 import { Route as ApiPublicJobsIwmWindowStrategyRouteImport } from './routes/api/public/jobs/iwm-window-strategy'
 import { Route as ApiPublicJobsPulseBotsRouteImport } from './routes/api/public/jobs/pulse-bots'
 import { Route as ApiPublicJobsScanRouteImport } from './routes/api/public/jobs/scan'
+import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -121,6 +122,12 @@ const ApiPublicJobsScanRoute = ApiPublicJobsScanRouteImport.update({
   path: '/api/public/jobs/scan',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPaymentsWebhookRoute =
+  ApiPublicPaymentsWebhookRouteImport.update({
+    id: '/api/public/payments/webhook',
+    path: '/api/public/payments/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -140,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
   '/api/public/jobs/pulse-bots': typeof ApiPublicJobsPulseBotsRoute
   '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -159,6 +167,7 @@ export interface FileRoutesByTo {
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
   '/api/public/jobs/pulse-bots': typeof ApiPublicJobsPulseBotsRoute
   '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -180,6 +189,7 @@ export interface FileRoutesById {
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
   '/api/public/jobs/pulse-bots': typeof ApiPublicJobsPulseBotsRoute
   '/api/public/jobs/scan': typeof ApiPublicJobsScanRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
     | '/api/public/jobs/iwm-window-strategy'
     | '/api/public/jobs/pulse-bots'
     | '/api/public/jobs/scan'
+    | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -220,6 +231,7 @@ export interface FileRouteTypes {
     | '/api/public/jobs/iwm-window-strategy'
     | '/api/public/jobs/pulse-bots'
     | '/api/public/jobs/scan'
+    | '/api/public/payments/webhook'
   id:
     | '__root__'
     | '/_authenticated'
@@ -240,6 +252,7 @@ export interface FileRouteTypes {
     | '/api/public/jobs/iwm-window-strategy'
     | '/api/public/jobs/pulse-bots'
     | '/api/public/jobs/scan'
+    | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -249,6 +262,7 @@ export interface RootRouteChildren {
   ApiPublicJobsIwmWindowStrategyRoute: typeof ApiPublicJobsIwmWindowStrategyRoute
   ApiPublicJobsPulseBotsRoute: typeof ApiPublicJobsPulseBotsRoute
   ApiPublicJobsScanRoute: typeof ApiPublicJobsScanRoute
+  ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -379,6 +393,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicJobsScanRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/payments/webhook': {
+      id: '/api/public/payments/webhook'
+      path: '/api/public/payments/webhook'
+      fullPath: '/api/public/payments/webhook'
+      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -422,6 +443,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicJobsIwmWindowStrategyRoute: ApiPublicJobsIwmWindowStrategyRoute,
   ApiPublicJobsPulseBotsRoute: ApiPublicJobsPulseBotsRoute,
   ApiPublicJobsScanRoute: ApiPublicJobsScanRoute,
+  ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
