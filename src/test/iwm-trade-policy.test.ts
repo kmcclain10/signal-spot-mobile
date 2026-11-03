@@ -30,3 +30,9 @@ describe('8 EMA close break and WMT savings', () => {
   it('saves half of a profitable day, e.g. $94 -> $47', () => { expect(savingsAmount(94)).toBe(47); });
   it('saves nothing on a losing day or under $1', () => { expect(savingsAmount(-16)).toBe(0); expect(savingsAmount(1.5)).toBe(0); });
 });
+import { takeTheBid } from '@/lib/iwm-trade-policy';
+describe('take the bid',()=>{
+  it('sells at market when in profit with a 2-cent spread',()=>expect(takeTheBid(0.33,0.45,0.47)).toBe(true));
+  it('keeps a limit when the spread is 3 cents',()=>expect(takeTheBid(0.33,0.45,0.48)).toBe(false));
+  it('keeps a limit when not in profit',()=>expect(takeTheBid(0.5,0.45,0.46)).toBe(false));
+});

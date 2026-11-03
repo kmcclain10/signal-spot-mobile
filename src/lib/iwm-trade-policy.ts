@@ -53,3 +53,8 @@ export function savingsAmount(pnlToday: number): number {
   const amt = Math.floor(pnlToday*IWM_SAVINGS_SHARE*100)/100;
   return amt>=1 ? amt : 0;
 }
+/** Real-money habit: in profit with a 1–2 cent spread, take the bid now (market) instead of waiting for a tick. */
+export const IWM_TIGHT_SPREAD = 0.02;
+export function takeTheBid(entryPremium: number, bid?: number, ask?: number): boolean {
+  return Number(bid)>Number(entryPremium) && Number(ask)>=Number(bid) && Number(ask)-Number(bid)<=IWM_TIGHT_SPREAD+1e-9;
+}

@@ -3,7 +3,7 @@ import { closedRegularBars, freshQuote, terminalOrder, forceExitMinutes, iwmForc
 import { iwmAlpaca } from "@/lib/server/iwm-alpaca.server";
 import { iwmDiscord } from "@/lib/server/iwm-discord.server";
 import { iwmConfigFor } from '@/lib/iwm-config';
-import { crossEntry, profitAction, emaCloseBreak, savingsAmount, IWM_SAVINGS_SYMBOL } from '@/lib/iwm-trade-policy';
+import { crossEntry, profitAction, emaCloseBreak, takeTheBid, savingsAmount, IWM_SAVINGS_SYMBOL } from '@/lib/iwm-trade-policy';
 
 type Rec = Record<string, any>;
 type Api = Awaited<ReturnType<typeof iwmAlpaca>>;
@@ -101,7 +101,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     if (!terminalOrder(order.status)) {
       const age = now.getTime()-Date.parse(p.submitted_at);
       // Kill switch cancels a working entry immediately.
-      if (age < (p.side === "buy" ? 60000 : 30000) && !(p.side==="buy" && (settings.kill_switch || windowExpired))) return;
+      if (age < (p.side === "buy" ? 60000 : 10000) && !(p.side==="buy" && (settings.kill_switch || windowExpired))) return;
       order = await api.cancel(order.id);
       if (!terminalOrder(order.status)) return;
     }
@@ -142,14 +142,15 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
       await submitIntent({...p,id:undefined,client_id:replacementId,submitted_at:now.toISOString(),body:{...p.body,client_order_id:replacementId,qty:String(remaining),type:"market",limit_price:undefined}});
     }
   }
-  async function requestExit(reason:string,bid?:number,qty?:number,partial=false) {
+  async function requestExit(reason:string,bid?:number,qty?:number,partial=false,ask?:number) {
     const t = state.open_trade;
     if (!t || state.pending_order) return;
     if (!partial) t.exitRequested=reason;
     const clientId=`iwm-${crypto.randomUUID()}`;
     const sellQty=Math.min(qty ?? t.contracts-Number(t.exitFilledQty ?? 0),t.contracts-Number(t.exitFilledQty ?? 0));
     if (!(sellQty>0)) return;
-    const body:Rec={symbol:t.optionSymbol,qty:String(sellQty),side:"sell",type:bid && bid>0 ? "limit":"market",time_in_force:"day",position_intent:"sell_to_close",client_order_id:clientId};
+    const market=!(bid && bid>0) || takeTheBid(t.entryPremium,bid,ask);
+    const body:Rec={symbol:t.optionSymbol,qty:String(sellQty),side:"sell",type:market ? "market":"limit",time_in_force:"day",position_intent:"sell_to_close",client_order_id:clientId};
     if (body.type === "limit") body.limit_price=money(Number(bid)).toFixed(2);
     await submitIntent({side:"sell",client_id:clientId,submitted_at:now.toISOString(),reason,underlying:t.liveUnderlying,body,connection_id:t.connectionId,partial,targetFilledQty:Number(t.exitFilledQty ?? 0)+sellQty});
   }
@@ -238,12 +239,12 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
         t.peakPremium=Math.max(t.peakPremium,premium); t.floorPct=null;
         const action=profitAction(t,premium);
         if (action && !t.exitRequested && !state.pending_order) {
-          if (action.partial) await requestExit(action.reason,premium,action.qty,true);
+          if (action.partial) await requestExit(action.reason,premium,action.qty,true,Number(quote.ap));
           else t.exitRequested=action.reason;
         }
         await checkpoint();
       }
-      if (state.open_trade.exitRequested) await requestExit(state.open_trade.exitRequested,windowExit ? undefined : valid ? Number(quote.bp):undefined);
+      if (state.open_trade.exitRequested) await requestExit(state.open_trade.exitRequested,windowExit ? undefined : valid ? Number(quote.bp):undefined,undefined,false,valid ? Number(quote.ap):undefined);
     }
     deadline();
     const bars=closedRegularBars(await api.bars(cfg,settings.data_feed,now),now,cfg);
