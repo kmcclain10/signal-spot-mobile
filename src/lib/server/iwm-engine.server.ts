@@ -269,7 +269,6 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
             ema8:ind.emaFast,ema20:ind.emaSlow,osc:Number.isFinite(ind.osc) ? ind.osc:null,detail:signal.detail,action:signal.kind==="potential" ? "alert":"evaluating"});
           await checkpoint();
           if (signal.kind==="potential") { note("POTENTIAL ENTRY",`IWM $${signal.price.toFixed(2)} ${signal.side} • Window ${signal.window}/15`); continue; }
-          const windowDeadline = iwmWindowExitAt(signal.barTime,cfg,signal.window);
           const block=entryBlock(settings,state) ?? (minutes>=sessionEnd ? "early close":null) ?? null;
           let action=block ?? "daily limit";
           if (!block && state.trades_today<settings.max_trades_per_day) {
