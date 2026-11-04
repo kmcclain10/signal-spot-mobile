@@ -3,7 +3,7 @@ import { closedRegularBars, freshQuote, terminalOrder, forceExitMinutes, iwmForc
 import { iwmAlpaca } from "@/lib/server/iwm-alpaca.server";
 import { iwmDiscord } from "@/lib/server/iwm-discord.server";
 import { iwmConfigFor } from '@/lib/iwm-config';
-import { crossEntry, profitAction, emaCloseBreak, takeTheBid, savingsAmount, IWM_SAVINGS_SYMBOL } from '@/lib/iwm-trade-policy';
+import { crossEntry, profitAction, emaCrossBack, takeTheBid, savingsAmount, IWM_SAVINGS_SYMBOL } from '@/lib/iwm-trade-policy';
 
 type Rec = Record<string, any>;
 type Api = Awaited<ReturnType<typeof iwmAlpaca>>;
@@ -256,8 +256,8 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
       if (state.open_trade) {
         state.open_trade.liveUnderlying=last.c;
         const t=state.open_trade;
-        if (!t.exitRequested && emaCloseBreak(t,ind)) {
-          t.exitRequested=`8 EMA close break (close ${ind.c.toFixed(2)} vs ${ind.emaFast.toFixed(2)})`; await checkpoint(); await requestExit(t.exitRequested);
+        if (!t.exitRequested && emaCrossBack(t,ind)) {
+          t.exitRequested=`8/20 EMA cross-back (8 ${ind.emaFast.toFixed(2)} vs 20 ${ind.emaSlow.toFixed(2)})`; await checkpoint(); await requestExit(t.exitRequested);
         }
       } else if (!state.pending_order && settings.enabled && !forced && now.getTime()-Date.parse(last.t)<=cfg.timeframeMin*60000+90000) {
         const keys=new Set<string>(state.alerted_keys ?? []);
@@ -269,8 +269,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
             ema8:ind.emaFast,ema20:ind.emaSlow,osc:Number.isFinite(ind.osc) ? ind.osc:null,detail:signal.detail,action:signal.kind==="potential" ? "alert":"evaluating"});
           await checkpoint();
           if (signal.kind==="potential") { note("POTENTIAL ENTRY",`IWM $${signal.price.toFixed(2)} ${signal.side} • Window ${signal.window}/15`); continue; }
-          const windowDeadline = iwmWindowExitAt(signal.barTime,cfg,signal.window);
-          const block=entryBlock(settings,state) ?? (minutes>=sessionEnd ? "early close":null) ?? (windowDeadline !== null && now.getTime()>=windowDeadline ? 'window closing':null);
+          const block=entryBlock(settings,state) ?? (minutes>=sessionEnd ? "early close":null) ?? null;
           let action=block ?? "daily limit";
           if (!block && state.trades_today<settings.max_trades_per_day) {
             deadline();
