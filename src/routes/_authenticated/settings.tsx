@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -127,6 +127,10 @@ function SettingsPage() {
     <div className="space-y-5">
       <PageHeader title="Account" />
       <AccountOverview />
+      <Panel className="flex items-center justify-between rounded-lg border p-4">
+        <div><h2 className="text-sm font-semibold">Plan & billing</h2><p className="text-xs text-muted-foreground">Alerts Only or Full AI Bot Assistance</p></div>
+        <Button asChild variant="outline"><Link to="/plans">View plans</Link></Button>
+      </Panel>
       <h2 className="border-t pt-6 text-xl font-semibold">Trading preferences</h2>
 
       <Panel className="p-4">
