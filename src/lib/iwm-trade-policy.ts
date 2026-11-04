@@ -29,7 +29,7 @@ export function profitAction(trade: Record<string,any>, bid: number) {
   // No partial sell: once +15% is reached, trail 12 points below the peak (floor at break-even) and ride to the 8/20 cross-back.
   const peak = Math.max(Number(trade.peakPremium) || 0, bid);
   const peakPct = (peak/trade.entryPremium-1)*100;
-  if (peakPct >= IWM_TRAIL_ACTIVATE_PCT && bid <= trade.entryPremium*(1+Math.max(0,peakPct-IWM_TRAIL_GIVEBACK_PTS)/100)+1e-9) {
+  if (peakPct >= IWM_TRAIL_ACTIVATE_PCT-1e-9 && bid <= trade.entryPremium*(1+Math.max(0,peakPct-IWM_TRAIL_GIVEBACK_PTS)/100)+1e-9) {
     return {reason:`Trailing profit lock (peak +${Math.round(peakPct)}%)`,qty:remaining,partial:false};
   }
   return null;
