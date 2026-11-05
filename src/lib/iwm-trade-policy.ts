@@ -14,8 +14,6 @@ export function crossEntry(row: IndRow, seen: Set<string>, cfg: StrategyConfig, 
   if (window === null || inMiddayLull(row.t)) return [];
   const side = row.bullCross ? 'CALL' : row.bearCross ? 'PUT' : null;
   if (!side) return [];
-  // Window 1 (10:00–10:20 ET) needs an opening-range breakout in the cross direction.
-  if (window === 1 && (!orb || (side==='CALL' ? !(row.c>orb.high) : !(row.c<orb.low)))) return [];
   const key = `cross|${row.t}|${side}`;
   if (seen.has(key)) return [];
   seen.add(key);
