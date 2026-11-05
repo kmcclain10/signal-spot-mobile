@@ -4,8 +4,8 @@ import { iwmConfigFor } from '@/lib/iwm-config';
 
 const now = new Date("2026-10-16T15:00:00Z");
 describe("IWM safety rules", () => {
-  it('starts closing a 10:00–10:20 ET trade at 10:19 ET', () => {
-    expect(iwmWindowExitAt('2026-10-16T14:04:00Z',iwmConfigFor({starting_bankroll:200,bank_trigger:25200,stop_loss_pct:30}),1)).toBe(Date.parse('2026-10-16T14:19:00Z'));
+  it('starts closing a 9:30–9:50 ET trade at 9:49 ET', () => {
+    expect(iwmWindowExitAt('2026-10-16T13:34:00Z',iwmConfigFor({starting_bankroll:200,bank_trigger:25200,stop_loss_pct:30}),1)).toBe(Date.parse('2026-10-16T13:49:00Z'));
   });
   it("ignores quotes older than 15 seconds", () => {
     expect(freshQuote({ bp: 1, ap: 1.1, t: "2026-10-16T14:59:50Z" }, now)).toBe(true);

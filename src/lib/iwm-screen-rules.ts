@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { etParts, windowOf } from "@/lib/iwmWindowStrategy";
+import { etParts } from "@/lib/iwmWindowStrategy";
 
 export const iwmSettingsInput = z.object({
   enabled: z.boolean().optional(),
@@ -15,10 +15,10 @@ export const iwmSettingsInput = z.object({
 }).strict();
 
 const clock = (m: number) => `${Math.floor(m / 60) > 12 ? Math.floor(m / 60) - 12 : Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
-/** ET clock range of a 20-minute window: window 1 = 10:00–10:20, window 15 = 2:40–3:00. */
+/** ET clock range of a 20-minute window: window 1 = 9:30–9:50, window 17 = 2:50–3:00. */
 export function windowRange(window: number) {
-  const start = 600 + (window - 1) * 20;
-  return `${clock(start)}–${clock(start + 20)} ET`;
+  const start = 570 + (window - 1) * 20;
+  return `${clock(start)}–${clock(Math.min(900, start + 20))} ET`;
 }
 
 export function iwmScreenStatus(now: Date, state: Record<string, any> | null, enabled: boolean, maxTrades = 15) {
@@ -28,12 +28,12 @@ export function iwmScreenStatus(now: Date, state: Record<string, any> | null, en
   const iso = now.toISOString(), {date, minutes} = etParts(iso);
   const weekday = new Intl.DateTimeFormat("en-US", {timeZone:"America/New_York", weekday:"short"}).format(now);
   if (["Sat", "Sun"].includes(weekday)) return {label:"Waiting for next session",remaining:null};
-  if (minutes < 600) return {label:"Waiting for 10:00 ET",remaining:null};
+  if (minutes < 570) return {label:"Waiting for 9:30 ET",remaining:null};
   if (minutes >= 900 || (state?.trading_day === date && state.trades_today >= maxTrades)) return {label:"Done for today",remaining:null};
-  const window = windowOf(iso);
-  const remaining = (20 - (minutes - 600) % 20) * 60 - now.getUTCSeconds();
+  const window = Math.floor((minutes - 570) / 20) + 1;
+  const remaining = (Math.min(20 - (minutes - 570) % 20, 900 - minutes)) * 60 - now.getUTCSeconds();
   if (!state?.last_run_at || now.getTime() - Date.parse(state.last_run_at) > 150000) return {label:"Waiting for runner",remaining};
-  return {label:`Scanning • Window ${window}/15 (${windowRange(window ?? 1)})`,remaining};
+  return {label:`Scanning • Window ${window}/17 (${windowRange(window)})`,remaining};
 }
 
 export const journalColumns = {
