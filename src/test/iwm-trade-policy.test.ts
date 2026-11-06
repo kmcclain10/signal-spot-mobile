@@ -13,7 +13,9 @@ describe('latest IWM trade policy',()=> {
   it('holds at -15% and requests the theoretical stop at -20%',()=>{expect(profitAction(trade,0.85)).toBeNull();expect(profitAction(trade,0.8)).toMatchObject({qty:5,reason:'-20% option stop'});});
   it('no trailing lock before +15% peak',()=>expect(profitAction({...trade,peakPremium:1.14},1.01)).toBeNull());
   it('at a +15% peak the floor is +3%',()=>{const t={...trade,peakPremium:1.15};expect(profitAction(t,1.04)).toBeNull();expect(profitAction(t,1.03)).toMatchObject({qty:5,partial:false});});
-  it('trails 12 points below an +80% peak',()=>{const t={...trade,peakPremium:1.8};expect(profitAction(t,1.69)).toBeNull();expect(profitAction(t,1.68)).toMatchObject({qty:5});});
+  it('trails 12 points below a +25% peak',()=>{const t={...trade,peakPremium:1.25};expect(profitAction(t,1.14)).toBeNull();expect(profitAction(t,1.13)).toMatchObject({qty:5});});
+  it('tightens to 7 points below an +80% peak',()=>{const t={...trade,peakPremium:1.8};expect(profitAction(t,1.74)).toBeNull();expect(profitAction(t,1.73)).toMatchObject({qty:5});});
+  it('a +36.5% peak locks at +29.5%',()=>{const t={...trade,peakPremium:1.365};expect(profitAction(t,1.30)).toBeNull();expect(profitAction(t,1.295)).toMatchObject({qty:5});});
   it('exits first CALL reversal only when profitable',()=>{const reversal={...row,t:'2026-10-16T14:04:00Z',red:true,green:false};expect(profitableReversal(trade,reversal,1.01)).toBe(true);expect(profitableReversal(trade,reversal,0.9)).toBe(false);});
   it('exits profitable PUT on its first green candle',()=>expect(profitableReversal({...trade,side:'PUT'},{...row,t:'2026-10-16T14:04:00Z'},1.01)).toBe(true));
   it('only selects the closest ATM strike rather than substituting farther strikes',()=>expect(nearestAtmContracts([{strike_price:279},{strike_price:280},{strike_price:281}],280.2)).toEqual([{strike_price:280}]));

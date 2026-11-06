@@ -25,7 +25,9 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
   const started = Date.now();
   const deadline = () => { if (Date.now()-started>38000) throw new Error("IWM run time budget reached; safely resume next run"); };
   async function checkpoint() {
-    const {error} = await db.rpc("iwm_save_state",{p_user_id:userId,p_token:token,p_state:state,p_events:events});
+    let {error} = await db.rpc("iwm_save_state",{p_user_id:userId,p_token:token,p_state:state,p_events:events});
+    // One short retry absorbs transient database timeouts (the save is idempotent under the same lock token).
+    if (error) { await new Promise(r=>setTimeout(r,750)); ({error} = await db.rpc("iwm_save_state",{p_user_id:userId,p_token:token,p_state:state,p_events:events})); }
     if (error) throw new Error("IWM checkpoint failed; order intent will be reconciled next run");
     events = {};
   }
