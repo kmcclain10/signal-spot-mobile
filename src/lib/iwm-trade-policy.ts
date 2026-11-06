@@ -14,7 +14,7 @@ export const IWM_LULL_START = 690, IWM_LULL_END = 810;
 export const inMiddayLull = (t: string) => { const m = etParts(t).minutes; return m >= IWM_LULL_START && m < IWM_LULL_END; };
 export function crossEntry(row: IndRow, seen: Set<string>, cfg: StrategyConfig, orb?: {high:number;low:number}|null): Signal[] {
   const window = windowOf(row.t,cfg);
-  if (window === null || inMiddayLull(row.t)) return [];
+  if (window === null) return [];
   const side = row.bullCross ? 'CALL' : row.bearCross ? 'PUT' : null;
   if (!side) return [];
   const key = `cross|${row.t}|${side}`;
@@ -22,18 +22,39 @@ export function crossEntry(row: IndRow, seen: Set<string>, cfg: StrategyConfig, 
   seen.add(key);
   return [{ kind:'entry',side,barTime:row.t,window,price:row.c,detail:`Confirmed ${cfg.timeframeMin}-minute 8/20 EMA cross` }];
 }
-export function profitAction(trade: Record<string,any>, bid: number) {
+/** Hold-and-scale rules: no stop loss, half at +20%, the rest at +100%, break-even lock after +20%, 60-minute time exit. */
+export const IWM_HALF_TARGET_PCT = 20;
+export const IWM_FULL_TARGET_PCT = 100;
+export const IWM_MAX_HOLD_MIN = 60;
+export const IWM_RISK_SHARE = 0.5;
+export const IWM_BANK_PROFIT_SHARE = 0.5;
+export function profitAction(trade: Record<string,any>, bid: number, nowMs?: number) {
   const remaining = Number(trade.contracts)-Number(trade.exitFilledQty ?? 0);
-  if (!(remaining>0) || !(trade.entryPremium>0) || !(bid>0)) return null;
-  // Direct premium comparisons avoid boundary rounding at exactly -20%, +35%, +50%.
-  if (bid <= trade.entryPremium*(1-IWM_STOP_PCT/100)) return {reason:'-20% option stop',qty:remaining,partial:false};
-  // No partial sell: once +15% is reached, trail 12 points below the peak (floor at break-even) and ride to the 8/20 cross-back.
+  if (!(remaining>0) || !(trade.entryPremium>0)) return null;
+  const entryMs = Date.parse(trade.tradeRow?.entry_time ?? trade.entryTime);
+  if (nowMs !== undefined && Number.isFinite(entryMs) && nowMs-entryMs >= IWM_MAX_HOLD_MIN*60000) return {reason:'60-minute time exit',qty:remaining,partial:false};
+  if (!(bid>0)) return null;
+  if (bid >= trade.entryPremium*(1+IWM_FULL_TARGET_PCT/100)-1e-9) return {reason:'+100% profit target',qty:remaining,partial:false};
   const peak = Math.max(Number(trade.peakPremium) || 0, bid);
-  const peakPct = (peak/trade.entryPremium-1)*100;
-  const giveback = peakPct >= IWM_TRAIL_TIGHT_AT_PCT-1e-9 ? IWM_TRAIL_TIGHT_GIVEBACK_PTS : IWM_TRAIL_GIVEBACK_PTS;
-  if (peakPct >= IWM_TRAIL_ACTIVATE_PCT-1e-9 && bid <= trade.entryPremium*(1+Math.max(0,peakPct-giveback)/100)+1e-9) {
-    return {reason:`Trailing profit lock (peak +${Math.round(peakPct)}%)`,qty:remaining,partial:false};
+  const hitHalf = peak >= trade.entryPremium*(1+IWM_HALF_TARGET_PCT/100)-1e-9;
+  if (hitHalf && !trade.partialTaken && Number(trade.contracts)>=2) {
+    const half = Math.floor(Number(trade.contracts)/2)-Number(trade.exitFilledQty ?? 0);
+    if (half>0) return {reason:'+20% half profit',qty:half,partial:true};
   }
+  if (hitHalf && bid <= trade.entryPremium+1e-9) return {reason:'Break-even lock after +20%',qty:remaining,partial:false};
+  return null;
+}
+/** Size against half the available balance only. */
+export const riskBalance = (balance: number) => Math.max(0, Number(balance)*IWM_RISK_SHARE);
+/** Half of every winning trade's profit is banked out of the trading balance. */
+export function tradeBankAmount(pnl: number): number {
+  return pnl>0 ? Math.floor(pnl*IWM_BANK_PROFIT_SHARE*100)/100 : 0;
+}
+/** Opposite 8/20 cross while holding: close and flip to the new direction. */
+export function oppositeCross(trade: Record<string,any>, row: IndRow): 'CALL'|'PUT'|null {
+  if (!(Date.parse(row.t)>=Date.parse(trade.entryCloseTime))) return null;
+  if (trade.side==='CALL' && row.bearCross) return 'PUT';
+  if (trade.side==='PUT' && row.bullCross) return 'CALL';
   return null;
 }
 export function profitableReversal(trade: Record<string,any>, row: IndRow, bid: number): boolean {
