@@ -4,6 +4,9 @@ export const IWM_STOP_PCT = 20;
 export const IWM_PARTIAL_TARGET_PCT = 35;
 export const IWM_PROFIT_TARGET_PCT = 50;
 export const IWM_TRAIL_GIVEBACK_PTS = 12;
+/** Tiered trail: once the peak reaches +30%, tighten the giveback to 7 points. */
+export const IWM_TRAIL_TIGHT_AT_PCT = 30;
+export const IWM_TRAIL_TIGHT_GIVEBACK_PTS = 7;
 /** Trailing profit activates at +15%; the floor never drops below break-even once active. */
 export const IWM_TRAIL_ACTIVATE_PCT = 15;
 /** Midday lull (ET minutes): no new entries 11:30 AM – 1:30 PM. */
@@ -27,7 +30,8 @@ export function profitAction(trade: Record<string,any>, bid: number) {
   // No partial sell: once +15% is reached, trail 12 points below the peak (floor at break-even) and ride to the 8/20 cross-back.
   const peak = Math.max(Number(trade.peakPremium) || 0, bid);
   const peakPct = (peak/trade.entryPremium-1)*100;
-  if (peakPct >= IWM_TRAIL_ACTIVATE_PCT-1e-9 && bid <= trade.entryPremium*(1+Math.max(0,peakPct-IWM_TRAIL_GIVEBACK_PTS)/100)+1e-9) {
+  const giveback = peakPct >= IWM_TRAIL_TIGHT_AT_PCT-1e-9 ? IWM_TRAIL_TIGHT_GIVEBACK_PTS : IWM_TRAIL_GIVEBACK_PTS;
+  if (peakPct >= IWM_TRAIL_ACTIVATE_PCT-1e-9 && bid <= trade.entryPremium*(1+Math.max(0,peakPct-giveback)/100)+1e-9) {
     return {reason:`Trailing profit lock (peak +${Math.round(peakPct)}%)`,qty:remaining,partial:false};
   }
   return null;
