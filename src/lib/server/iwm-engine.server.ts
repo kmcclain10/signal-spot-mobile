@@ -1,9 +1,9 @@
-import { addIndicators, contractsFor, settle, etParts, type StrategyConfig } from "@/lib/iwmWindowStrategy";
+import { addIndicators, contractsFor, settle, etParts, windowOf, type StrategyConfig } from "@/lib/iwmWindowStrategy";
 import { closedRegularBars, freshQuote, terminalOrder, forceExitMinutes, iwmForceExitAt, openingRange, sessionEndMinutes, entryBlock, positionMismatch, iwmWindowExitAt } from "@/lib/iwm-engine-rules";
 import { iwmAlpaca } from "@/lib/server/iwm-alpaca.server";
 import { iwmDiscord } from "@/lib/server/iwm-discord.server";
 import { iwmConfigFor } from '@/lib/iwm-config';
-import { crossEntry, profitAction, emaCrossBack, takeTheBid, savingsAmount, IWM_SAVINGS_SYMBOL } from '@/lib/iwm-trade-policy';
+import { crossEntry, profitAction, oppositeCross, riskBalance, tradeBankAmount, takeTheBid, savingsAmount, IWM_SAVINGS_SYMBOL } from '@/lib/iwm-trade-policy';
 
 type Rec = Record<string, any>;
 type Api = Awaited<ReturnType<typeof iwmAlpaca>>;
@@ -51,7 +51,9 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     const t = state.open_trade;
     const pnl = money((exit-t.entryPremium)*100*t.contracts - cfg.feePerContract*2*t.contracts);
     const bank={balance:Number(state.balance),bankedTotal:Number(state.banked_total),cycles:Number(state.cycles)};
-    const banked = settle(bank,pnl,cfg);
+    let banked = settle(bank,pnl,cfg);
+    // Bank half of every winning trade's profit (unless the cycle bank already swept it).
+    if (banked === null) { const half=tradeBankAmount(pnl); if (half>0) { bank.balance=money(bank.balance-half); bank.bankedTotal=money(bank.bankedTotal+half); banked=half; } }
     Object.assign(state,{balance:bank.balance,banked_total:bank.bankedTotal,cycles:bank.cycles,pnl_today:money(Number(state.pnl_today)+pnl),
       wins_today:Number(state.wins_today)+(pnl>0 ? 1:0),losses_today:Number(state.losses_today)+(pnl<0 ? 1:0)});
     const gain=(exit/t.entryPremium-1)*100;
@@ -134,7 +136,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
       t.partialTaken=true;
       t.exitRequested=null;
       state.pending_order=null;
-      note('PARTIAL PROFIT',`IWM ${t.side} • ${t.exitFilledQty}/${t.contracts} contracts sold • +35% target`);
+      note('PARTIAL PROFIT',`IWM ${t.side} • ${t.exitFilledQty}/${t.contracts} contracts sold • +20% half profit`);
       await checkpoint();
     } else {
       // Account for a terminal partially-filled sell before placing only the remainder.
@@ -239,7 +241,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
         const t=state.open_trade, premium=Number(quote.bp);
         t.livePremium=premium;t.quoteTime=quote.t;
         t.peakPremium=Math.max(t.peakPremium,premium); t.floorPct=null;
-        const action=profitAction(t,premium);
+        const action=profitAction(t,premium,now.getTime());
         if (action && !t.exitRequested && !state.pending_order) {
           if (action.partial) await requestExit(action.reason,premium,action.qty,true,Number(quote.ap));
           else t.exitRequested=action.reason;
@@ -258,13 +260,29 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
       if (state.open_trade) {
         state.open_trade.liveUnderlying=last.c;
         const t=state.open_trade;
-        if (!t.exitRequested && emaCrossBack(t,ind)) {
-          t.exitRequested=`8/20 EMA cross-back (8 ${ind.emaFast.toFixed(2)} vs 20 ${ind.emaSlow.toFixed(2)})`; await checkpoint(); await requestExit(t.exitRequested);
+        const flip=oppositeCross(t,ind);
+        if (!t.exitRequested && flip) {
+          t.exitRequested=`Opposite 8/20 cross — flip to ${flip}`;
+          if (settings.enabled && !forced) state.flip_signal={side:flip,barTime:last.t,price:last.c,ema8:ind.emaFast,ema20:ind.emaSlow};
+          await checkpoint(); await requestExit(t.exitRequested);
         }
       } else if (!state.pending_order && settings.enabled && !forced && now.getTime()-Date.parse(last.t)<=cfg.timeframeMin*60000+90000) {
         const keys=new Set<string>(state.alerted_keys ?? []);
         const signals=crossEntry(ind,keys,cfg,openingRange(bars,date));
         state.alerted_keys=[...keys];
+        await enterSignals(signals,ind);
+      }
+      await checkpoint();
+    } else if (state.flip_signal && !state.open_trade && !state.pending_order) {
+      // Flip after the opposite-cross exit has filled, while that bar is still fresh.
+      const f=state.flip_signal; state.flip_signal=null;
+      const window=windowOf(f.barTime,cfg);
+      if (settings.enabled && !forced && window!==null && now.getTime()-Date.parse(f.barTime)<=cfg.timeframeMin*60000+90000) {
+        await enterSignals([{kind:'entry',side:f.side,barTime:f.barTime,window,price:f.price,detail:`Flip on opposite ${cfg.timeframeMin}-minute 8/20 EMA cross`}],{emaFast:f.ema8,emaSlow:f.ema20,osc:NaN});
+      }
+      await checkpoint();
+    }
+    async function enterSignals(signals:any[],ind:any) {
         for (const signal of signals) {
           const id=crypto.randomUUID();
           event("signals",{id,user_id:userId,created_at:now.toISOString(),bar_time:signal.barTime,window:signal.window,kind:signal.kind,side:signal.side,price:signal.price,
@@ -279,8 +297,9 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
             action="no valid option quote";
             if (contract) {
               const bank={balance:Number(state.balance),bankedTotal:Number(state.banked_total),cycles:Number(state.cycles)};
-              let qty=contractsFor(bank,contract.ask,cfg);
-              if (qty<1) {state.balance=cfg.startingBankroll;bank.balance=cfg.startingBankroll;qty=contractsFor(bank,contract.ask,cfg);state.last_error="Bankroll restarted because no contract was affordable";await checkpoint();}
+              const sized=()=>contractsFor({...bank,balance:riskBalance(bank.balance)},contract.ask,cfg);
+              let qty=sized();
+              if (qty<1) {state.balance=cfg.startingBankroll;bank.balance=cfg.startingBankroll;qty=sized();state.last_error="Bankroll restarted because no contract was affordable";await checkpoint();}
               action="insufficient bankroll";
               if (qty>=1) {
                 const clientId=`iwm-${crypto.randomUUID()}`;
@@ -293,8 +312,6 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
           const {error}=await db.from("iwm_signals").update({action}).eq("user_id",userId).eq("id",id);
           if (error) throw new Error("Could not update entry outcome");
         }
-      }
-      await checkpoint();
     }
     await dailyReport(date,minutes);
     ok=true;
