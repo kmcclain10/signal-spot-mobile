@@ -27,7 +27,7 @@ describe("paper IWM order lifecycle",()=> {
     h.api.bars.mockResolvedValue(bars);h.api.chooseContract=vi.fn(async()=>({symbol:'IWM261016C00110000',strike:110,expiry:'2026-10-16',ask:1,bid:0.99}));
     await runIwmUser(h.db,settings,h.api);
     expect(h.api.chooseContract).toHaveBeenCalledWith('CALL',110,'2026-10-16','indicative',expect.any(Date),'IWM',true);
-    expect(h.api.submit).toHaveBeenCalledWith(expect.objectContaining({side:'buy',qty:'2',position_intent:'buy_to_open'}));
+    expect(h.api.submit).toHaveBeenCalledWith(expect.objectContaining({side:'buy',qty:'1',position_intent:'buy_to_open'}));
     expect(h.writes.signals[0]).toMatchObject({kind:'entry',bar_time:'2026-10-16T15:05:00.000Z'});
   });
   it('retries only the unfilled half-profit quantity, not the whole position',async()=> {
@@ -39,12 +39,12 @@ describe("paper IWM order lifecycle",()=> {
     expect(h.state().pending_order.body.qty).toBe('1');expect(h.state().pending_order.targetFilledQty).toBe(2);
     expect(h.state().open_trade.exitFilledQty).toBe(1);
   });
-  it('rides past +35% without a partial sell',async()=> {
+  it('sells half (2 of 4) at +20%',async()=> {
     const h=harness({pending_order:intent});
     h.api.order.mockResolvedValue({id:'buy-order',status:'filled',filled_qty:'4',filled_avg_price:'1',filled_at:'2026-10-16T14:08:00Z'});
-    h.api.quote.mockResolvedValue({bp:1.35,ap:1.36,t:'2026-10-16T14:10:00Z'});
+    h.api.quote.mockResolvedValue({bp:1.2,ap:1.21,t:'2026-10-16T14:10:00Z'});
     await runIwmUser(h.db,settings,h.api);
-    expect(h.state().pending_order).toBeNull(); expect(h.state().open_trade.exitFilledQty).toBe(0);
+    expect(h.state().pending_order).toMatchObject({partial:true,targetFilledQty:2}); expect(h.state().pending_order.body.qty).toBe('2');
   });
   it('keeps the trade open past the entry window end (window filters entries only)',async()=> {
     const h=harness({pending_order:intent});
@@ -64,13 +64,18 @@ describe("paper IWM order lifecycle",()=> {
     expect(h.api.cancel).toHaveBeenCalledWith('buy-order'); expect(h.api.submit).not.toHaveBeenCalled();
     expect(h.state().pending_order).toBeNull();
   });
-  it("creates a position only from a confirmed buy fill and requests the latest -20% stop",async()=> {
-    const h=harness({pending_order:intent});h.api.order.mockResolvedValue({id:"buy-order",status:"filled",filled_qty:"2",filled_avg_price:"1",filled_at:"2026-10-16T14:08:00Z"});
+  it("has no stop loss, then closes at 60 minutes and banks nothing on a loss",async()=> {
+    const h=harness({pending_order:intent});
+    await runIwmUser(h.db,settings,{...h.api,order:vi.fn(async()=>({id:"buy-order",status:"filled",filled_qty:"2",filled_avg_price:"1",filled_at:"2026-10-16T14:08:00Z"}))});
+    expect(h.state().open_trade.contracts).toBe(2);expect(h.state().pending_order).toBeNull();
+    h.api.clock.mockResolvedValue({timestamp:"2026-10-16T15:08:00Z",is_open:true,next_close:"2026-10-16T20:00:00Z"});
+    h.api.quote.mockResolvedValue({bp:0.69,ap:0.7,t:"2026-10-16T15:08:00Z"});
+    h.api.order.mockResolvedValue({id:"buy-order",status:"filled",filled_qty:"2",filled_avg_price:"1",filled_at:"2026-10-16T14:08:00Z"});h.api.order.mockResolvedValue({id:"buy-order",status:"filled",filled_qty:"2",filled_avg_price:"1",filled_at:"2026-10-16T14:08:00Z"});
     await runIwmUser(h.db,settings,h.api);
     expect(h.state().open_trade.contracts).toBe(2);expect(h.state().trades_today).toBe(1);
     expect(h.api.submit).toHaveBeenCalledWith(expect.objectContaining({side:"sell",qty:"2",position_intent:"sell_to_close",limit_price:"0.69"}));
-    expect(h.state().pending_order.reason).toBe("-20% option stop");
-    h.api.order.mockResolvedValue({id:"exit-order",status:"filled",filled_qty:"2",filled_avg_price:"0.69",filled_at:"2026-10-16T14:10:00Z"});
+    expect(h.state().pending_order.reason).toBe("60-minute time exit");
+    h.api.order.mockResolvedValue({id:"exit-order",status:"filled",filled_qty:"2",filled_avg_price:"0.69",filled_at:"2026-10-16T15:08:00Z"});
     await runIwmUser(h.db,settings,h.api);
     expect(h.state().balance).toBe(138);expect(h.state().pnl_today).toBe(-62);expect(h.state().losses_today).toBe(1);
     expect(h.state().open_trade).toBeNull();expect(h.state().pending_order).toBeNull();
@@ -90,7 +95,7 @@ describe("paper IWM order lifecycle",()=> {
     expect(h.state().pending_order.reason).toBe("Force exit before market close");
   });
   it("saves a recoverable order intent before the broker submission",async()=> {
-    const h=harness({pending_order:intent});h.api.order.mockResolvedValue({id:"buy-order",status:"filled",filled_qty:"1",filled_avg_price:"1"});
+    const h=harness({pending_order:intent});h.api.clock.mockResolvedValue({timestamp:"2026-10-16T15:10:00Z",is_open:true,next_close:"2026-10-16T20:00:00Z"});h.api.order.mockResolvedValue({id:"buy-order",status:"filled",filled_qty:"1",filled_avg_price:"1",filled_at:"2026-10-16T14:08:00Z"});
     h.api.submit.mockImplementation(async()=> {
       expect(h.state().pending_order.side).toBe("sell");expect(h.state().pending_order.client_id).toBeTruthy();
       throw new Error("simulated timeout");
@@ -106,7 +111,7 @@ describe("paper IWM order lifecycle",()=> {
   });
   it("cancels a sell after 30 seconds and resends only unfilled contracts with a new broker client ID",async()=> {
     const h=harness({pending_order:intent});
-    h.api.order.mockResolvedValue({id:"buy-order",status:"filled",filled_qty:"2",filled_avg_price:"1"});
+    h.api.order.mockResolvedValue({id:"buy-order",status:"filled",filled_qty:"2",filled_avg_price:"1",filled_at:"2026-10-16T13:00:00Z"});
     await runIwmUser(h.db,settings,h.api);
     const firstClientId=h.state().pending_order.client_id;
     h.api.clock.mockResolvedValue({timestamp:"2026-10-16T14:11:00Z",is_open:true,next_close:"2026-10-16T20:00:00Z"});
