@@ -95,7 +95,7 @@ describe("paper IWM order lifecycle",()=> {
     expect(h.state().pending_order.reason).toBe("Force exit before market close");
   });
   it("saves a recoverable order intent before the broker submission",async()=> {
-    const h=harness({pending_order:intent});h.api.clock.mockResolvedValue({timestamp:"2026-10-16T15:10:00Z",is_open:true,next_close:"2026-10-16T20:00:00Z"});h.api.order.mockResolvedValue({id:"buy-order",status:"filled",filled_qty:"1",filled_avg_price:"1"});
+    const h=harness({pending_order:intent});h.api.clock.mockResolvedValue({timestamp:"2026-10-16T15:10:00Z",is_open:true,next_close:"2026-10-16T20:00:00Z"});h.api.order.mockResolvedValue({id:"buy-order",status:"filled",filled_qty:"1",filled_avg_price:"1",filled_at:"2026-10-16T14:08:00Z"});
     h.api.submit.mockImplementation(async()=> {
       expect(h.state().pending_order.side).toBe("sell");expect(h.state().pending_order.client_id).toBeTruthy();
       throw new Error("simulated timeout");
