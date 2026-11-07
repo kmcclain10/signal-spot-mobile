@@ -70,13 +70,8 @@ export function emaCloseBreak(trade: Record<string,any>, row: IndRow): boolean {
   return trade.side==='CALL' ? row.c<row.emaFast : row.c>row.emaFast;
 }
 export const IWM_SAVINGS_SYMBOL = 'WMT';
-export const IWM_SAVINGS_SHARE = 0.5;
-/** Half of a positive day's net profit, rounded down to cents; Alpaca fractional orders need at least $1. */
-export function savingsAmount(pnlToday: number): number {
-  if (!(pnlToday>0)) return 0;
-  const amt = Math.floor(pnlToday*IWM_SAVINGS_SHARE*100)/100;
-  return amt>=1 ? amt : 0;
-}
+/** The banked half of every winning trade buys fractional WMT right after the trade closes; Alpaca fractional orders need at least $1. */
+export const IWM_SAVINGS_MIN = 1;
 /** Real-money habit: in profit with a 1–2 cent spread, take the bid now (market) instead of waiting for a tick. */
 export const IWM_TIGHT_SPREAD = 0.02;
 export function takeTheBid(entryPremium: number, bid?: number, ask?: number): boolean {
