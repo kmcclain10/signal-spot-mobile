@@ -81,6 +81,23 @@ describe("paper IWM order lifecycle",()=> {
     expect(h.state().open_trade).toBeNull();expect(h.state().pending_order).toBeNull();
     expect(h.writes.trades.at(-1)).toMatchObject({status:"closed",pnl:-62,contracts:2,exit_premium:0.69});
   });
+  it("buys WMT with half the profit right after a winning trade, not at end of day",async()=> {
+    const trade={side:'CALL',optionSymbol:intent.contract.symbol,strike:273,contracts:2,entryPremium:1,peakPremium:1.5,entryCloseTime:'2026-10-16T14:05:00Z',connectionId:'paper-connection',tradeRow:{id:'trade-a',entry_time:'2026-10-16T14:08:00Z',window:1},exitFilledQty:0,exitValue:0};
+    const h=harness({open_trade:trade,pending_order:{id:'sell-order',side:'sell',client_id:'sell-client',submitted_at:'2026-10-16T14:20:00Z',reason:'+100% profit target',body:{side:'sell',qty:'2'}}});
+    h.api.order.mockResolvedValue({id:'sell-order',status:'filled',filled_qty:'2',filled_avg_price:'1.5',filled_at:'2026-10-16T14:21:00Z'});
+    await runIwmUser(h.db,settings,h.api);
+    expect(h.state().open_trade).toBeNull();expect(h.state().banked_total).toBeGreaterThan(0);
+    expect(h.api.submit).toHaveBeenCalledWith(expect.objectContaining({symbol:'WMT',side:'buy',type:'market',notional:(h.state().banked_total).toFixed(2)}));
+    expect(h.writes.savings.at(-1)).toMatchObject({amount:h.state().banked_total});
+  });
+  it("queues a WMT buy under $1 and buys once the queue reaches $1",async()=> {
+    const trade={side:'CALL',optionSymbol:intent.contract.symbol,strike:273,contracts:2,entryPremium:1,peakPremium:1.02,entryCloseTime:'2026-10-16T14:05:00Z',connectionId:'paper-connection',tradeRow:{id:'trade-a',entry_time:'2026-10-16T14:08:00Z',window:1},exitFilledQty:0,exitValue:0};
+    const h=harness({open_trade:trade,pending_order:{id:'sell-order',side:'sell',client_id:'sell-client',submitted_at:'2026-10-16T14:20:00Z',reason:'+100% profit target',body:{side:'sell',qty:'2'}}});
+    h.api.order.mockResolvedValue({id:'sell-order',status:'filled',filled_qty:'2',filled_avg_price:'1.02',filled_at:'2026-10-16T14:21:00Z'});
+    await runIwmUser(h.db,settings,h.api);
+    expect(h.api.submit).not.toHaveBeenCalledWith(expect.objectContaining({symbol:'WMT'}));
+    expect(Number(h.state().savings_queue)).toBeGreaterThan(0);
+  });
   it("does not resend when cancellation has not become terminal",async()=> {
     const h=harness({pending_order:intent});h.api.order.mockResolvedValue({id:"buy-order",status:"partially_filled",filled_qty:"1"});
     h.api.cancel.mockResolvedValue({id:"buy-order",status:"pending_cancel",filled_qty:"1"});
