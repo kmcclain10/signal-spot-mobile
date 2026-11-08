@@ -402,6 +402,7 @@ export type Database = {
           starting_bankroll: number
           stop_loss_pct: number
           timeframe_min: number
+          trading_env: string
           user_id: string
         }
         Insert: {
@@ -417,6 +418,7 @@ export type Database = {
           starting_bankroll?: number
           stop_loss_pct?: number
           timeframe_min?: number
+          trading_env?: string
           user_id: string
         }
         Update: {
@@ -432,6 +434,7 @@ export type Database = {
           starting_bankroll?: number
           stop_loss_pct?: number
           timeframe_min?: number
+          trading_env?: string
           user_id?: string
         }
         Relationships: []
