@@ -8,7 +8,9 @@ type Rec = Record<string, any>;
 async function broker(userId: string) {
   const { iwmAlpaca } = await import("@/lib/server/iwm-alpaca.server");
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return { api: await iwmAlpaca(supabaseAdmin, userId), db: supabaseAdmin };
+  const { data } = await supabaseAdmin.from("iwm_strategy_settings").select("trading_env").eq("user_id", userId).maybeSingle();
+  const env = data?.trading_env === "live" ? "live" : "paper";
+  return { api: await iwmAlpaca(supabaseAdmin, userId, undefined, env), db: supabaseAdmin, env };
 }
 const pick = (o: Rec) => ({
   id: o.id, symbol: o.symbol, side: o.side, qty: Number(o.qty ?? 0), filled_qty: Number(o.filled_qty ?? 0), type: o.type,

@@ -1,5 +1,5 @@
 import { decryptJson } from "@/lib/server/providers.server";
-import { requireIwmPaper, freshQuote } from "@/lib/iwm-engine-rules";
+import { requireIwmAccount, freshQuote, type IwmEnv } from "@/lib/iwm-engine-rules";
 import { etParts, type Side, type Bar, type StrategyConfig } from "@/lib/iwmWindowStrategy";
 import { optionContractParams } from "@/lib/trade-rules";
 import { nearestAtmContracts } from '@/lib/iwm-trade-policy';
@@ -8,16 +8,17 @@ type Rec = Record<string, any>;
 export class IwmAlpacaError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
-export async function iwmAlpaca(db: any, userId: string, connectionId?: string) {
-  let query = db.from("connections").select("*").eq("user_id", userId).eq("provider", "alpaca").eq("environment", "paper");
+export async function iwmAlpaca(db: any, userId: string, connectionId?: string, env: IwmEnv = "paper") {
+  const label = env === "live" ? "live" : "paper";
+  let query = db.from("connections").select("*").eq("user_id", userId).eq("provider", "alpaca").eq("environment", env);
   if (connectionId) query = query.eq("id", connectionId);
   const { data, error } = await query.order("is_default_broker", {ascending:false}).order("created_at").limit(1);
-  if (error) throw new Error("Could not read the paper connection");
+  if (error) throw new Error(`Could not read the ${label} connection`);
   const conn = data?.[0];
-  if (!conn) throw new Error("Add an Alpaca paper connection before enabling IWM automation");
-  const base = requireIwmPaper(conn);
+  if (!conn) throw new Error(`Add an Alpaca ${label} connection in Settings → Connections first`);
+  const base = requireIwmAccount(conn, env);
   const secrets = await decryptJson(conn.secret_cipher, conn.secret_iv);
-  if (!secrets.key_id || !secrets.secret_key) throw new Error("Paper connection has no saved credentials");
+  if (!secrets.key_id || !secrets.secret_key) throw new Error(`The ${label} connection has no saved credentials`);
   const headers = {"APCA-API-KEY-ID": secrets.key_id,"APCA-API-SECRET-KEY": secrets.secret_key,"Content-Type":"application/json"};
   const call = async (path: string, method = "GET", body?: Rec, marketData = false): Promise<any> => {
     try {
@@ -66,6 +67,7 @@ export async function iwmAlpaca(db: any, userId: string, connectionId?: string) 
   }
   return {
     connectionId:conn.id,
+    env,
     /** Generic paper-only broker call for the manual Trade desk. */
     call,
     clock:()=>call("/v2/clock"),
@@ -90,7 +92,7 @@ export async function iwmAlpaca(db: any, userId: string, connectionId?: string) 
       catch(e) { if (e instanceof IwmAlpacaError && e.status===404) return null; throw e; }
     },
     submit:async(body:Rec)=> {
-      requireIwmPaper(conn);
+      requireIwmAccount(conn, env);
       return call("/v2/orders","POST",body);
     },
     async cancel(id:string) {
@@ -105,7 +107,7 @@ export async function iwmAlpaca(db: any, userId: string, connectionId?: string) 
       const bars = await pages("/v2/stocks/bars",{symbols:"IWM",timeframe:`${cfg.timeframeMin}Min`,start:new Date(now.getTime()-3*86400000).toISOString(),end:now.toISOString(),feed:stockFeed,adjustment:"raw",limit:"10000"},"bars",true);
       const last = bars[bars.length-1];
       const contract = last ? await chooseContract("CALL",last.c,etParts(now.toISOString()).date,optionFeed,now) : null;
-      return {paper:true, marketOpen:!!clock.is_open, optionsLevel:Number(account.options_trading_level ?? 0), bars:bars.length, optionQuotes:!!contract, discordConfigured:!!process.env["DISCORD_WEBHOOK_URL"]};
+      return {paper:env==="paper", env, marketOpen:!!clock.is_open, optionsLevel:Number(account.options_trading_level ?? 0), bars:bars.length, optionQuotes:!!contract, discordConfigured:!!process.env["DISCORD_WEBHOOK_URL"]};
     },
   };
 }

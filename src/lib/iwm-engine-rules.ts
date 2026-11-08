@@ -1,6 +1,17 @@
 import { etParts, windowOf, type Bar, type StrategyConfig } from "@/lib/iwmWindowStrategy";
 
 export const IWM_PAPER_URL = "https://paper-api.alpaca.markets";
+export const IWM_LIVE_URL = "https://api.alpaca.markets";
+export type IwmEnv = "paper" | "live";
+/** Only the account the owner deliberately selected may receive orders; a mismatched connection is refused. */
+export function requireIwmAccount(connection: { provider: string; environment: string; config?: Record<string, any> }, env: IwmEnv) {
+  const url = env === "live" ? IWM_LIVE_URL : IWM_PAPER_URL;
+  if (connection.provider !== "alpaca" || connection.environment !== env ||
+      (connection.config?.base_url && connection.config.base_url.replace(/\/$/, "") !== url)) {
+    throw new Error(env === "live" ? "Selected Live mode but the connection is not an Alpaca live account." : "IWM automation requires an Alpaca paper connection; live orders are prohibited.");
+  }
+  return url;
+}
 export function requireIwmPaper(connection: { provider: string; environment: string; config?: Record<string, any> }) {
   if (connection.provider !== "alpaca" || connection.environment !== "paper" ||
       (connection.config?.base_url && connection.config.base_url.replace(/\/$/, "") !== IWM_PAPER_URL)) {

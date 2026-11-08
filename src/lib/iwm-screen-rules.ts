@@ -12,6 +12,7 @@ export const iwmSettingsInput = z.object({
   discord_enabled: z.boolean().optional(),
   kill_switch: z.boolean().optional(),
   max_daily_loss: z.number().positive().max(100000).optional(),
+  trading_env: z.enum(["paper", "live"]).optional(),
 }).strict();
 
 const clock = (m: number) => `${Math.floor(m / 60) > 12 ? Math.floor(m / 60) - 12 : Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;

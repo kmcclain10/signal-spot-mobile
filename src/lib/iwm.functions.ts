@@ -33,16 +33,18 @@ export const saveIwmSettings = createServerFn({method:"POST"})
     if (data.enabled) {
       const {iwmAlpaca} = await import("@/lib/server/iwm-alpaca.server");
       const {supabaseAdmin} = await import("@/integrations/supabase/client.server");
-      const api = await iwmAlpaca(supabaseAdmin,context.userId);
+      let env = data.trading_env;
+      if (!env) { const cur = await context.supabase.from("iwm_strategy_settings").select("trading_env").eq("user_id",context.userId).maybeSingle(); env = cur.data?.trading_env==="live"?"live":"paper"; }
+      const api = await iwmAlpaca(supabaseAdmin,context.userId,undefined,env);
       const account = await api.account();
-      if (Number(account.options_trading_level ?? 0)<2 || account.trading_blocked) throw new Error("Paper account must allow buying options before enabling IWM");
+      if (Number(account.options_trading_level ?? 0)<2 || account.trading_blocked) throw new Error(`${env==="live"?"Live":"Paper"} account must allow buying options before enabling IWM`);
     }
     const existing = await context.supabase.from("iwm_strategy_settings").select("user_id").eq("user_id",context.userId).maybeSingle();
     if(existing.error) throw new Error("Could not read IWM settings");
     const result = existing.data
       ? await context.supabase.from("iwm_strategy_settings").update(data).eq("user_id",context.userId).select("*").single()
       : await context.supabase.from("iwm_strategy_settings").insert({user_id:context.userId,...data}).select("*").single();
-    if(result.error) throw new Error("Could not save IWM settings");
+    if(result.error) throw new Error(result.error.code==="42501" ? result.error.message : "Could not save IWM settings");
     return result.data;
   });
 
@@ -52,7 +54,8 @@ export const verifyIwmConnection = createServerFn({method:"POST"})
   .handler(async({context})=> {
     const {iwmAlpaca} = await import("@/lib/server/iwm-alpaca.server");
     const {supabaseAdmin} = await import("@/integrations/supabase/client.server");
-    const api=await iwmAlpaca(supabaseAdmin,context.userId);
+    const cur=await context.supabase.from("iwm_strategy_settings").select("trading_env").eq("user_id",context.userId).maybeSingle();
+    const api=await iwmAlpaca(supabaseAdmin,context.userId,undefined,cur.data?.trading_env==="live"?"live":"paper");
     return api.verify({...DEFAULT_CONFIG,timeframeMin:IWM_TIMEFRAME_MIN},"iex","indicative");
   });
 
