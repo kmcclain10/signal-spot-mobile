@@ -38,6 +38,9 @@ function TradePage() {
   const [symbol, setSymbol] = useState(search.symbol ?? "IWM");
   useEffect(() => { setSymbol(search.symbol ?? "IWM"); setTab(search.option ? "option" : "stock"); }, [search.symbol, search.option, search.side]);
   return <div className="mx-auto max-w-5xl space-y-5">
+    {data.env === "live"
+      ? <div role="alert" className="rounded-md border border-warning bg-warning/10 p-3 text-sm font-bold text-warning">LIVE ACCOUNT — orders here use real money. Switch back to Paper on the IWM screen.</div>
+      : <div className="rounded-md border p-2 text-xs text-gain">PAPER ACCOUNT — practice money</div>}
     <header className="flex items-start justify-between gap-3">
       <div><div className="mb-1 flex items-center gap-2 text-xs text-gain"><ShieldCheck className="size-4" />PAPER ACCOUNT</div><h1 className="text-2xl font-semibold">Trade</h1></div>
       <Button size="icon" variant="ghost" aria-label="Refresh" onClick={refresh}><RefreshCw /></Button>
