@@ -91,9 +91,9 @@ describe("paper IWM order lifecycle",()=> {
     expect(h.writes.savings.at(-1)).toMatchObject({amount:h.state().banked_total});
   });
   it("queues a WMT buy under $1 and buys once the queue reaches $1",async()=> {
-    const trade={side:'CALL',optionSymbol:intent.contract.symbol,strike:273,contracts:2,entryPremium:1,peakPremium:1.02,entryCloseTime:'2026-10-16T14:05:00Z',connectionId:'paper-connection',tradeRow:{id:'trade-a',entry_time:'2026-10-16T14:08:00Z',window:1},exitFilledQty:0,exitValue:0};
+    const trade={side:'CALL',optionSymbol:intent.contract.symbol,strike:273,contracts:2,entryPremium:1,peakPremium:1.005,entryCloseTime:'2026-10-16T14:05:00Z',connectionId:'paper-connection',tradeRow:{id:'trade-a',entry_time:'2026-10-16T14:08:00Z',window:1},exitFilledQty:0,exitValue:0};
     const h=harness({open_trade:trade,pending_order:{id:'sell-order',side:'sell',client_id:'sell-client',submitted_at:'2026-10-16T14:20:00Z',reason:'+100% profit target',body:{side:'sell',qty:'2'}}});
-    h.api.order.mockResolvedValue({id:'sell-order',status:'filled',filled_qty:'2',filled_avg_price:'1.02',filled_at:'2026-10-16T14:21:00Z'});
+    h.api.order.mockResolvedValue({id:'sell-order',status:'filled',filled_qty:'2',filled_avg_price:'1.005',filled_at:'2026-10-16T14:21:00Z'});
     await runIwmUser(h.db,settings,h.api);
     expect(h.api.submit).not.toHaveBeenCalledWith(expect.objectContaining({symbol:'WMT'}));
     expect(Number(h.state().savings_queue)).toBeGreaterThan(0);
