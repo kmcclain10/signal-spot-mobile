@@ -25,7 +25,7 @@ const pick = (o: Rec) => ({
 export const getTradeDesk = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { api } = await broker(context.userId);
+    const { api, env } = await broker(context.userId);
     const [account, positions, open, recent, clock] = await Promise.all([
       api.call("/v2/account"), api.call("/v2/positions"),
       api.call("/v2/orders?status=open&limit=50&nested=false"), api.call("/v2/orders?status=closed&limit=20"), api.clock(),
@@ -36,6 +36,7 @@ export const getTradeDesk = createServerFn({ method: "POST" })
     if(pulse.error) throw new Error("Could not read bot ownership");
     const pulseSymbols=new Set((pulse.data??[]).map(r=>(r.state as Rec)?.position?.symbol));
     return {
+      env,
       account: { equity: Number(account.equity), cash: Number(account.cash), buying_power: Number(account.buying_power),
         options_buying_power: Number(account.options_buying_power ?? account.buying_power), options_level: Number(account.options_trading_level ?? 0),
         day_pnl: Number(account.equity) - Number(account.last_equity) },
