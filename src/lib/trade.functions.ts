@@ -8,7 +8,9 @@ type Rec = Record<string, any>;
 async function broker(userId: string) {
   const { iwmAlpaca } = await import("@/lib/server/iwm-alpaca.server");
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return { api: await iwmAlpaca(supabaseAdmin, userId), db: supabaseAdmin };
+  const { data } = await supabaseAdmin.from("iwm_strategy_settings").select("trading_env").eq("user_id", userId).maybeSingle();
+  const env = data?.trading_env === "live" ? "live" : "paper";
+  return { api: await iwmAlpaca(supabaseAdmin, userId, undefined, env), db: supabaseAdmin, env };
 }
 const pick = (o: Rec) => ({
   id: o.id, symbol: o.symbol, side: o.side, qty: Number(o.qty ?? 0), filled_qty: Number(o.filled_qty ?? 0), type: o.type,
@@ -23,7 +25,7 @@ const pick = (o: Rec) => ({
 export const getTradeDesk = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { api } = await broker(context.userId);
+    const { api, env } = await broker(context.userId);
     const [account, positions, open, recent, clock] = await Promise.all([
       api.call("/v2/account"), api.call("/v2/positions"),
       api.call("/v2/orders?status=open&limit=50&nested=false"), api.call("/v2/orders?status=closed&limit=20"), api.clock(),
@@ -34,6 +36,7 @@ export const getTradeDesk = createServerFn({ method: "POST" })
     if(pulse.error) throw new Error("Could not read bot ownership");
     const pulseSymbols=new Set((pulse.data??[]).map(r=>(r.state as Rec)?.position?.symbol));
     return {
+      env,
       account: { equity: Number(account.equity), cash: Number(account.cash), buying_power: Number(account.buying_power),
         options_buying_power: Number(account.options_buying_power ?? account.buying_power), options_level: Number(account.options_trading_level ?? 0),
         day_pnl: Number(account.equity) - Number(account.last_equity) },

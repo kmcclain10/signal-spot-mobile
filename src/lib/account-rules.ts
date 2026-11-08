@@ -5,6 +5,7 @@ export function backgroundLockDue(hiddenAt: number | null, now: number) {
 }
 export function sensitiveIwmChange(old: Record<string, unknown>, next: Record<string, unknown>) {
   if (old.kill_switch === true && (next.kill_switch === false || next.enabled === true)) return true;
+  if (next.trading_env === "live" && old.trading_env !== "live") return true;
   return ["max_daily_loss", "stop_loss_pct", "max_trades_per_day", "force_exit_time"].some(k => next[k] !== undefined && next[k] !== old[k]);
 }
 export function sensitiveAccountChange(old: Record<string, unknown>, next: Record<string, unknown>) {

@@ -210,7 +210,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     note("DAILY REPORT",`${date} • ${state.trades_today} trades • ${state.wins_today}W/${state.losses_today}L • P&L $${Number(state.pnl_today).toFixed(2)} • bankroll $${Number(state.balance).toFixed(2)}`);
   }
   try {
-    api=apiOverride ?? await iwmAlpaca(db,userId,state.pending_order?.connection_id ?? state.open_trade?.connectionId);
+    api=apiOverride ?? await iwmAlpaca(db,userId,state.pending_order?.connection_id ?? state.open_trade?.connectionId,settings.trading_env==="live"?"live":"paper");
     const clock=await api.clock(); now=new Date(clock.timestamp);
     if (!Number.isFinite(now.getTime())) throw new Error("Alpaca clock returned an invalid time");
     const {date,minutes}=etParts(now.toISOString());
