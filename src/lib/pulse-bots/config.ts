@@ -2,7 +2,7 @@ import { z } from "zod";
 import { getStrategy, type BotConfig, type StrategyId, type StrategySignal, type ResolvedSettings } from "./index";
 import type { Bar } from "./indicators";
 
-export const separateStrategyIds = ["orb", "vwap_reclaim", "ema_pullback", "ttm_squeeze", "rsi2", "macd_cross", "band_bounce", "supertrend", "donchian"] as const;
+export const separateStrategyIds = ["orb", "vwap_reclaim", "ema_pullback", "ttm_squeeze", "rsi2", "macd_cross", "band_bounce", "supertrend", "donchian", "scalpers"] as const;
 const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 export const pulseConfigSchema = z.object({
   strategyId: z.enum(separateStrategyIds), name: z.string().trim().min(1).max(60),
