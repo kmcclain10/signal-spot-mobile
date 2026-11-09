@@ -12,7 +12,7 @@ function bars(lastClose: number, lastLow: number) {
     const c = 200 - k * 0.05; const t = new Date(Date.UTC(2026, 10, 9, 14, 30 + k * 5)).toISOString();
     out.push({ t, o: c, h: c + 0.05, l: c - 0.05, c, v: 1000 });
   }
-  out.push({ t: new Date(Date.UTC(2026, 10, 9, 15, 30)).toISOString(), o: 199.5, h: lastClose + 0.05, l: lastLow, c: lastClose, v: 50000 });
+  out.push({ t: new Date(Date.UTC(2026, 10, 9, 15, 30)).toISOString(), o: 199.5, h: lastClose + 0.05, l: lastLow, c: lastClose, v: 1000 });
   return out;
 }
 
