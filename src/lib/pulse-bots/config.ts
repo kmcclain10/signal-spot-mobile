@@ -25,6 +25,7 @@ export const pulseConfigSchema = z.object({
 
 export function defaultPulseConfig(id: StrategyId): BotConfig {
   const s=getStrategy(id);
+  if(id==="scalpers") return {strategyId:id,name:s.botName,symbols:["IWM"],timeframe:5,riskLevel:"balanced",instrument:"options",direction:"both",allocation:500,options:{dte:0,strikeOffset:0},overrides:{maxTradesPerDay:3,dailyLossPct:2,useUnderlyingLevels:true,useStrategyExit:true},executionMode:"auto",enabled:false} as BotConfig;
   return {strategyId:id,name:s.botName,symbols:["SPY"],timeframe:s.defaultTimeframe,riskLevel:"balanced",instrument:"shares",direction:"long",allocation:200,executionMode:"auto",enabled:false};
 }
 

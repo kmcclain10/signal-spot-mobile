@@ -5,7 +5,7 @@ import { isBotOrder,assertNoPulseOwnership } from "@/lib/bot-ownership";
 
 describe("separate ZIP bot rules",()=>{
   it("contains nine separate strategies and does not accept a configurable IWM bot",()=>{
-    expect(STRATEGIES.filter(s=>s.id!=="window20")).toHaveLength(9);
+    expect(STRATEGIES.filter(s=>s.id!=="window20")).toHaveLength(10);
     expect(pulseConfigSchema.safeParse(defaultPulseConfig("window20")).success).toBe(false);
   });
   it("defaults new bots to disabled paper automation with $200 allocation",()=>{
