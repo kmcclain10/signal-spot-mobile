@@ -41,7 +41,7 @@ export interface StrategyDef {
 }
 export type StrategyId =
   | "window20" | "orb" | "vwap_reclaim" | "ema_pullback" | "ttm_squeeze"
-  | "rsi2" | "macd_cross" | "band_bounce" | "supertrend" | "donchian";
+  | "rsi2" | "macd_cross" | "band_bounce" | "supertrend" | "donchian" | "scalpers";
 
 const P = (key: string, label: string, min: number, max: number, step: number,
   presets: [number, number, number, number], help: string): ParamSpec => ({ key, label, min, max, step, presets, help });
@@ -320,7 +320,44 @@ const donchian: StrategyDef = {
   },
 };
 
-export const STRATEGIES: StrategyDef[] = [window20, orb, vwapReclaim, emaPullback, ttm, rsi2, macdCross, bandBounce, superTrendDef, donchian];
+// ------------------------------------------------------------------ Scalpers
+const scalpers: StrategyDef = {
+  id: "scalpers", botName: "The Scalpers", name: "9 EMA / VWAP Cross Scalp", category: "Momentum", style: "intraday",
+  summary: "Buys a CALL when the 9 EMA crosses above VWAP and the candle closes above VWAP (PUT on the mirror cross). Stop under the signal candle, target 2R.",
+  rules: ["5-minute candles, entries 9:45 AM–3:30 PM ET", "Long: 9 EMA crosses above VWAP and the candle closes above VWAP (short: mirror)",
+    "Underlying stop = signal candle low − $0.02 (high + $0.02 for shorts); skipped if wider than 0.40% of price, at least 0.10%",
+    "Target = 2R on the underlying", "Strategy exit: 9 EMA crosses back through VWAP against the trade", "Max 3 entries per day, flat by 3:55 PM ET"],
+  timeframes: [5], defaultTimeframe: 5, minBars: 12,
+  params: [
+    P("emaLen", "EMA length", 5, 21, 1, [9, 9, 9, 9], ""),
+    P("rMultiple", "Target (R multiple)", 0.5, 10, 0.5, [2, 2, 2, 2], "Target distance as a multiple of the stop distance"),
+    P("stopBuffer", "Stop buffer ($)", 0, 0.5, 0.01, [0.02, 0.02, 0.02, 0.02], "Beyond the signal candle"),
+    P("minStopPct", "Min stop distance (%)", 0.01, 1, 0.01, [0.1, 0.1, 0.1, 0.1], ""),
+    P("maxStopPct", "Max stop distance (%)", 0.05, 2, 0.05, [0.4, 0.4, 0.4, 1], "Skip the trade if the stop is wider"),
+  ],
+  evaluate(b, p, ctx) {
+    const i = b.length - 1, last = b[i], prev = b[i - 1];
+    const vw = vwap(b), e = ema(closes(b), p.emaLen);
+    const sameDay = !!prev && etParts(prev.t).date === etParts(last.t).date;
+    const up = sameDay && e[i] > vw[i] && e[i - 1] <= vw[i - 1];
+    const dn = sameDay && e[i] < vw[i] && e[i - 1] >= vw[i - 1];
+    const out: StrategySignal = { note: `9 EMA ${e[i].toFixed(2)} ${e[i] > vw[i] ? "above" : "below"} VWAP ${vw[i].toFixed(2)}`,
+      exitLong: dn ? "9 EMA crossed back below VWAP" : undefined, exitShort: up ? "9 EMA crossed back above VWAP" : undefined };
+    if (!inEntryWindow(last, ctx, this.style)) return { ...out, note: "Outside entry hours" };
+    const ref = last.c, minD = ref * p.minStopPct / 100, maxD = ref * p.maxStopPct / 100;
+    const plan = (side: Dir) => {
+      let stop = side === "long" ? last.l - p.stopBuffer : last.h + p.stopBuffer; let d = Math.abs(ref - stop);
+      if (d < minD) { d = minD; stop = side === "long" ? ref - d : ref + d; }
+      if (d > maxD) { out.note = `Cross found but stop ${(d / ref * 100).toFixed(2)}% is too wide — skipped`; return; }
+      out.entry = { side, reason: `9 EMA crossed ${side === "long" ? "above" : "below"} VWAP ${vw[i].toFixed(2)}`,
+        stop: Math.round(stop * 100) / 100, target: Math.round((side === "long" ? ref + p.rMultiple * d : ref - p.rMultiple * d) * 100) / 100 };
+    };
+    if (up && last.c > vw[i]) plan("long"); else if (dn && last.c < vw[i]) plan("short");
+    return out;
+  },
+};
+
+export const STRATEGIES: StrategyDef[] = [window20, orb, vwapReclaim, emaPullback, ttm, rsi2, macdCross, bandBounce, superTrendDef, donchian, scalpers];
 export const getStrategy = (id: StrategyId) => {
   const s = STRATEGIES.find((x) => x.id === id); if (!s) throw new Error(`unknown strategy ${id}`); return s;
 };
