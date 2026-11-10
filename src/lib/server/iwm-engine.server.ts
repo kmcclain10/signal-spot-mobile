@@ -3,7 +3,7 @@ import { closedRegularBars, freshQuote, terminalOrder, forceExitMinutes, iwmForc
 import { iwmAlpaca } from "@/lib/server/iwm-alpaca.server";
 import { iwmDiscord } from "@/lib/server/iwm-discord.server";
 import { iwmConfigFor } from '@/lib/iwm-config';
-import { crossEntry, profitAction, oppositeCross, riskBalance, tradeBankAmount, IWM_MAX_HOLD_MIN, takeTheBid, IWM_SAVINGS_MIN, IWM_SAVINGS_SYMBOL } from '@/lib/iwm-trade-policy';
+import { crossEntry, profitAction, oppositeCross, riskBalance, tradeBankAmount, takeTheBid, IWM_SAVINGS_MIN, IWM_SAVINGS_SYMBOL } from '@/lib/iwm-trade-policy';
 
 type Rec = Record<string, any>;
 type Api = Awaited<ReturnType<typeof iwmAlpaca>>;
@@ -138,7 +138,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
       t.partialTaken=true;
       t.exitRequested=null;
       state.pending_order=null;
-      note('PARTIAL PROFIT',`IWM ${t.side} • ${t.exitFilledQty}/${t.contracts} contracts sold • +20% half profit`);
+      note('PARTIAL PROFIT',`IWM ${t.side} • ${t.exitFilledQty}/${t.contracts} contracts sold • partial profit`);
       await checkpoint();
     } else {
       // Account for a terminal partially-filled sell before placing only the remainder.
@@ -240,8 +240,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     await savingsSweep(date,pastForceExit && !settings.kill_switch && !state.open_trade && !state.pending_order);
     if (state.open_trade) {
       if (forced) state.open_trade.exitRequested=settings.kill_switch ? "Kill switch":"Force exit before market close";
-      // 60-minute time exit runs even without a fresh option quote.
-      else if (!state.open_trade.exitRequested && now.getTime()-Date.parse(state.open_trade.tradeRow?.entry_time)>=IWM_MAX_HOLD_MIN*60000) state.open_trade.exitRequested="60-minute time exit";
+
       // The 20-minute window filters entries only; open trades ride past it until the 8 EMA close break.
       const windowExit = false;
       let quote:any;

@@ -10,10 +10,10 @@ describe('latest IWM trade policy',()=> {
   it('does not duplicate a cross',()=>{const seen=new Set<string>();crossEntry(row,seen,cfg);expect(crossEntry(row,seen,cfg)).toEqual([]);});
   it('allows entries during the old 11:30–1:30 midday pause',()=>expect(crossEntry({...row,t:'2026-10-16T16:35:00Z'},new Set(),cfg)).toHaveLength(1));
   it('has no stop loss: holds at -60%',()=>expect(profitAction(trade,0.4)).toBeNull());
-  it('sells half (2 of 5) at +20%',()=>{expect(profitAction({...trade,peakPremium:1.19},1.19)).toBeNull();expect(profitAction({...trade,peakPremium:1.2},1.2)).toMatchObject({qty:2,partial:true});});
-  it('sells the rest at +100%',()=>expect(profitAction({...trade,exitFilledQty:2,partialTaken:true,peakPremium:2},2)).toMatchObject({qty:3,partial:false,reason:'+100% profit target'}));
-  it('after +20%, sells the rest back at the entry price',()=>{const t={...trade,exitFilledQty:2,partialTaken:true,peakPremium:1.3};expect(profitAction(t,1.01)).toBeNull();expect(profitAction(t,1)).toMatchObject({qty:3});});
-  it('closes after 60 minutes',()=>{const t={...trade,tradeRow:{entry_time:'2026-10-16T14:00:00Z'}};expect(profitAction(t,0.9,Date.parse('2026-10-16T14:59:00Z'))).toBeNull();expect(profitAction(t,0.9,Date.parse('2026-10-16T15:00:00Z'))).toMatchObject({qty:5,reason:'60-minute time exit'});});
+  it('no partial sells or break-even lock below +50%',()=>{expect(profitAction({...trade,peakPremium:1.4},1.0)).toBeNull();expect(profitAction({...trade,peakPremium:1.2},0.95)).toBeNull();});
+  it('trailer arms at +50% and sells 10 points off peak gain',()=>{const t={...trade,peakPremium:1.5};expect(profitAction(t,1.41)).toBeNull();expect(profitAction(t,1.4)).toMatchObject({qty:5,partial:false});const r={...trade,peakPremium:3};expect(profitAction(r,2.91)).toBeNull();expect(profitAction(r,2.9)).toMatchObject({qty:5});});
+  it('sells everything at +1000%',()=>expect(profitAction({...trade,peakPremium:11},11)).toMatchObject({qty:5,reason:'+1000% max target'}));
+  it('has no 60-minute time exit',()=>{const t={...trade,tradeRow:{entry_time:'2026-10-16T14:00:00Z'}};expect(profitAction(t,0.9,Date.parse('2026-10-16T16:00:00Z'))).toBeNull();});
   it('flips on the opposite cross',()=>{expect(oppositeCross(trade,{...row,t:'2026-10-16T14:05:00Z',bullCross:false,bearCross:true})).toBe('PUT');expect(oppositeCross(trade,{...row,t:'2026-10-16T14:05:00Z'})).toBeNull();});
   it('risks at most half the balance and banks half of each winning trade',()=>{expect(riskBalance(500)).toBe(250);expect(tradeBankAmount(84)).toBe(42);expect(tradeBankAmount(-30)).toBe(0);});
   it('exits first CALL reversal only when profitable',()=>{const reversal={...row,t:'2026-10-16T14:04:00Z',red:true,green:false};expect(profitableReversal(trade,reversal,1.01)).toBe(true);expect(profitableReversal(trade,reversal,0.9)).toBe(false);});

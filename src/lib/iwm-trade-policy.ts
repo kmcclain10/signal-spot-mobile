@@ -26,22 +26,22 @@ export function crossEntry(row: IndRow, seen: Set<string>, cfg: StrategyConfig, 
 export const IWM_HALF_TARGET_PCT = 20;
 export const IWM_FULL_TARGET_PCT = 100;
 export const IWM_MAX_HOLD_MIN = 60;
+/** Current rules: no stop, no break-even lock, no time limit. Trailer arms at +50% peak and sells 10 points off the peak gain; hard cap +1000%. */
+export const IWM_TRAIL_START_PCT = 50;
+export const IWM_TRAIL_PTS = 10;
+export const IWM_MAX_TARGET_PCT = 1000;
 export const IWM_RISK_SHARE = 0.5;
 export const IWM_BANK_PROFIT_SHARE = 0.5;
 export function profitAction(trade: Record<string,any>, bid: number, nowMs?: number) {
   const remaining = Number(trade.contracts)-Number(trade.exitFilledQty ?? 0);
   if (!(remaining>0) || !(trade.entryPremium>0)) return null;
-  const entryMs = Date.parse(trade.tradeRow?.entry_time ?? trade.entryTime);
-  if (nowMs !== undefined && Number.isFinite(entryMs) && nowMs-entryMs >= IWM_MAX_HOLD_MIN*60000) return {reason:'60-minute time exit',qty:remaining,partial:false};
+  void nowMs;
   if (!(bid>0)) return null;
-  if (bid >= trade.entryPremium*(1+IWM_FULL_TARGET_PCT/100)-1e-9) return {reason:'+100% profit target',qty:remaining,partial:false};
   const peak = Math.max(Number(trade.peakPremium) || 0, bid);
-  const hitHalf = peak >= trade.entryPremium*(1+IWM_HALF_TARGET_PCT/100)-1e-9;
-  if (hitHalf && !trade.partialTaken && Number(trade.contracts)>=2) {
-    const half = Math.floor(Number(trade.contracts)/2)-Number(trade.exitFilledQty ?? 0);
-    if (half>0) return {reason:'+20% half profit',qty:half,partial:true};
-  }
-  if (hitHalf && bid <= trade.entryPremium+1e-9) return {reason:'Break-even lock after +20%',qty:remaining,partial:false};
+  const peakGain = (peak/trade.entryPremium-1)*100, gain = (bid/trade.entryPremium-1)*100;
+  if (gain >= IWM_MAX_TARGET_PCT-1e-9) return {reason:`+${IWM_MAX_TARGET_PCT}% max target`,qty:remaining,partial:false};
+  if (peakGain >= IWM_TRAIL_START_PCT-1e-9 && gain <= peakGain-IWM_TRAIL_PTS+1e-9)
+    return {reason:`Trailing lock: ${IWM_TRAIL_PTS} pts off +${peakGain.toFixed(0)}% peak`,qty:remaining,partial:false};
   return null;
 }
 /** Size against half the available balance only. */
