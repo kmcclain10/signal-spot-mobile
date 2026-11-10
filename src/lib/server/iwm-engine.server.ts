@@ -138,7 +138,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
       t.partialTaken=true;
       t.exitRequested=null;
       state.pending_order=null;
-      note('PARTIAL PROFIT',`IWM ${t.side} • ${t.exitFilledQty}/${t.contracts} contracts sold • +20% half profit`);
+      note('PARTIAL PROFIT',`IWM ${t.side} • ${t.exitFilledQty}/${t.contracts} contracts sold • partial profit`);
       await checkpoint();
     } else {
       // Account for a terminal partially-filled sell before placing only the remainder.
