@@ -138,9 +138,10 @@ describe("paper IWM order lifecycle",()=> {
   it("cancels a sell after 30 seconds and resends only unfilled contracts with a new broker client ID",async()=> {
     const h=harness({pending_order:intent});
     h.api.order.mockResolvedValue({id:"buy-order",status:"filled",filled_qty:"2",filled_avg_price:"1",filled_at:"2026-10-16T13:00:00Z"});
+    h.api.clock.mockResolvedValue({timestamp:"2026-10-16T19:41:00Z",is_open:true,next_close:"2026-10-16T20:00:00Z"});h.api.quote.mockResolvedValue({bp:0.69,ap:0.7,t:"2026-10-16T19:41:00Z"});
     await runIwmUser(h.db,settings,h.api);
     const firstClientId=h.state().pending_order.client_id;
-    h.api.clock.mockResolvedValue({timestamp:"2026-10-16T14:11:00Z",is_open:true,next_close:"2026-10-16T20:00:00Z"});
+    h.api.clock.mockResolvedValue({timestamp:"2026-10-16T19:42:00Z",is_open:true,next_close:"2026-10-16T20:00:00Z"});
     h.api.order.mockResolvedValue({id:"exit-order",status:"partially_filled",filled_qty:"1",filled_avg_price:"0.69"});
     h.api.cancel.mockResolvedValue({id:"exit-order",status:"canceled",filled_qty:"1",filled_avg_price:"0.69"});
     await runIwmUser(h.db,settings,h.api);
