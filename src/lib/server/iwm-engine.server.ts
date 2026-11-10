@@ -241,7 +241,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     if (state.open_trade) {
       if (forced) state.open_trade.exitRequested=settings.kill_switch ? "Kill switch":"Force exit before market close";
       // 60-minute time exit runs even without a fresh option quote.
-      else if (!state.open_trade.exitRequested && now.getTime()-Date.parse(state.open_trade.tradeRow?.entry_time)>=IWM_MAX_HOLD_MIN*60000) state.open_trade.exitRequested="60-minute time exit";
+
       // The 20-minute window filters entries only; open trades ride past it until the 8 EMA close break.
       const windowExit = false;
       let quote:any;
