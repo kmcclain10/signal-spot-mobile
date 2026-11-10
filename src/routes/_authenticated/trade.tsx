@@ -87,6 +87,7 @@ function Stepper({ value, set, max }: { value: number; set: (n: number) => void;
 }
 
 function useSubmit(onDone: () => void) {
+  const acct = useAcct();
   const place = useServerFn(placeManualTrade);
   const [busy, setBusy] = useState(false);
   return { busy, async run(t: TradeTicket) {
