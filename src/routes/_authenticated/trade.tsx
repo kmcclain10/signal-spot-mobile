@@ -19,15 +19,17 @@ import { cn } from "@/lib/utils";
 const desk = queryOptions({ queryKey: ["trade-desk"], queryFn: () => getTradeDesk(), refetchInterval: 10000 });
 export const Route = createFileRoute("/_authenticated/trade")({
   validateSearch: tradeSearch,
-  head: () => ({ meta: [{ title: "Trade — Pulse Signals" }, { name: "description", content: "Place paper stock, ETF and option trades, close positions and manage orders." },
-    { property: "og:title", content: "Paper Trade Desk — Pulse Signals" }, { property: "og:description", content: "Manual paper trading on your Alpaca paper account." },
+  head: () => ({ meta: [{ title: "Trade — Pulse Signals" }, { name: "description", content: "Place stock, ETF and option trades, close positions and manage orders." },
+    { property: "og:title", content: "Trade Desk — Pulse Signals" }, { property: "og:description", content: "Manual stock and options trading on your Alpaca account." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(desk),
   component: TradePage,
-  errorComponent: ({ error }) => <div className="p-6 text-sm text-muted-foreground">Could not load your paper account: {error instanceof Error ? error.message : "unknown error"}. Check Connections.</div>,
+  errorComponent: ({ error }) => <div className="p-6 text-sm text-muted-foreground">Could not load your account: {error instanceof Error ? error.message : "unknown error"}. Check Connections.</div>,
 });
 const cash = (v: number) => (Number.isFinite(v) ? v : 0).toLocaleString("en-US", { style: "currency", currency: "USD" });
 const QUICK = ["IWM", "SPY", "QQQ", "AAPL", "TSLA", "NVDA"];
+
+function useAcct() { const live = useSuspenseQuery(desk).data.env === "live"; return { live, word: live ? "live" : "paper", Word: live ? "Live" : "Paper" }; }
 
 function TradePage() {
   const { data } = useSuspenseQuery(desk);
@@ -42,7 +44,7 @@ function TradePage() {
       ? <div role="alert" className="rounded-md border border-warning bg-warning/10 p-3 text-sm font-bold text-warning">LIVE ACCOUNT — orders here use real money. Switch back to Paper on the IWM screen.</div>
       : <div className="rounded-md border p-2 text-xs text-gain">PAPER ACCOUNT — practice money</div>}
     <header className="flex items-start justify-between gap-3">
-      <div><div className="mb-1 flex items-center gap-2 text-xs text-gain"><ShieldCheck className="size-4" />PAPER ACCOUNT</div><h1 className="text-2xl font-semibold">Trade</h1></div>
+      <div><div className={`mb-1 flex items-center gap-2 text-xs ${data.env === "live" ? "font-bold text-warning" : "text-gain"}`}><ShieldCheck className="size-4" />{data.env === "live" ? "LIVE ACCOUNT" : "PAPER ACCOUNT"}</div><h1 className="text-2xl font-semibold">Trade</h1></div>
       <Button size="icon" variant="ghost" aria-label="Refresh" onClick={refresh}><RefreshCw /></Button>
     </header>
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -85,11 +87,12 @@ function Stepper({ value, set, max }: { value: number; set: (n: number) => void;
 }
 
 function useSubmit(onDone: () => void) {
+  const acct = useAcct();
   const place = useServerFn(placeManualTrade);
   const [busy, setBusy] = useState(false);
   return { busy, async run(t: TradeTicket) {
     setBusy(true);
-    try { const o = await place({ data: t }); toast.success(`Paper order sent: ${o.side} ${o.notional ? cash(o.notional) : o.qty} ${o.symbol}`); onDone(); return o; }
+    try { const o = await place({ data: t }); toast.success(`${acct.Word} order sent: ${o.side} ${o.notional ? cash(o.notional) : o.qty} ${o.symbol}`); onDone(); return o; }
     catch (e) { toast.error(e instanceof Error ? e.message : "Order failed"); return null; }
     finally { setBusy(false); }
   } };
@@ -98,6 +101,7 @@ function useSubmit(onDone: () => void) {
 const TYPES = [["market", "Market"], ["limit", "Limit"], ["stop", "Stop"], ["stop_limit", "Stop limit"]] as const;
 type OType = typeof TYPES[number][0];
 function StockTicket({ symbol, initial, onDone }: { symbol: string; initial: "buy" | "sell"; onDone: () => void }) {
+  const acct = useAcct();
   const [side, setSide] = useState<"buy" | "sell">(initial);
   const [mode, setMode] = useState<"shares" | "dollars">("shares");
   const [qty, setQty] = useState(1);
@@ -154,7 +158,7 @@ function StockTicket({ symbol, initial, onDone }: { symbol: string; initial: "bu
     {problem && <p className="text-xs text-warning">{problem}</p>}
     <Button type="submit" className="w-full" size="lg" disabled={!valid || busy || !!problem}>Review {side} order</Button>
     <Confirm open={confirm} setOpen={setConfirm} busy={busy} title={`${side === "buy" ? "Buy" : "Sell"} ${dollarsMode ? cash(Number(dollars)) + " of" : qty} ${symbol}`}
-      body={`${typeText} • ${tif === "day" ? "today only" : "good until canceled"}${ext ? " • extended hours" : ""} • about ${est ? cash(est) : "unknown"} • paper account`}
+      body={`${typeText} • ${tif === "day" ? "today only" : "good until canceled"}${ext ? " • extended hours" : ""} • about ${est ? cash(est) : "unknown"} • ${acct.word} account`}
       onYes={async () => { if (!parsed.success) return; const o = await run(parsed.data); if (o) { setConfirm(false); setPlaced(o.id); } }} />
     <OrderSheet id={placed} onClose={() => setPlaced(null)} onDone={onDone} />
   </form>;
@@ -163,6 +167,7 @@ function StockTicket({ symbol, initial, onDone }: { symbol: string; initial: "bu
 type ChainRow = Awaited<ReturnType<typeof getOptionChain>>["rows"][number];
 const fmtExp = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 function OptionChain({ symbol, initial, open, level, botContract, onDone }: { symbol: string; initial: "CALL" | "PUT"; open: boolean; level: number; botContract: string | null; onDone: () => void }) {
+  const acct = useAcct();
   const [side, setSide] = useState<"CALL" | "PUT">(initial);
   const [exp, setExp] = useState<string | undefined>();
   const [row, setRow] = useState<ChainRow | null>(null);
@@ -178,7 +183,7 @@ function OptionChain({ symbol, initial, open, level, botContract, onDone }: { sy
       <Button variant={side === "PUT" ? "default" : "outline"} className={cn(side === "PUT" && "bg-loss text-destructive-foreground hover:bg-loss/90")} onClick={() => setSide("PUT")}><ArrowDownRight />Puts</Button>
     </div>
     {!open && <p className="rounded border border-warning/40 bg-warning/10 p-3 text-sm text-warning">Market closed — you can browse the chain, but options orders only go in 9:30 AM–4:00 PM ET.</p>}
-    {open && level < 2 && <p className="rounded border border-warning/40 bg-warning/10 p-3 text-sm text-warning">Your paper account needs options level 2 to buy options.</p>}
+    {open && level < 2 && <p className="rounded border border-warning/40 bg-warning/10 p-3 text-sm text-warning">Your {acct.word} account needs options level 2 to buy options.</p>}
     {symbol === "IWM" && <p className="text-xs text-muted-foreground">Buying IWM options yourself pauses the IWM bot until you confirm on the bot screen.</p>}
     {!valid ? <p className="text-sm text-muted-foreground">Enter a valid symbol</p> : q.isLoading ? <p className="text-sm text-muted-foreground">Loading chain…</p>
       : q.isError ? <p className="text-sm text-loss">Could not load {symbol} options. Try refreshing.</p>
@@ -200,6 +205,7 @@ function OptionChain({ symbol, initial, open, level, botContract, onDone }: { sy
 }
 
 function ContractTicket({ row, symbol, side, expiration, open, level, bot, onClose, onDone }: { row: ChainRow | null; symbol: string; side: "CALL" | "PUT"; expiration: string; open: boolean; level: number; bot: boolean; onClose: () => void; onDone: () => void }) {
+  const acct = useAcct();
   const [intent, setIntent] = useState<"buy_to_open" | "sell_to_close">("buy_to_open");
   const [qty, setQty] = useState(1);
   const [limit, setLimit] = useState("");
@@ -235,9 +241,9 @@ function ContractTicket({ row, symbol, side, expiration, open, level, bot, onClo
       </div>}
     </SheetContent></Sheet>
     <Confirm open={confirm} setOpen={setConfirm} busy={busy} title={`${intent === "buy_to_open" ? "Buy" : "Sell"} ${qty} ${title}`}
-      body={`Limit $${lp.toFixed(2)} • today only • about ${cash(ticketCost(lp || 0, qty, true))} • paper account`}
+      body={`Limit $${lp.toFixed(2)} • today only • about ${cash(ticketCost(lp || 0, qty, true))} • ${acct.word} account`}
       onYes={async () => { if (!parsed?.success) return; setBusy(true);
-        try { const o = await place({ data: parsed.data }); toast.success(`Paper option order sent: ${o.side} ${o.qty}`); setConfirm(false); setPlaced(o.id); onDone(); }
+        try { const o = await place({ data: parsed.data }); toast.success(`${acct.Word} option order sent: ${o.side} ${o.qty}`); setConfirm(false); setPlaced(o.id); onDone(); }
         catch (e) { toast.error(e instanceof Error ? e.message : "Order failed"); } finally { setBusy(false); } }} />
     <OrderSheet id={placed} onClose={() => { setPlaced(null); onClose(); }} onDone={onDone} />
   </>;
@@ -277,6 +283,7 @@ const etTime = (v: string | null) => v ? new Date(v).toLocaleString("en-US", { t
 const typeLabel = (o: Ord) => o.type === "market" ? "market" : [o.stop_price ? `stop ${o.stop_price.toFixed(2)}` : "", o.limit_price ? `limit ${o.limit_price.toFixed(2)}` : ""].filter(Boolean).join(" → ") || o.type.replace("_", " ");
 
 function OrderSheet({ id, onClose, onDone }: { id: string | null; onClose: () => void; onDone: () => void }) {
+  const acct = useAcct();
   const fn = useServerFn(getPaperOrder);
   const cancelFn = useServerFn(cancelPaperOrder);
   const q = useQuery({ queryKey: ["paper-order", id], queryFn: () => fn({ data: { id: id! } }), enabled: !!id,
@@ -285,7 +292,7 @@ function OrderSheet({ id, onClose, onDone }: { id: string | null; onClose: () =>
   const steps = o ? [["Submitted", o.submitted_at], ["Filled", o.filled_at], ["Canceled", o.canceled_at], ["Expired", o.expired_at], ["Failed", o.failed_at]].filter(([, t]) => t) as [string, string][] : [];
   return <Sheet open={!!id} onOpenChange={v => !v && onClose()}><SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
     <SheetHeader><SheetTitle>{o ? `${o.side === "buy" ? "Buy" : "Sell"} ${o.notional ? cash(o.notional) + " of" : o.qty} ${o.symbol}` : "Order status"}</SheetTitle>
-      <SheetDescription>Paper order{o?.bot ? " • managed by the IWM bot" : ""}</SheetDescription></SheetHeader>
+      <SheetDescription>{acct.Word} order{o?.bot ? " • managed by the IWM bot" : ""}</SheetDescription></SheetHeader>
     {q.isLoading ? <p className="p-4 text-sm text-muted-foreground">Loading order…</p> : q.isError ? <p className="p-4 text-sm text-loss">Could not load this order.</p> : o && st && <div className="space-y-4 p-4">
       <div className={cn("text-2xl font-semibold", toneClass(st.tone))}>{st.label}</div>
       {o.qty > 0 && <div><div className="h-2 overflow-hidden rounded bg-secondary"><div className="h-full bg-gain" style={{ width: `${Math.min(100, (o.filled_qty / o.qty) * 100)}%` }} /></div>

@@ -1,5 +1,5 @@
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
   Activity,
@@ -41,7 +41,11 @@ const SECONDARY = [
 
 export function ModeBadge() {
   const s = useSettings();
-  const live = s.data?.trading_mode === "live";
+  const env = useQuery({ queryKey: ["account-env"], queryFn: async () => {
+    const { data } = await supabase.from("iwm_strategy_settings").select("trading_env").maybeSingle();
+    return data?.trading_env === "live" ? "live" : "paper";
+  }, staleTime: 30000 });
+  const live = env.data === "live" || s.data?.trading_mode === "live";
   return (
     <span
       className={cn(
