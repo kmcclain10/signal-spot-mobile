@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { tradeTicket, toBrokerOrder, chainTicket, chainStrikeRange, optionLimitProblem, closeQtyProblem } from "@/lib/trade-rules";
+import { tradeTicket, toBrokerOrder, chainTicket, spreadTicket, chainStrikeRange, optionLimitProblem, closeQtyProblem } from "@/lib/trade-rules";
 import { assertNoPulseOwnership, isBotOrder } from "@/lib/bot-ownership";
 
 type Rec = Record<string, any>;
@@ -206,4 +206,35 @@ export const placeChainOrder = createServerFn({ method: "POST" })
     }
     return pick(await api.submit({ symbol: data.contract, qty: String(data.contracts), side: data.intent === "buy_to_open" ? "buy" : "sell", type: "limit",
       limit_price: data.limit_price.toFixed(2), time_in_force: "day", position_intent: data.intent, client_order_id: `manual-${crypto.randomUUID()}` }));
+  });
+
+
+/** Places a two-leg vertical spread as one Alpaca multi-leg (mleg) limit order on the selected account. */
+export const placeSpreadOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => spreadTicket.parse(i))
+  .handler(async ({ data, context }) => {
+    const { api } = await broker(context.userId);
+    const [clock, account, positions] = await Promise.all([api.clock(), api.account(), api.call("/v2/positions")]);
+    if (!clock.is_open) throw new Error("Options can only be traded while the market is open");
+    for (const c of [data.long_contract, data.short_contract]) await assertNoPulseOwnership(context.supabase, context.userId, c);
+    const st = await context.supabase.from("iwm_strategy_state").select("open_trade").eq("user_id", context.userId).maybeSingle();
+    const botC = (st.data?.open_trade as Rec | null)?.optionSymbol;
+    if (botC === data.long_contract || botC === data.short_contract) throw new Error("The IWM bot holds one of these contracts");
+    const held = (sym: string) => Number((positions ?? []).find((p: Rec) => p.symbol === sym)?.qty ?? 0);
+    if (data.action === "open") {
+      if (Number(account.options_trading_level ?? 0) < 3) throw new Error("Spreads need options level 3 on your Alpaca account");
+      if (data.limit_price > 0 && data.limit_price * data.contracts * 100 > Number(account.options_buying_power ?? account.buying_power)) throw new Error("Not enough options buying power for this spread");
+    } else {
+      if (held(data.long_contract) < data.contracts) throw new Error("You don't hold enough of the long leg to close");
+      if (held(data.short_contract) > -data.contracts) throw new Error("You don't hold enough of the short leg to close");
+    }
+    const open = data.action === "open";
+    const legs = [
+      { symbol: data.long_contract, ratio_qty: "1", side: open ? "buy" : "sell", position_intent: open ? "buy_to_open" : "sell_to_close" },
+      { symbol: data.short_contract, ratio_qty: "1", side: open ? "sell" : "buy", position_intent: open ? "sell_to_open" : "buy_to_close" },
+    ];
+    // Alpaca mleg limit: positive = debit to pay, negative = credit to receive. Closing flips the sign of the opening price.
+    return pick(await api.submit({ order_class: "mleg", qty: String(data.contracts), type: "limit", limit_price: data.limit_price.toFixed(2),
+      time_in_force: "day", legs, client_order_id: `manual-${crypto.randomUUID()}` }));
   });

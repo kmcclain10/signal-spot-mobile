@@ -4,8 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ArrowDownRight, ArrowUpRight, Bot, Minus, Plus, RefreshCw, ShieldCheck, X } from "lucide-react";
-import { getTradeDesk, getTicketQuote, placeManualTrade, cancelPaperOrder, closePaperPosition, getPaperOrder, getOptionChain, placeChainOrder } from "@/lib/trade.functions";
-import { ticketCost, stockTicket, orderStatus, chainTicket, optionLimitProblem, closeQtyProblem, type TradeTicket } from "@/lib/trade-rules";
+import { getTradeDesk, getTicketQuote, placeManualTrade, cancelPaperOrder, closePaperPosition, getPaperOrder, getOptionChain, placeChainOrder, placeSpreadOrder } from "@/lib/trade.functions";
+import { ticketCost, stockTicket, orderStatus, chainTicket, spreadTicket, spreadMath, optionLimitProblem, closeQtyProblem, type TradeTicket } from "@/lib/trade-rules";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { tradeSearch } from "@/lib/explore-rules";
@@ -47,8 +47,10 @@ function TradePage() {
       <div><div className={`mb-1 flex items-center gap-2 text-xs ${data.env === "live" ? "font-bold text-warning" : "text-gain"}`}><ShieldCheck className="size-4" />{data.env === "live" ? "LIVE ACCOUNT" : "PAPER ACCOUNT"}</div><h1 className="text-2xl font-semibold">Trade</h1></div>
       <Button size="icon" variant="ghost" aria-label="Refresh" onClick={refresh}><RefreshCw /></Button>
     </header>
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       <Stat label="Equity" value={cash(data.account.equity)} />
+      <Stat label="Cash" value={cash(data.account.cash)} />
+      <Stat label="Options buying power" value={cash(data.account.options_buying_power)} />
       <Stat label="Today" value={cash(data.account.day_pnl)} tone={data.account.day_pnl >= 0 ? "text-gain" : "text-loss"} />
       <Stat label="Buying power" value={cash(data.account.buying_power)} />
       <Stat label="Market" value={data.clock.is_open ? "Open" : "Closed"} tone={data.clock.is_open ? "text-gain" : "text-muted-foreground"} />
@@ -171,6 +173,16 @@ function OptionChain({ symbol, initial, open, level, botContract, onDone }: { sy
   const [side, setSide] = useState<"CALL" | "PUT">(initial);
   const [exp, setExp] = useState<string | undefined>();
   const [row, setRow] = useState<ChainRow | null>(null);
+  const [mode, setMode] = useState<"single" | "spread">("single");
+  const [legs, setLegs] = useState<{ long: ChainRow | null; short: ChainRow | null }>({ long: null, short: null });
+  const [spreadOpen, setSpreadOpen] = useState(false);
+  useEffect(() => setLegs({ long: null, short: null }), [side, exp, mode]);
+  const tap = (r: ChainRow) => {
+    if (mode === "single") return setRow(r);
+    if (!legs.long || legs.short) return setLegs({ long: r, short: null });
+    if (r.contract === legs.long.contract) return setLegs({ long: null, short: null });
+    setLegs({ long: legs.long, short: r }); setSpreadOpen(true);
+  };
   const fn = useServerFn(getOptionChain);
   const valid = /^[A-Z][A-Z.]{0,9}$/.test(symbol);
   const q = useQuery({ queryKey: ["chain", symbol, side, exp], queryFn: () => fn({ data: { symbol, type: side === "CALL" ? "call" : "put", expiration: exp } }), enabled: valid, refetchInterval: open ? 10000 : false });
@@ -182,6 +194,11 @@ function OptionChain({ symbol, initial, open, level, botContract, onDone }: { sy
       <Button variant={side === "CALL" ? "default" : "outline"} className={cn(side === "CALL" && "bg-gain text-primary-foreground hover:bg-gain/90")} onClick={() => setSide("CALL")}><ArrowUpRight />Calls</Button>
       <Button variant={side === "PUT" ? "default" : "outline"} className={cn(side === "PUT" && "bg-loss text-destructive-foreground hover:bg-loss/90")} onClick={() => setSide("PUT")}><ArrowDownRight />Puts</Button>
     </div>
+    <div className="grid grid-cols-2 gap-2">
+      <Button size="sm" variant={mode === "single" ? "secondary" : "ghost"} onClick={() => setMode("single")}>Single contract</Button>
+      <Button size="sm" variant={mode === "spread" ? "secondary" : "ghost"} onClick={() => setMode("spread")}>Spread</Button>
+    </div>
+    {mode === "spread" && <p className="rounded border p-3 text-sm text-muted-foreground">{!legs.long ? "Tap the strike you want to BUY." : !legs.short ? `Buying ${legs.long.strike}. Now tap the strike you want to SELL.` : `Buy ${legs.long.strike} / Sell ${legs.short.strike}`}{legs.long && <Button size="sm" variant="link" className="h-auto px-2" onClick={() => setLegs({ long: null, short: null })}>Reset</Button>}</p>}
     {!open && <p className="rounded border border-warning/40 bg-warning/10 p-3 text-sm text-warning">Market closed — you can browse the chain, but options orders only go in 9:30 AM–4:00 PM ET.</p>}
     {open && level < 2 && <p className="rounded border border-warning/40 bg-warning/10 p-3 text-sm text-warning">Your {acct.word} account needs options level 2 to buy options.</p>}
     {symbol === "IWM" && <p className="text-xs text-muted-foreground">Buying IWM options yourself pauses the IWM bot until you confirm on the bot screen.</p>}
@@ -192,7 +209,7 @@ function OptionChain({ symbol, initial, open, level, botContract, onDone }: { sy
       <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">{d.expirations.map(e => <Button key={e} size="sm" variant={e === d.expiration ? "secondary" : "ghost"} className="shrink-0" onClick={() => setExp(e)}>{fmtExp(e)}{e === d.today ? " (today)" : ""}</Button>)}</div>
       <div className="num text-sm">
         <div className="grid grid-cols-[1fr_1fr_1fr_1fr] border-b pb-1 text-[10px] uppercase text-muted-foreground"><span>Strike</span><span className="text-right">Bid</span><span className="text-right">Ask</span><span className="text-right">Delta</span></div>
-        {d.rows.map(r => <button key={r.contract} type="button" onClick={() => setRow(r)} className={cn("grid w-full grid-cols-[1fr_1fr_1fr_1fr] border-b py-2.5 text-left", r.contract === atm && "border-b-primary")}>
+        {d.rows.map(r => <button key={r.contract} type="button" onClick={() => tap(r)} className={cn("grid w-full grid-cols-[1fr_1fr_1fr_1fr] border-b py-2.5 text-left", r.contract === atm && "border-b-primary", legs.long?.contract === r.contract && "bg-gain/15", legs.short?.contract === r.contract && "bg-loss/15")}>
           <span className="flex items-center gap-1">{r.strike.toFixed(r.strike % 1 ? 1 : 0)}{r.held > 0 && <span className="rounded bg-secondary px-1 text-[10px]">{r.contract === botContract ? "bot" : `own ${r.held}`}</span>}</span>
           <span className="text-right">{r.bid ? r.bid.toFixed(2) : "—"}</span><span className="text-right text-gain">{r.ask ? r.ask.toFixed(2) : "—"}</span>
           <span className="text-right text-muted-foreground">{r.delta != null ? r.delta.toFixed(2) : "—"}</span>
@@ -200,6 +217,7 @@ function OptionChain({ symbol, initial, open, level, botContract, onDone }: { sy
       </div>
       <p className="text-xs text-muted-foreground">Prices are indicative (free data). Green line = closest to the stock price. Tap a strike to trade.</p>
     </>}
+    <SpreadTicketSheet open={spreadOpen && !!legs.long && !!legs.short} long={legs.long} short={legs.short} symbol={symbol} side={side} expiration={d?.expiration ?? ""} market={open} level={level} onClose={() => setSpreadOpen(false)} onDone={() => { onDone(); q.refetch(); }} />
     <ContractTicket row={row} symbol={symbol} side={side} expiration={d?.expiration ?? ""} open={open} level={level} bot={row?.contract === botContract} onClose={() => setRow(null)} onDone={() => { onDone(); q.refetch(); }} />
   </div>;
 }
@@ -245,6 +263,60 @@ function ContractTicket({ row, symbol, side, expiration, open, level, bot, onClo
       onYes={async () => { if (!parsed?.success) return; setBusy(true);
         try { const o = await place({ data: parsed.data }); toast.success(`${acct.Word} option order sent: ${o.side} ${o.qty}`); setConfirm(false); setPlaced(o.id); onDone(); }
         catch (e) { toast.error(e instanceof Error ? e.message : "Order failed"); } finally { setBusy(false); } }} />
+    <OrderSheet id={placed} onClose={() => { setPlaced(null); onClose(); }} onDone={onDone} />
+  </>;
+}
+
+function SpreadTicketSheet({ open, long, short, symbol, side, expiration, market, level, onClose, onDone }: { open: boolean; long: ChainRow | null; short: ChainRow | null; symbol: string; side: "CALL" | "PUT"; expiration: string; market: boolean; level: number; onClose: () => void; onDone: () => void }) {
+  const acct = useAcct();
+  const [action, setAction] = useState<"open" | "close">("open");
+  const [qty, setQty] = useState(1);
+  const [limit, setLimit] = useState("");
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [placed, setPlaced] = useState<string | null>(null);
+  const place = useServerFn(placeSpreadOrder);
+  // Natural prices: opening pays long ask, receives short bid; closing receives long bid, pays short ask.
+  const openMid = long && short ? ((long.bid + long.ask) / 2) - ((short.bid + short.ask) / 2) : 0;
+  useEffect(() => { if (long && short) { setAction(long.held > 0 && short.held < 0 ? "close" : "open"); setQty(1); setLimit(openMid.toFixed(2)); } }, [long?.contract, short?.contract]);
+  useEffect(() => { setLimit((action === "open" ? openMid : -openMid).toFixed(2)); }, [action]);
+  if (!long || !short) return null;
+  const net = Number(limit);
+  const m = spreadMath(side, long.strike, short.strike, action === "open" ? net : -net);
+  const t = { symbol, long_contract: long.contract, short_contract: short.contract, action, contracts: qty, limit_price: net };
+  const parsed = spreadTicket.safeParse(t);
+  const problem = !market ? "Market is closed" : action === "open" && level < 3 ? "Spreads need options level 3 on your Alpaca account"
+    : !parsed.success ? parsed.error.issues[0]?.message : null;
+  const title = `${symbol} ${fmtExp(expiration)} ${side} ${long.strike}/${short.strike} spread`;
+  const kind = (action === "open" ? net : -net) > 0 ? "debit" : "credit";
+  return <>
+    <Sheet open={open && !placed} onOpenChange={v => !v && onClose()}><SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto">
+      <SheetHeader><SheetTitle>{title}</SheetTitle><SheetDescription className="num">Buy {long.strike} (bid {long.bid.toFixed(2)} / ask {long.ask.toFixed(2)}) • Sell {short.strike} (bid {short.bid.toFixed(2)} / ask {short.ask.toFixed(2)})</SheetDescription></SheetHeader>
+      <div className="space-y-4 p-4">
+        <div className="grid grid-cols-2 gap-2">
+          <Button type="button" variant={action === "open" ? "secondary" : "outline"} onClick={() => setAction("open")}>Open spread</Button>
+          <Button type="button" variant={action === "close" ? "secondary" : "outline"} onClick={() => setAction("close")}>Close spread</Button>
+        </div>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-2"><Label>Spreads</Label><Stepper value={qty} set={setQty} max={50} /></div>
+          <div className="space-y-2"><Label htmlFor="slimit">Net price (+ pay / − receive)</Label><Input id="slimit" inputMode="decimal" className="num w-28" value={limit} onChange={e => setLimit(e.target.value.replace(/[^0-9.-]/g, ""))} /></div>
+        </div>
+        <div className="num grid grid-cols-2 gap-2 text-sm">
+          <span className="text-muted-foreground">Net {kind}</span><span className="text-right font-semibold">{cash(Math.abs(net) * 100 * qty)}</span>
+          {action === "open" && <><span className="text-muted-foreground">Max profit</span><span className="text-right text-gain">{cash(m.maxProfit * qty)}</span>
+          <span className="text-muted-foreground">Max loss</span><span className="text-right text-loss">{cash(m.maxLoss * qty)}</span>
+          <span className="text-muted-foreground">Breakeven</span><span className="text-right">{m.breakeven.toFixed(2)}</span></>}
+        </div>
+        <p className="text-xs text-muted-foreground">Both legs go in together as one limit order, today only. Mid price is pre-filled.</p>
+        {problem && <p className="text-xs text-warning">{problem}</p>}
+        <Button className="w-full" size="lg" disabled={!!problem || busy} onClick={() => setConfirm(true)}>Review spread</Button>
+      </div>
+    </SheetContent></Sheet>
+    <Confirm open={confirm} setOpen={setConfirm} busy={busy} title={`${action === "open" ? "Open" : "Close"} ${qty} × ${title}`}
+      body={`Net ${kind} limit $${Math.abs(net).toFixed(2)} • today only • ${acct.word} account`}
+      onYes={async () => { if (!parsed.success) return; setBusy(true);
+        try { const o = await place({ data: parsed.data }); toast.success(`${acct.Word} spread order sent`); setConfirm(false); setPlaced(o.id); onDone(); }
+        catch (e) { toast.error(e instanceof Error ? e.message : "Spread order failed"); } finally { setBusy(false); } }} />
     <OrderSheet id={placed} onClose={() => { setPlaced(null); onClose(); }} onDone={onDone} />
   </>;
 }
