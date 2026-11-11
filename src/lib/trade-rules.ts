@@ -109,3 +109,27 @@ export function closeQtyProblem(held: number, qty: number) {
   if (held <= 0) return "You don't hold this contract";
   return qty > held ? `You hold only ${held} contract${held === 1 ? "" : "s"}` : null;
 }
+
+
+/** Two-leg vertical spread: buy one strike, sell another, same type and expiration, sent as one Alpaca multi-leg order. */
+export const spreadTicket = z.object({
+  symbol: tickerSymbol,
+  long_contract: occContract,
+  short_contract: occContract,
+  action: z.enum(["open", "close"]),
+  contracts: z.number().int().min(1).max(50),
+  /** Positive = net debit paid, negative = net credit received (per spread). */
+  limit_price: z.number().min(-1000).max(1000).refine(v => Math.abs(v) >= 0.01, "Enter a net price"),
+}).refine(t => t.long_contract !== t.short_contract, { message: "Pick two different strikes", path: ["short_contract"] })
+  .refine(t => occRoot(t.long_contract) === t.symbol && occRoot(t.short_contract) === t.symbol, { message: "Both legs must be on this stock", path: ["long_contract"] });
+export type SpreadTicket = z.infer<typeof spreadTicket>;
+
+/** Vertical spread risk math per spread (×100 already applied). net > 0 is a debit, net < 0 a credit. */
+export function spreadMath(type: "CALL" | "PUT", longStrike: number, shortStrike: number, net: number) {
+  const width = Math.abs(longStrike - shortStrike);
+  const debit = net > 0;
+  const maxProfit = debit ? (width - net) * 100 : -net * 100;
+  const maxLoss = debit ? net * 100 : (width + net) * 100;
+  const breakeven = type === "CALL" ? (debit ? longStrike + net : shortStrike - net) : (debit ? longStrike - net : shortStrike + net);
+  return { width, debit, maxProfit, maxLoss, breakeven };
+}
