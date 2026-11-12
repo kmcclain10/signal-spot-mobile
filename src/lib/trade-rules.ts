@@ -92,8 +92,8 @@ export const chainTicket = z.object({
 }).refine(t => occRoot(t.contract) === t.symbol, { message: "That contract belongs to a different stock", path: ["contract"] });
 export type ChainTicket = z.infer<typeof chainTicket>;
 
-/** Strikes shown around the stock price: ±10% (at least $5). */
-export const chainStrikeRange = (spot: number) => Math.max(5, spot * 0.1);
+/** Strikes shown around the stock price: ±20% (at least $10). */
+export const chainStrikeRange = (spot: number) => Math.max(10, spot * 0.2);
 
 /** Fat-finger guard against the live quote: buys at most 25% over the ask, sells at least 75% of the bid. */
 export function optionLimitProblem(intent: ChainTicket["intent"], limit: number, bid: number, ask: number) {

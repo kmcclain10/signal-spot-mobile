@@ -15,6 +15,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getStrategyChain, placeStrategyOrder } from "@/lib/trade.functions";
+import { STRATEGIES, buildLegs, chainStrikes, netMid, netNatural, payoff, needsFarExpiration, strategyTicket, type StrategyId } from "@/lib/option-strategies";
 
 const desk = queryOptions({ queryKey: ["trade-desk"], queryFn: () => getTradeDesk(), refetchInterval: 10000 });
 export const Route = createFileRoute("/_authenticated/trade")({
@@ -173,7 +176,7 @@ function OptionChain({ symbol, initial, open, level, botContract, onDone }: { sy
   const [side, setSide] = useState<"CALL" | "PUT">(initial);
   const [exp, setExp] = useState<string | undefined>();
   const [row, setRow] = useState<ChainRow | null>(null);
-  const [mode, setMode] = useState<"single" | "spread">("single");
+  const [mode, setMode] = useState<"single" | "spread" | "strategy">("single");
   const [legs, setLegs] = useState<{ long: ChainRow | null; short: ChainRow | null }>({ long: null, short: null });
   const [spreadOpen, setSpreadOpen] = useState(false);
   useEffect(() => setLegs({ long: null, short: null }), [side, exp, mode]);
@@ -194,10 +197,12 @@ function OptionChain({ symbol, initial, open, level, botContract, onDone }: { sy
       <Button variant={side === "CALL" ? "default" : "outline"} className={cn(side === "CALL" && "bg-gain text-primary-foreground hover:bg-gain/90")} onClick={() => setSide("CALL")}><ArrowUpRight />Calls</Button>
       <Button variant={side === "PUT" ? "default" : "outline"} className={cn(side === "PUT" && "bg-loss text-destructive-foreground hover:bg-loss/90")} onClick={() => setSide("PUT")}><ArrowDownRight />Puts</Button>
     </div>
-    <div className="grid grid-cols-2 gap-2">
-      <Button size="sm" variant={mode === "single" ? "secondary" : "ghost"} onClick={() => setMode("single")}>Single contract</Button>
-      <Button size="sm" variant={mode === "spread" ? "secondary" : "ghost"} onClick={() => setMode("spread")}>Spread</Button>
+    <div className="grid grid-cols-3 gap-2">
+      <Button size="sm" variant={mode === "single" ? "secondary" : "ghost"} onClick={() => setMode("single")}>Single</Button>
+      <Button size="sm" variant={mode === "spread" ? "secondary" : "ghost"} onClick={() => setMode("spread")}>Pick 2 strikes</Button>
+      <Button size="sm" variant={mode === "strategy" ? "secondary" : "ghost"} onClick={() => setMode("strategy")}>Strategies</Button>
     </div>
+    {mode === "strategy" ? <StrategyBuilder symbol={symbol} market={open} level={level} onDone={onDone} /> : <>
     {mode === "spread" && <p className="rounded border p-3 text-sm text-muted-foreground">{!legs.long ? "Tap the strike you want to BUY." : !legs.short ? `Buying ${legs.long.strike}. Now tap the strike you want to SELL.` : `Buy ${legs.long.strike} / Sell ${legs.short.strike}`}{legs.long && <Button size="sm" variant="link" className="h-auto px-2" onClick={() => setLegs({ long: null, short: null })}>Reset</Button>}</p>}
     {!open && <p className="rounded border border-warning/40 bg-warning/10 p-3 text-sm text-warning">Market closed — you can browse the chain, but options orders only go in 9:30 AM–4:00 PM ET.</p>}
     {open && level < 2 && <p className="rounded border border-warning/40 bg-warning/10 p-3 text-sm text-warning">Your {acct.word} account needs options level 2 to buy options.</p>}
@@ -205,7 +210,7 @@ function OptionChain({ symbol, initial, open, level, botContract, onDone }: { sy
     {!valid ? <p className="text-sm text-muted-foreground">Enter a valid symbol</p> : q.isLoading ? <p className="text-sm text-muted-foreground">Loading chain…</p>
       : q.isError ? <p className="text-sm text-loss">Could not load {symbol} options. Try refreshing.</p>
       : d?.error ? <p className="text-sm text-muted-foreground">{d.error}</p>
-      : !d?.expirations.length ? <p className="text-sm text-muted-foreground">{symbol} has no tradable options in the next 60 days.</p> : <>
+      : !d?.expirations.length ? <p className="text-sm text-muted-foreground">{symbol} has no tradable options right now.</p> : <>
       <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">{d.expirations.map(e => <Button key={e} size="sm" variant={e === d.expiration ? "secondary" : "ghost"} className="shrink-0" onClick={() => setExp(e)}>{fmtExp(e)}{e === d.today ? " (today)" : ""}</Button>)}</div>
       <div className="num text-sm">
         <div className="grid grid-cols-[1fr_1fr_1fr_1fr] border-b pb-1 text-[10px] uppercase text-muted-foreground"><span>Strike</span><span className="text-right">Bid</span><span className="text-right">Ask</span><span className="text-right">Delta</span></div>
@@ -216,6 +221,7 @@ function OptionChain({ symbol, initial, open, level, botContract, onDone }: { sy
         </button>)}
       </div>
       <p className="text-xs text-muted-foreground">Prices are indicative (free data). Green line = closest to the stock price. Tap a strike to trade.</p>
+    </>}
     </>}
     <SpreadTicketSheet open={spreadOpen && !!legs.long && !!legs.short} long={legs.long} short={legs.short} symbol={symbol} side={side} expiration={d?.expiration ?? ""} market={open} level={level} onClose={() => setSpreadOpen(false)} onDone={() => { onDone(); q.refetch(); }} />
     <ContractTicket row={row} symbol={symbol} side={side} expiration={d?.expiration ?? ""} open={open} level={level} bot={row?.contract === botContract} onClose={() => setRow(null)} onDone={() => { onDone(); q.refetch(); }} />
@@ -319,6 +325,114 @@ function SpreadTicketSheet({ open, long, short, symbol, side, expiration, market
         catch (e) { toast.error(e instanceof Error ? e.message : "Spread order failed"); } finally { setBusy(false); } }} />
     <OrderSheet id={placed} onClose={() => { setPlaced(null); onClose(); }} onDone={onDone} />
   </>;
+}
+
+const fmtStrike = (k: number) => k.toFixed(k % 1 ? 1 : 0);
+const money = (v: number) => v === Infinity ? "Unlimited" : cash(v);
+function StrategyBuilder({ symbol, market, level, onDone }: { symbol: string; market: boolean; level: number; onDone: () => void }) {
+  const acct = useAcct();
+  const [id, setId] = useState<StrategyId>("bull_call");
+  const [exp, setExp] = useState<string | undefined>();
+  const [far, setFar] = useState<string | undefined>();
+  const [center, setCenter] = useState<number | null>(null);
+  const [width, setWidth] = useState(1);
+  const [action, setAction] = useState<"open" | "close">("open");
+  const [qty, setQty] = useState(1);
+  const [limit, setLimit] = useState("");
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [placed, setPlaced] = useState<string | null>(null);
+  const fn = useServerFn(getStrategyChain);
+  const place = useServerFn(placeStrategyOrder);
+  const timed = needsFarExpiration(id);
+  const valid = /^[A-Z][A-Z.]{0,9}$/.test(symbol);
+  const q = useQuery({ queryKey: ["strategy-chain", symbol, exp, timed ? far : null], queryFn: () => fn({ data: { symbol, expiration: exp, far: timed ? far : undefined } }), enabled: valid, refetchInterval: market ? 10000 : false });
+  const d = q.data;
+  const strikes = d ? chainStrikes(d.near) : [];
+  const atmIdx = strikes.length && d ? strikes.reduce((b, k, i) => Math.abs(k - d.spot) < Math.abs(strikes[b] - d.spot) ? i : b, 0) : 0;
+  const idx = center != null && center < strikes.length ? center : atmIdx;
+  const farOptions = d?.expirations.filter(e => d.expiration && e > d.expiration) ?? [];
+  useEffect(() => { if (timed && !far && farOptions.length) setFar(farOptions[Math.min(farOptions.length - 1, 3)]); }, [timed, farOptions.join()]);
+  useEffect(() => setCenter(null), [symbol, exp]);
+  const legs = d && d.expiration ? buildLegs(id, d.near, d.expiration, idx, width, timed ? d.farChain : undefined, d.far ?? undefined) : null;
+  const mid = legs ? netMid(legs) : 0;
+  useEffect(() => { setLimit((action === "open" ? mid : -mid).toFixed(2)); }, [legs?.map(l => l.contract).join(), action]);
+  const net = Number(limit);
+  const openNet = action === "open" ? net : -net;
+  const pay = legs ? payoff(legs, openNet) : null;
+  const ticket = legs ? { symbol, action, contracts: qty, limit_price: net, legs: legs.map(l => ({ contract: l.contract, side: l.side, ratio: l.ratio })) } : null;
+  const parsed = ticket ? strategyTicket.safeParse(ticket) : null;
+  const allLong = !!legs?.every(l => l.side === "buy");
+  const problem = !legs ? "This chain doesn't have the strikes for that setup — try a different center or width" : !market ? "Market is closed"
+    : action === "open" && level < (allLong ? 2 : 3) ? (allLong ? "Needs options level 2" : "Needs options level 3 on your Alpaca account") : parsed && !parsed.success ? parsed.error.issues[0]?.message : null;
+  const def = STRATEGIES.find(s => s.id === id)!;
+  const groups = [...new Set(STRATEGIES.map(s => s.group))];
+  const kind = openNet > 0 ? "debit" : "credit";
+  const title = `${action === "open" ? "Open" : "Close"} ${qty} × ${symbol} ${def.label}`;
+  return <div className="space-y-4">
+    <div className="space-y-2"><Label>Strategy</Label>
+      <Select value={id} onValueChange={v => { setId(v as StrategyId); setAction("open"); }}>
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>{groups.map(g => <SelectGroup key={g}><SelectLabel>{g}</SelectLabel>{STRATEGIES.filter(s => s.group === g).map(s => <SelectItem key={s.id} value={s.id}>{s.label} · {s.view}</SelectItem>)}</SelectGroup>)}</SelectContent>
+      </Select>
+      <p className="text-xs text-muted-foreground">{def.note}</p>
+    </div>
+    {!valid ? <p className="text-sm text-muted-foreground">Enter a valid symbol</p> : q.isLoading ? <p className="text-sm text-muted-foreground">Loading chain…</p>
+      : q.isError ? <p className="text-sm text-loss">Could not load {symbol} options. Try refreshing.</p>
+      : d?.error ? <p className="text-sm text-muted-foreground">{d.error}</p>
+      : !d?.expirations.length ? <p className="text-sm text-muted-foreground">{symbol} has no tradable options.</p> : <>
+      <div className="space-y-1"><Label>{timed ? "Near expiration (sell)" : "Expiration"}</Label>
+        <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">{d.expirations.map(e => <Button key={e} size="sm" variant={e === d.expiration ? "secondary" : "ghost"} className="shrink-0" onClick={() => { setExp(e); if (far && far <= e) setFar(undefined); }}>{fmtExp(e)}{e === d.today ? " (today)" : ""}</Button>)}</div></div>
+      {timed && <div className="space-y-1"><Label>Later expiration (buy)</Label>
+        <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">{farOptions.map(e => <Button key={e} size="sm" variant={e === d.far ? "secondary" : "ghost"} className="shrink-0" onClick={() => setFar(e)}>{fmtExp(e)}</Button>)}</div></div>}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2"><Label>Center strike</Label>
+          <Select value={String(idx)} onValueChange={v => setCenter(Number(v))}><SelectTrigger className="num"><SelectValue /></SelectTrigger>
+            <SelectContent>{strikes.map((k, i) => <SelectItem key={k} value={String(i)} className="num">{fmtStrike(k)}{i === atmIdx ? " (at the money)" : ""}</SelectItem>)}</SelectContent></Select></div>
+        {!["long_straddle", "call_calendar", "put_calendar"].includes(id) && <div className="space-y-2"><Label>Width (strikes)</Label>
+          <Select value={String(width)} onValueChange={v => setWidth(Number(v))}><SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{[1, 2, 3, 4, 5, 10].map(n => <SelectItem key={n} value={String(n)}>{n} strike{n > 1 ? "s" : ""}{strikes[idx + n] != null ? ` ($${fmtStrike(Math.abs(strikes[idx + n] - strikes[idx]))})` : ""}</SelectItem>)}</SelectContent></Select></div>}
+      </div>
+      {legs && <div className="num rounded border text-sm">
+        {legs.map(l => <div key={l.contract} className="grid grid-cols-[auto_1fr_auto] gap-3 border-b px-3 py-2 last:border-b-0">
+          <span className={l.side === "buy" ? "text-gain" : "text-loss"}>{l.side === "buy" ? "BUY" : "SELL"}{l.ratio > 1 ? ` ${l.ratio}` : ""}</span>
+          <span>{fmtExp(l.expiration)} {fmtStrike(l.strike)} {l.type}</span>
+          <span className="text-muted-foreground">{l.bid.toFixed(2)} / {l.ask.toFixed(2)}</span>
+        </div>)}
+      </div>}
+      {legs && <>
+        <div className="grid grid-cols-2 gap-2">
+          <Button type="button" variant={action === "open" ? "secondary" : "outline"} onClick={() => setAction("open")}>Open</Button>
+          <Button type="button" variant={action === "close" ? "secondary" : "outline"} onClick={() => setAction("close")}>Close existing</Button>
+        </div>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-2"><Label>Quantity</Label><Stepper value={qty} set={setQty} max={50} /></div>
+          <div className="space-y-2"><Label htmlFor="stlimit">Net price (+ pay / − receive)</Label>
+            <div className="flex gap-1"><Input id="stlimit" inputMode="decimal" className="num w-24" value={limit} onChange={e => setLimit(e.target.value.replace(/[^0-9.-]/g, ""))} />
+              <Button type="button" size="sm" variant="ghost" onClick={() => setLimit((action === "open" ? mid : -mid).toFixed(2))}>Mid</Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => { const n = netNatural(legs); setLimit((action === "open" ? n : -n).toFixed(2)); }}>Natural</Button></div></div>
+        </div>
+        <div className="num grid grid-cols-2 gap-2 text-sm">
+          <span className="text-muted-foreground">Net {kind}</span><span className="text-right font-semibold">{cash(Math.abs(net) * 100 * qty)}</span>
+          {action === "open" && (pay ? <>
+            <span className="text-muted-foreground">Max profit</span><span className="text-right text-gain">{money(pay.maxProfit * qty)}</span>
+            <span className="text-muted-foreground">Max loss</span><span className="text-right text-loss">{money(pay.maxLoss * qty)}</span>
+            <span className="text-muted-foreground">Breakeven</span><span className="text-right">{pay.breakevens.map(b => b.toFixed(2)).join(" / ") || "—"}</span>
+          </> : <><span className="text-muted-foreground">Max loss</span><span className="text-right text-loss">about {cash(Math.max(0, openNet) * 100 * qty)}</span>
+            <span className="col-span-2 text-xs text-muted-foreground">Profit depends on the later option's value when the near one expires.</span></>)}
+        </div>
+      </>}
+      <p className="text-xs text-muted-foreground">All legs go in together as one limit order, today only. Prices are indicative (free data).</p>
+      {problem && <p className="text-xs text-warning">{problem}</p>}
+      <Button className="w-full" size="lg" disabled={!!problem || busy} onClick={() => setConfirm(true)}>Review {def.label.toLowerCase()}</Button>
+    </>}
+    <Confirm open={confirm} setOpen={setConfirm} busy={busy} title={title}
+      body={`${legs?.map(l => `${l.side === "buy" ? "Buy" : "Sell"}${l.ratio > 1 ? " " + l.ratio : ""} ${fmtExp(l.expiration)} ${fmtStrike(l.strike)}${l.type[0]}`).join(", ") ?? ""} • net ${kind} limit $${Math.abs(net).toFixed(2)} • today only • ${acct.word} account`}
+      onYes={async () => { if (!parsed?.success) return; setBusy(true);
+        try { const o = await place({ data: parsed.data }); toast.success(`${acct.Word} ${def.label.toLowerCase()} order sent`); setConfirm(false); setPlaced(o.id); onDone(); q.refetch(); }
+        catch (e) { toast.error(e instanceof Error ? e.message : "Order failed"); } finally { setBusy(false); } }} />
+    <OrderSheet id={placed} onClose={() => setPlaced(null)} onDone={onDone} />
+  </div>;
 }
 
 function Confirm({ open, setOpen, title, body, busy, onYes }: { open: boolean; setOpen: (v: boolean) => void; title: string; body: string; busy: boolean; onYes: () => void }) {

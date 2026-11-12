@@ -44,5 +44,5 @@ describe("option chain ticket", () => {
   it("blocks buys far above the ask", () => { expect(optionLimitProblem("buy_to_open", 2.5, 1.9, 2.0)).toBeNull(); expect(optionLimitProblem("buy_to_open", 2.6, 1.9, 2.0)).toMatch(/above the ask/); expect(optionLimitProblem("buy_to_open", 1, 0, 0)).toMatch(/No live ask/); });
   it("blocks sells far below the bid", () => { expect(optionLimitProblem("sell_to_close", 1.5, 2.0, 2.1)).toBeNull(); expect(optionLimitProblem("sell_to_close", 1.4, 2.0, 2.1)).toMatch(/below the bid/); });
   it("can't sell more than you hold", () => { expect(closeQtyProblem(2, 3)).toMatch(/only 2/); expect(closeQtyProblem(0, 1)).toMatch(/don't hold/); expect(closeQtyProblem(3, 3)).toBeNull(); });
-  it("shows strikes within 10% of the price, at least $5", () => { expect(chainStrikeRange(30)).toBe(5); expect(chainStrikeRange(250)).toBe(25); });
+  it("shows strikes within 20% of the price, at least $10", () => { expect(chainStrikeRange(30)).toBe(10); expect(chainStrikeRange(250)).toBe(50); });
 });
