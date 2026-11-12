@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { tradeTicket, toBrokerOrder, chainTicket, spreadTicket, chainStrikeRange, optionLimitProblem, closeQtyProblem } from "@/lib/trade-rules";
+import { strategyTicket, mlegLegs, closeLegsProblem } from "@/lib/option-strategies";
 import { assertNoPulseOwnership, isBotOrder } from "@/lib/bot-ownership";
 
 type Rec = Record<string, any>;
@@ -144,41 +145,83 @@ export const getPaperOrder = createServerFn({ method: "POST" })
 
 const nyToday = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d);
 
-/** Option chain for the selected underlying: expirations in the next 60 days and strikes near the price, with live quotes. */
+/** Expirations up to a year out (narrow strike band keeps the listing cheap). */
+async function listExpirations(api: any, symbol: string, spot: number, today: string) {
+  const end = new Date(Date.parse(`${today}T12:00:00Z`) + 365 * 86400000).toISOString().slice(0, 10);
+  const band = Math.max(1, spot * 0.02); const out = new Set<string>(); let token: string | undefined;
+  for (let n = 0; n < 6; n++) {
+    const q = new URLSearchParams({ underlying_symbols: symbol, status: "active", type: "call", expiration_date_gte: today, expiration_date_lte: end,
+      strike_price_gte: String(spot - band), strike_price_lte: String(spot + band), limit: "1000", ...(token ? { page_token: token } : {}) });
+    const r = await api.call(`/v2/options/contracts?${q}`);
+    for (const c of r?.option_contracts ?? []) if (c.tradable) out.add(String(c.expiration_date));
+    token = r?.next_page_token; if (!token) break;
+  }
+  return [...out].sort();
+}
+/** Tradable contracts for one expiration near the price, with live quotes. */
+async function chainFor(api: any, symbol: string, spot: number, expiration: string, type?: "call" | "put") {
+  const range = chainStrikeRange(spot); const contracts: Rec[] = []; let token: string | undefined;
+  for (let n = 0; n < 4; n++) {
+    const q = new URLSearchParams({ underlying_symbols: symbol, status: "active", expiration_date: expiration, ...(type ? { type } : {}),
+      strike_price_gte: String(spot - range), strike_price_lte: String(spot + range), limit: "1000", ...(token ? { page_token: token } : {}) });
+    const r = await api.call(`/v2/options/contracts?${q}`);
+    contracts.push(...(r?.option_contracts ?? []).filter((c: Rec) => c.tradable));
+    token = r?.next_page_token; if (!token) break;
+  }
+  contracts.sort((a, b) => +a.strike_price - +b.strike_price);
+  const snaps: Rec = {};
+  for (let i = 0; i < contracts.length; i += 100) {
+    const r = await api.call(`/v1beta1/options/snapshots?${new URLSearchParams({ symbols: contracts.slice(i, i + 100).map(c => c.symbol).join(","), feed: "indicative", limit: "1000" })}`, "GET", undefined, true).catch(() => null);
+    Object.assign(snaps, r?.snapshots ?? {});
+  }
+  return contracts.map(c => { const s = snaps[c.symbol] ?? {}; return { c, s }; });
+}
+async function spotFor(api: any, symbol: string) {
+  const t = await api.call(`/v2/stocks/${symbol}/trades/latest?feed=iex`, "GET", undefined, true).catch(() => null);
+  return Number(t?.trade?.p ?? 0);
+}
+
+/** Option chain for the selected underlying: expirations up to a year out and strikes within ±20% of the price, with live quotes. */
 export const getOptionChain = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ symbol: z.string().regex(/^[A-Z][A-Z.]{0,9}$/), type: z.enum(["call", "put"]), expiration: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }).parse(i))
   .handler(async ({ data, context }) => {
     const { api } = await broker(context.userId);
-    const [clock, t, positions] = await Promise.all([api.clock(), api.call(`/v2/stocks/${data.symbol}/trades/latest?feed=iex`, "GET", undefined, true).catch(() => null), api.call("/v2/positions")]);
-    const spot = Number(t?.trade?.p ?? 0);
+    const [clock, spot, positions] = await Promise.all([api.clock(), spotFor(api, data.symbol), api.call("/v2/positions")]);
     const today = nyToday(new Date(clock.timestamp));
     const base = { symbol: data.symbol, spot, today, market_open: !!clock.is_open };
     if (!(spot > 0)) return { ...base, expirations: [] as string[], expiration: null, rows: [], error: `No ${data.symbol} stock price available right now` };
-    const range = chainStrikeRange(spot);
-    const end = new Date(Date.parse(`${today}T12:00:00Z`) + 60 * 86400000).toISOString().slice(0, 10);
-    const contracts: Rec[] = []; let token: string | undefined;
-    for (let n = 0; n < 5; n++) {
-      const q = new URLSearchParams({ underlying_symbols: data.symbol, status: "active", type: data.type, expiration_date_gte: today, expiration_date_lte: end,
-        strike_price_gte: String(spot - range), strike_price_lte: String(spot + range), limit: "1000", ...(token ? { page_token: token } : {}) });
-      const r = await api.call(`/v2/options/contracts?${q}`);
-      contracts.push(...(r?.option_contracts ?? []).filter((c: Rec) => c.tradable));
-      token = r?.next_page_token; if (!token) break;
-    }
-    const expirations = [...new Set(contracts.map(c => String(c.expiration_date)))].sort();
+    const expirations = await listExpirations(api, data.symbol, spot, today);
     const expiration = data.expiration && expirations.includes(data.expiration) ? data.expiration : expirations[0] ?? null;
-    const list = contracts.filter(c => c.expiration_date === expiration).sort((a, b) => +a.strike_price - +b.strike_price);
-    const snaps: Rec = {};
-    for (let i = 0; i < list.length; i += 100) {
-      const r = await api.call(`/v1beta1/options/snapshots?${new URLSearchParams({ symbols: list.slice(i, i + 100).map(c => c.symbol).join(","), feed: "indicative", limit: "1000" })}`, "GET", undefined, true).catch(() => null);
-      Object.assign(snaps, r?.snapshots ?? {});
-    }
+    const list = expiration ? await chainFor(api, data.symbol, spot, expiration, data.type) : [];
     const held = new Map<string, number>((positions ?? []).map((p: Rec) => [p.symbol, Number(p.qty)]));
-    const rows = list.map(c => { const s = snaps[c.symbol] ?? {}; return {
+    const rows = list.map(({ c, s }) => ({
       contract: String(c.symbol), strike: Number(c.strike_price), bid: Number(s.latestQuote?.bp ?? 0), ask: Number(s.latestQuote?.ap ?? 0),
       last: Number(s.latestTrade?.p ?? 0), quote_time: s.latestQuote?.t ?? null, iv: s.impliedVolatility != null ? Number(s.impliedVolatility) : null,
-      delta: s.greeks?.delta != null ? Number(s.greeks.delta) : null, open_interest: c.open_interest != null ? Number(c.open_interest) : null, held: held.get(String(c.symbol)) ?? 0 }; });
+      delta: s.greeks?.delta != null ? Number(s.greeks.delta) : null, open_interest: c.open_interest != null ? Number(c.open_interest) : null, held: held.get(String(c.symbol)) ?? 0 }));
     return { ...base, expirations, expiration, rows, error: null as string | null };
+  });
+
+/** Calls and puts for one or two expirations, for the multi-leg strategy builder. */
+export const getStrategyChain = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ symbol: z.string().regex(/^[A-Z][A-Z.]{0,9}$/), expiration: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), far: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { api } = await broker(context.userId);
+    const [clock, spot] = await Promise.all([api.clock(), spotFor(api, data.symbol)]);
+    const today = nyToday(new Date(clock.timestamp));
+    const empty = { calls: [] as { contract: string; strike: number; bid: number; ask: number }[], puts: [] as { contract: string; strike: number; bid: number; ask: number }[] };
+    const base = { symbol: data.symbol, spot, today, market_open: !!clock.is_open };
+    if (!(spot > 0)) return { ...base, expirations: [] as string[], expiration: null, far: null, near: empty, farChain: empty, error: `No ${data.symbol} stock price available right now` };
+    const expirations = await listExpirations(api, data.symbol, spot, today);
+    const expiration = data.expiration && expirations.includes(data.expiration) ? data.expiration : expirations[0] ?? null;
+    const far = data.far && expirations.includes(data.far) && (!expiration || data.far > expiration) ? data.far : null;
+    const split = (rows: { c: Rec; s: Rec }[]) => {
+      const q = (x: { c: Rec; s: Rec }) => ({ contract: String(x.c.symbol), strike: Number(x.c.strike_price), bid: Number(x.s.latestQuote?.bp ?? 0), ask: Number(x.s.latestQuote?.ap ?? 0) });
+      return { calls: rows.filter(x => x.c.type === "call").map(q), puts: rows.filter(x => x.c.type === "put").map(q) };
+    };
+    const [near, farChain] = await Promise.all([expiration ? chainFor(api, data.symbol, spot, expiration).then(split) : empty, far ? chainFor(api, data.symbol, spot, far).then(split) : empty]);
+    return { ...base, expirations, expiration, far, near, farChain, error: null as string | null };
   });
 
 /** Places a limit option order on a chosen contract. Paper only; sells only close contracts you hold; never touches the IWM bot's contract. */
@@ -237,4 +280,29 @@ export const placeSpreadOrder = createServerFn({ method: "POST" })
     // Alpaca mleg limit: positive = debit to pay, negative = credit to receive. Closing flips the sign of the opening price.
     return pick(await api.submit({ order_class: "mleg", qty: String(data.contracts), type: "limit", limit_price: data.limit_price.toFixed(2),
       time_in_force: "day", legs, client_order_id: `manual-${crypto.randomUUID()}` }));
+  });
+
+/** Places any 2–4 leg preset (verticals, straddles, condors, butterflies, calendars, diagonals) as one Alpaca mleg limit order. */
+export const placeStrategyOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => strategyTicket.parse(i))
+  .handler(async ({ data, context }) => {
+    const { api } = await broker(context.userId);
+    const [clock, account, positions] = await Promise.all([api.clock(), api.account(), api.call("/v2/positions")]);
+    if (!clock.is_open) throw new Error("Options can only be traded while the market is open");
+    for (const l of data.legs) await assertNoPulseOwnership(context.supabase, context.userId, l.contract);
+    const st = await context.supabase.from("iwm_strategy_state").select("open_trade").eq("user_id", context.userId).maybeSingle();
+    const botC = (st.data?.open_trade as Rec | null)?.optionSymbol;
+    if (data.legs.some(l => l.contract === botC)) throw new Error("The IWM bot holds one of these contracts");
+    const held = (sym: string) => Number((positions ?? []).find((p: Rec) => p.symbol === sym)?.qty ?? 0);
+    if (data.action === "open") {
+      const level = Number(account.options_trading_level ?? 0);
+      const allLong = data.legs.every(l => l.side === "buy");
+      if (level < (allLong ? 2 : 3)) throw new Error(allLong ? "Needs options level 2 on your Alpaca account" : "Multi-leg orders with short legs need options level 3 on your Alpaca account");
+      if (data.limit_price > 0 && data.limit_price * data.contracts * 100 > Number(account.options_buying_power ?? account.buying_power)) throw new Error("Not enough options buying power for this order");
+    } else {
+      const p = closeLegsProblem(data, held); if (p) throw new Error(p);
+    }
+    return pick(await api.submit({ order_class: "mleg", qty: String(data.contracts), type: "limit", limit_price: data.limit_price.toFixed(2),
+      time_in_force: "day", legs: mlegLegs(data), client_order_id: `manual-${crypto.randomUUID()}` }));
   });
