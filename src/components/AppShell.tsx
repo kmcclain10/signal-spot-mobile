@@ -111,7 +111,7 @@ function NavLink({ to, label, icon: Icon, onClick }: ((typeof NAV)[number] | (ty
 
 export function AppShell() {
   const identity=useQuery({queryKey:['notification-owner'],queryFn:async()=>{const r=await supabase.auth.getUser();return r.data.user?.id;}});
-  useBotNotifications(identity.data);
+  useBotNotifications(identity.data,true);
   const signOut = useSignOut();
   const qc = useQueryClient();
   const [more, setMore] = useState(false);

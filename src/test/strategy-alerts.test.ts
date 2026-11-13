@@ -21,10 +21,11 @@ describe('read-only strategy alerts',()=>{
   });
   it('persists a real closed-bar IWM cross without placing any order',async()=>{
     const h=harness('alerts',true);
-    const bars=Array.from({length:18},(_,i)=>({t:new Date(Date.parse('2026-11-12T13:30:00Z')+i*300000).toISOString(),o:100,h:i===17?110:102,l:99,c:i===17?110:100}));
+    h.api.clock.mockResolvedValue({timestamp:'2026-11-12T16:00:00Z',is_open:true});
+    const bars=Array.from({length:18},(_,i)=>({t:new Date(Date.parse('2026-11-12T14:30:00Z')+i*300000).toISOString(),o:100,h:i===17?110:102,l:99,c:i===17?110:100}));
     h.api.call.mockImplementation(async(path:string)=>({bars:path.includes('symbols=IWM')?{IWM:[...bars].reverse()}:{},next_page_token:null}));
     await runStrategyAlerts(h);
-    expect(h.upsert).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({strategy_id:'iwm',symbol:'IWM',side:'long',price:110,bar_time:'2026-11-12T14:55:00.000Z'})]),expect.objectContaining({ignoreDuplicates:true}));
+    expect(h.upsert).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({strategy_id:'iwm',symbol:'IWM',side:'long',price:110,bar_time:'2026-11-12T15:55:00.000Z'})]),expect.objectContaining({ignoreDuplicates:true}));
     expect(h.api.submit).not.toHaveBeenCalled();
   });
 });

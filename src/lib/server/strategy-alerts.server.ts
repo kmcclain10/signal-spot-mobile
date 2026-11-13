@@ -46,7 +46,7 @@ export async function runStrategyAlerts(overrides?: {db:any; apiFor:typeof iwmAl
           promise = (async()=>{
             let token: string | undefined; const bars: Rec[] = [];
             for(let page=0;page<5;page++) {
-              const params = new URLSearchParams({symbols:symbol,timeframe:timeframe===1440?'1Day':`${timeframe}Min`,start:new Date(now.getTime()-(timeframe===1440?750:14)*86400000).toISOString(),end:now.toISOString(),feed,adjustment:'raw',limit:'10000',sort:'desc',...(token?{page_token:token}:{})});
+              const params = new URLSearchParams({symbols:symbol,timeframe:timeframe===1440?'1Day':`${timeframe}Min`,start:new Date(now.getTime()-(symbol==='IWM' && timeframe===5 ? 3 : timeframe===1440?750:14)*86400000).toISOString(),end:now.toISOString(),feed,adjustment:'raw',limit:'10000',sort:'desc',...(token?{page_token:token}:{})});
               const r = await api.call(`/v2/stocks/bars?${params}`,'GET',undefined,true);
               bars.push(...(r.bars?.[symbol]??[])); token=r.next_page_token;
               if(!token) break;

@@ -54,37 +54,4 @@ export function useHasBroker() {
   return { loading: conns.isLoading, hasBroker: (conns.data ?? []).some((c) => c.is_default_broker) };
 }
 
-export function useLatestBacktest() {
-  return useQuery({
-    queryKey: ["runs", "latest-backtest"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("engine_runs")
-        .select("id,status,summary,started_at,finished_at")
-        .eq("kind", "backtest")
-        .order("finished_at", { ascending: false, nullsFirst: false })
-        .limit(1);
-      if (error) throw error;
-      return data[0] ?? null;
-    },
-  });
-}
-
-/** Subscribes to realtime changes on a table and invalidates the given query keys. */
-export function useRealtimeInvalidate(table: "signals" | "picks" | "engine_runs", keys: string[][]) {
-  const qc = useQueryClient();
-  useEffect(() => {
-    const ch = supabase
-      .channel(`rt-${table}`)
-      .on("postgres_changes", { event: "*", schema: "public", table }, () => {
-        keys.forEach((k) => qc.invalidateQueries({ queryKey: k }));
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [table]);
-}
-
 export const todayNY = () => nyDate();
