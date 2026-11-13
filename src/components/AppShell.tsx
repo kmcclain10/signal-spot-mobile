@@ -22,6 +22,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { AccountSecurity } from "@/components/AccountSecurity";
+import { useBotNotifications } from '@/hooks/use-bot-notifications';
 
 const NAV = [
   { to: "/", label: "Home", icon: Home },
@@ -33,7 +34,7 @@ const NAV = [
 const SECONDARY = [
   { to: "/signals", label: "Signals", icon: Activity },
   { to: "/trade", label: "Trade", icon: CandlestickChart },
-  { to: "/iwm", label: "IWM 20-Min Window", icon: Activity },
+  { to: "/iwm", label: "IWM 8/20 Momentum", icon: Activity },
   { to: "/strategies", label: "Strategy playbook", icon: BarChart3 },
   { to: "/performance", label: "Performance", icon: BarChart3 },
   { to: "/connections", label: "Connections", icon: Plug },
@@ -109,6 +110,8 @@ function NavLink({ to, label, icon: Icon, onClick }: ((typeof NAV)[number] | (ty
 }
 
 export function AppShell() {
+  const identity=useQuery({queryKey:['notification-owner'],queryFn:async()=>{const r=await supabase.auth.getUser();return r.data.user?.id;}});
+  useBotNotifications(identity.data);
   const signOut = useSignOut();
   const qc = useQueryClient();
   const [more, setMore] = useState(false);

@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from '@tanstack/react-query';
+import { getStrategyPlatform } from '@/lib/strategy-platform.functions';
+import { strategyLabel } from '@/lib/strategy-platform';
+import { useRef } from 'react';
 
 const KEY = "bot-notifications";
 export const notificationsSupported = () => typeof window !== "undefined" && "Notification" in window;
@@ -7,6 +11,17 @@ export const notificationsSupported = () => typeof window !== "undefined" && "No
 /** Browser notifications for new IWM bot trades. Opt-in; stored on this device only. */
 export function useBotNotifications(userId: string | undefined) {
   const [enabled, setEnabled] = useState(false);
+  const seen = useRef<Set<string> | null>(null);
+  const signals = useQuery({queryKey:['strategy-notifications',userId],queryFn:()=>getStrategyPlatform(),enabled:enabled&&!!userId,refetchInterval:15000});
+  useEffect(()=>{
+    if(!signals.data || !enabled || !notificationsSupported() || Notification.permission!=='granted') return;
+    const rows=signals.data.signals;
+    if(seen.current===null){seen.current=new Set(rows.map(s=>s.id));return;}
+    for(const s of rows){if(seen.current.has(s.id)) continue;seen.current.add(s.id);
+      if(Date.now()-Date.parse(s.at)>120000) continue;
+      new Notification(`${strategyLabel(s.strategy)}: ${s.symbol}`,{body:`${s.side==='long'?'Bullish':'Bearish'} · ${s.reason}`,tag:`strategy-${s.id}`,icon:'/icons/icon-192.png'});
+    }
+  },[signals.data,enabled]);
   useEffect(() => { try { setEnabled(localStorage.getItem(KEY) === "1"); } catch { setEnabled(false); } }, []);
 
   async function toggle(next: boolean) {

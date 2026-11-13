@@ -61,13 +61,13 @@ export async function runPulseOwner(db:any,userId:string,apiOverride?:Api){
           if(qty>0&&price>0){
             if(p.kind==="entry"){
               state.position={...p.position,qty,entryPrice:price,peakGainPct:0,floorPct:null,openedBarTime:p.barTime,entryAt:o.filled_at??now.toISOString()};
-              state.trades++;await event("entry",{symbol:p.body.symbol,qty,price,side:p.position.side,reason:p.reason,orderId:o.id});
+              state.trades++;await event("entry",{symbol:p.body.symbol,underlying:p.position.underlying,barTime:p.barTime,strategyId:parsed.strategyId,qty,price,side:p.position.side,reason:p.reason,orderId:o.id});
             }else{
               const pos=state.position;if(!pos) throw new Error("Exit has no owned position; review required");
               const signed=pos.instrument==="shares"&&pos.side==="short"?-1:1;
               const pnl=cash((price-pos.entryPrice)*signed*qty*(pos.instrument==="options"?100:1));
               state.balance=cash(state.balance+pnl);state.pnlToday=cash(state.pnlToday+pnl);pos.qty-=qty;
-              await event("exit",{symbol:pos.symbol,qty,price,pnl,reason:p.reason,orderId:o.id});
+              await event("exit",{symbol:pos.symbol,strategyId:parsed.strategyId,entryAt:pos.entryAt,remainingQty:pos.qty,qty,price,pnl,reason:p.reason,orderId:o.id});
               if(pos.qty<=0){state.position=null;
                 if(parsed.banking?.enabled){const bank={balance:state.balance,bankedTotal:state.bankedTotal,cycles:state.cycles};const amount=bankSettle(bank,0,parsed.banking.startBalance,parsed.banking.bankTrigger);Object.assign(state,bank);if(amount!==null) await event("bank",{amount,balance:bank.balance});}
               }
@@ -128,7 +128,7 @@ export async function runPulseOwner(db:any,userId:string,apiOverride?:Api){
           state.memo[symbol]=[...memo];state.lastBars[symbol]=last.t;state.note=sig.note;
           if(!sig.entry || parsed.direction!=="both"&&parsed.direction!==sig.entry.side) continue;
           if(s.timeframe!==1440&&now.getTime()-(Date.parse(last.t)+s.timeframe*60000)>s.timeframe*60000) {state.note="Signal bar stale";continue;}
-          if(parsed.executionMode!=="auto"){await event("signal",{symbol,...sig.entry,barTime:last.t,mode:parsed.executionMode});continue;}
+          if(parsed.executionMode!=="auto"){await event("signal",{symbol,strategyId:parsed.strategyId,price:last.c,...sig.entry,barTime:last.t,mode:parsed.executionMode});continue;}
           // Do not share an underlying with manual positions, IWM, another bot or a working order.
           const matches=(x:string)=>x===symbol||new RegExp(`^${symbol.replaceAll('.','\\.')}\\d{6}[CP]\\d{8}$`).test(x);
           const otherStates=await db.from("pulse_bot_states").select("state").eq("user_id",userId);

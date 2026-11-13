@@ -26,9 +26,9 @@ export const getStrategyPlatform = createServerFn({method:'POST'}).middleware([r
   }
   for(const e of events.data??[]) {
     const c=botMap.get(e.bot_id), d=e.detail as Rec;
-    if(!c || e.kind==='exit') continue;
+    if((!c && !d.strategyId) || e.kind==='exit') continue;
     const symbol = /^[A-Z.]+\d{6}[CP]\d{8}$/.test(d.symbol??'') ? String(d.symbol).slice(0,-15) : String(d.symbol??'');
-    real.push({id:e.id,strategy:c.strategyId,symbol,side:d.side??'long',at:e.created_at,barTime:d.barTime??e.created_at,price:e.kind==='signal'?numeric(d.price):null,reason:d.reason??'Strategy entry',status:e.kind==='entry'?'filled':'alert',environment:'paper',feed:'IEX / indicative',contract:e.kind==='entry' && d.symbol!==symbol ? d.symbol:null,fill:e.kind==='entry'?numeric(d.price):null});
+    real.push({id:e.id,strategy:d.strategyId??c?.strategyId,symbol,side:d.side??'long',at:e.created_at,barTime:d.barTime??e.created_at,price:e.kind==='signal'?numeric(d.price):null,reason:d.reason??'Strategy entry',status:e.kind==='entry'?'filled':'alert',environment:'paper',feed:'IEX / indicative',contract:e.kind==='entry' && d.symbol!==symbol ? d.symbol:null,fill:e.kind==='entry'?numeric(d.price):null});
   }
   return {signals:mergeRealSignals(real),bots:bots.data??[],states:states.data??[],settings:settings.data,state:state.data};
 });
@@ -54,7 +54,7 @@ export const getRealPerformance = createServerFn({method:'POST'}).middleware([re
       const d=e.detail as Rec, key=`${e.bot_id}|${d.symbol}`;
       if(e.kind==='entry') {entries.set(key,e.created_at);continue;}
       if(numeric(d.pnl)===null) continue;
-      result.push({id:e.id,strategy:botMap.get(e.bot_id)??'removed-bot',symbol:String(d.symbol??''),at:e.created_at,entryAt:entries.get(key)??null,pnl:Number(d.pnl),environment:'paper',reason:d.reason??'Closed'});
+      result.push({id:e.id,strategy:d.strategyId??botMap.get(e.bot_id)??'removed-bot',symbol:String(d.symbol??''),at:e.created_at,entryAt:d.entryAt??entries.get(key)??null,pnl:Number(d.pnl),environment:'paper',reason:d.reason??'Closed'});
     }
     if((r.data?.length??0)<1000) break;
   }

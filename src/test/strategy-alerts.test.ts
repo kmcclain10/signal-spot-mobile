@@ -19,4 +19,12 @@ describe('read-only strategy alerts',()=>{
   it('evaluates actual market bars for Alerts tier without submitting or fabricating signals',async()=>{
     const h=harness('alerts',true);const r=await runStrategyAlerts(h);expect(h.api.call).toHaveBeenCalled();expect(h.upsert).not.toHaveBeenCalled();expect(h.api.submit).not.toHaveBeenCalled();expect(h.api.cancel).not.toHaveBeenCalled();expect(r.errors).toBe(0);
   });
+  it('persists a real closed-bar IWM cross without placing any order',async()=>{
+    const h=harness('alerts',true);
+    const bars=Array.from({length:18},(_,i)=>({t:new Date(Date.parse('2026-11-12T13:30:00Z')+i*300000).toISOString(),o:100,h:i===17?110:102,l:99,c:i===17?110:100}));
+    h.api.call.mockImplementation(async(path:string)=>({bars:path.includes('symbols=IWM')?{IWM:[...bars].reverse()}:{},next_page_token:null}));
+    await runStrategyAlerts(h);
+    expect(h.upsert).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({strategy_id:'iwm',symbol:'IWM',side:'long',price:110,bar_time:'2026-11-12T14:55:00.000Z'})]),expect.objectContaining({ignoreDuplicates:true}));
+    expect(h.api.submit).not.toHaveBeenCalled();
+  });
 });
