@@ -1,8 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getProviderDef } from "@/lib/providers";
-import { nyDate } from "@/lib/market-hours";
-import { positionSize } from "@/lib/format";
 import { assertNoPulseOwnership, isBotOrder } from "@/lib/bot-ownership";
 
 type Rec = Record<string, any>;
@@ -199,53 +197,7 @@ export const providerProxy = createServerFn({ method: "POST" })
 export const placeSignalOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: { signal_id: string }) => i)
-  .handler(async ({ data, context }) => {
-    const p = await import("@/lib/server/providers.server");
-    const db = await admin();
-    const uid = context.userId;
-    const { data: sig } = await db.from("signals").select("*").eq("id", data.signal_id).eq("user_id", uid).maybeSingle();
-    if (!sig) throw new Error("Signal not found");
-    await assertNoPulseOwnership(context.supabase,uid,sig.symbol);
-    if (sig.trade_date !== nyDate()) throw new Error("Only today's signals can be traded");
-    if (sig.status !== "new") throw new Error(`Signal is already ${sig.status}`);
-    const { data: settings } = await db.from("settings").select("*").eq("user_id", uid).maybeSingle();
-    if (!settings) throw new Error("Settings not found");
-    const c = await pickConnection(uid, "broker");
-    if (c.environment === "live" && settings.trading_mode !== "live")
-      throw new Error("Your default broker is LIVE but trading mode is Paper. Switch mode in Settings first.");
-    const sec = await p.decryptJson(c.secret_cipher, c.secret_iv);
-    const broker = p.brokerAdapter({ provider: c.provider, environment: c.environment, config: c.config as Rec }, sec);
-    const [acct, positions] = await Promise.all([broker.getAccount(), broker.getPositions()]);
-    if (positions.length >= settings.max_open_positions)
-      throw new Error(`Max open positions reached (${settings.max_open_positions})`);
-    if (acct.dayPl <= -Number(settings.max_daily_loss_usd))
-      throw new Error(`Max daily loss hit (${acct.dayPl.toFixed(2)}) — no new orders today`);
-    const entry = Number(sig.entry);
-    const stop = Number(sig.stop);
-    const target = sig.target == null ? null : Number(sig.target);
-    const qty = positionSize(Number(settings.risk_per_trade_usd), entry, stop);
-    const side = sig.side === "long" ? "buy" : "sell";
-    const placed = await broker.placeBracketOrder({ symbol: sig.symbol, side, qty, stop, target, clientId: sig.id });
-    const { data: order } = await db
-      .from("orders")
-      .insert({
-        user_id: uid,
-        signal_id: sig.id,
-        connection_id: c.id,
-        environment: c.environment,
-        broker_order_id: placed.id,
-        symbol: sig.symbol,
-        side,
-        qty,
-        entry,
-        stop,
-        target,
-        status: placed.status ?? "submitted",
-        raw: placed.raw,
-      })
-      .select("id")
-      .single();
-    await db.from("signals").update({ status: "ordered" }).eq("id", sig.id);
-    return { order_id: order?.id ?? null, broker_order_id: placed.id, qty, side, environment: c.environment };
+  .handler(async () => {
+    throw new Error("Legacy scanner orders are retired. Review real strategy signals in the Trade desk.");
   });
 

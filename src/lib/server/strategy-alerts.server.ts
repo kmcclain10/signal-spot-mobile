@@ -9,13 +9,14 @@ import { closedRegularBars } from '@/lib/iwm-engine-rules';
 
 type Rec = Record<string, any>;
 /** Read-only strategy evaluation. Never calls submit, cancel, or changes bot state. */
-export async function runStrategyAlerts() {
-  const { supabaseAdmin: db } = await import('@/integrations/supabase/client.server');
+export async function runStrategyAlerts(overrides?: {db:any; apiFor:typeof iwmAlpaca}) {
+  const db = overrides?.db ?? (await import('@/integrations/supabase/client.server')).supabaseAdmin;
+  const apiFor = overrides?.apiFor ?? iwmAlpaca;
   const owners = await db.from('connections').select('user_id').eq('provider','alpaca');
   if (owners.error) throw new Error('Could not load alert connections');
   let alerts = 0, errors = 0, users = 0;
   const started = Date.now();
-  for (const userId of new Set((owners.data ?? []).map(r=>r.user_id))) {
+  for (const userId of new Set<string>((owners.data ?? []).map((r:Rec)=>r.user_id))) {
     if (Date.now()-started>38000) break;
     try {
       const tier = await db.rpc('plan_tier',{_user_id:userId});
@@ -26,17 +27,17 @@ export async function runStrategyAlerts() {
       ]);
       if (iwm.error || bots.error) throw new Error('Could not read alert settings');
       const env = iwm.data?.trading_env==='live' ? 'live' : 'paper';
-      const api = await iwmAlpaca(db,userId,undefined,env);
+      const api = await apiFor(db,userId,undefined,env);
       const clock = await api.clock();
       if (!clock.is_open) continue;
       const now = new Date(clock.timestamp), today = etParts(now.toISOString()).date;
       const feed = iwm.data?.data_feed ?? 'iex';
-      const configs = (bots.data ?? []).flatMap(row => {
+      const configs = (bots.data ?? []).flatMap((row:Rec) => {
         const parsed = pulseConfigSchema.safeParse(row.config);
         return parsed.success ? [{ config: parsed.data, settings: resolveBotSettings(parsed.data,{isPaper:true}) }] : [];
       });
-      const configured = new Set(configs.map(c=>c.config.strategyId));
-      const checks = [...configs,...defaultAlertSettings().filter(c=>!configured.has(c.config.strategyId as any))];
+      const configured = new Set(configs.map((c:Rec)=>c.config.strategyId));
+      const checks = [...configs,...defaultAlertSettings().filter(c=>!configured.has(c.config.strategyId))];
       const cache = new Map<string,Promise<Rec[]>>();
       async function barsFor(symbol:string, timeframe:number) {
         const key = `${symbol}|${timeframe}`;
@@ -73,8 +74,9 @@ export async function runStrategyAlerts() {
         if(!sig.entry || config.direction!=='both' && config.direction!==sig.entry.side) continue;
         rows.push({user_id:userId,strategy_id:config.strategyId,symbol,side:sig.entry.side,bar_time:bar.t,price:bar.c,reason:sig.entry.reason,timeframe_min:settings.timeframe,data_feed:feed,environment:env});
       }
-      if(rows.length) {
-        const saved = await db.from('strategy_alerts').upsert(rows as any,{onConflict:'user_id,strategy_id,symbol,bar_time,side',ignoreDuplicates:true}).select('id');
+      const uniqueRows = [...new Map(rows.map(row=>[`${row.strategy_id}|${row.symbol}|${row.bar_time}|${row.side}`,row])).values()];
+      if(uniqueRows.length) {
+        const saved = await db.from('strategy_alerts').upsert(uniqueRows,{onConflict:'user_id,strategy_id,symbol,bar_time,side',ignoreDuplicates:true}).select('id');
         if(saved.error) throw new Error('Could not save strategy alerts');
         alerts += saved.data?.length??0;
       }
