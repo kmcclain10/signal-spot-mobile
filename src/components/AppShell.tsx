@@ -34,7 +34,7 @@ const SECONDARY = [
   { to: "/signals", label: "Signals", icon: Activity },
   { to: "/trade", label: "Trade", icon: CandlestickChart },
   { to: "/iwm", label: "IWM 20-Min Window", icon: Activity },
-  { to: "/strategies", label: "Strategy library", icon: BarChart3 },
+  { to: "/strategies", label: "Strategy playbook", icon: BarChart3 },
   { to: "/performance", label: "Performance", icon: BarChart3 },
   { to: "/connections", label: "Connections", icon: Plug },
 ] as const;

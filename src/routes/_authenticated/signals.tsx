@@ -1,127 +1,27 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { Download } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useRealtimeInvalidate } from "@/hooks/use-app-data";
-import { FAMILY_LABEL, parseStrategyId, strategyName } from "@/lib/strategy-names";
-import { EmptyState, ErrorState, LoadingRows, PageHeader, Panel } from "@/components/common";
-import { SignalRow, type Signal } from "@/components/SignalRow";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-export const Route = createFileRoute("/_authenticated/signals")({
-  head: () => ({
-    meta: [
-      { title: "Signals — Pulse Signals" },
-      { name: "description", content: "Full history of trade signals with filters and CSV export." },
-      { property: "og:title", content: "Signals — Pulse Signals" },
-      { property: "og:description", content: "Full history of trade signals with filters and CSV export." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
-  component: SignalsPage,
+import { createFileRoute } from '@tanstack/react-router';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { Download, Radio } from 'lucide-react';
+import { strategyPlatformOptions,useStrategyRealtime } from '@/hooks/use-strategy-platform';
+import { PLAYBOOK,strategyLabel } from '@/lib/strategy-platform';
+import { RealStrategyFeed } from '@/components/RealStrategyFeed';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from '@/components/ui/select';
+import { ErrorState } from '@/components/common';
+import { nyDate } from '@/lib/market-hours';
+export const Route=createFileRoute('/_authenticated/signals')({
+  validateSearch:(s:Record<string,unknown>)=>({strategy:typeof s.strategy==='string'?s.strategy:'all',date:typeof s.date==='string'?s.date:'',symbol:typeof s.symbol==='string'?s.symbol:''}),
+  head:()=>({meta:[{title:'Real Strategy Signals — Pulse Signals'},{name:'description',content:'Actual IWM and Pulse strategy triggers, bot fills and signal history.'},{property:'og:title',content:'Real Strategy Signals — Pulse Signals'},{property:'og:description',content:'Authentic market triggers from your executable trading strategies.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'}]}),
+  loader:({context})=>context.queryClient.ensureQueryData(strategyPlatformOptions),errorComponent:({error})=><ErrorState error={error}/>,notFoundComponent:()=> <p>Signals unavailable.</p>,component:Signals,
 });
-
-function SignalsPage() {
-  useRealtimeInvalidate("signals", [["signals"]]);
-  const [date, setDate] = useState("");
-  const [symbol, setSymbol] = useState("");
-  const [family, setFamily] = useState("all");
-  const [side, setSide] = useState("all");
-  const [status, setStatus] = useState("all");
-  const q = useQuery({
-    queryKey: ["signals", "history", date],
-    queryFn: async () => {
-      let r = supabase.from("signals").select("*").order("signal_time", { ascending: false }).limit(1000);
-      if (date) r = r.eq("trade_date", date);
-      const { data, error } = await r;
-      if (error) throw error;
-      return data as unknown as Signal[];
-    },
-  });
-  const rows = useMemo(
-    () =>
-      (q.data ?? []).filter(
-        (s) =>
-          (!symbol || s.symbol.includes(symbol.toUpperCase())) &&
-          (family === "all" || parseStrategyId(s.strategy_id)?.family === family) &&
-          (side === "all" || s.side === side) &&
-          (status === "all" || s.status === status),
-      ),
-    [q.data, symbol, family, side, status],
-  );
-
-  function exportCsv() {
-    const head = ["date", "time", "symbol", "strategy", "side", "entry", "stop", "target", "status"];
-    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const lines = rows.map((s) =>
-      [s.trade_date, s.signal_time, s.symbol, strategyName(s.strategy_id), s.side, s.entry, s.stop, s.target ?? "close", s.status]
-        .map(esc)
-        .join(","),
-    );
-    const blob = new Blob([[head.join(","), ...lines].join("\n")], { type: "text/csv" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `signals${date ? "-" + date : ""}.csv`;
-    a.click();
-  }
-
-  return (
-    <div>
-      <PageHeader
-        title="Signals"
-        sub="Every entry the engine flagged."
-        action={
-          <Button size="sm" variant="outline" onClick={exportCsv} disabled={!rows.length}>
-            <Download /> CSV
-          </Button>
-        }
-      />
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
-        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        <Input placeholder="Symbol" value={symbol} onChange={(e) => setSymbol(e.target.value)} />
-        <Select value={family} onValueChange={setFamily}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All families</SelectItem>
-            {Object.entries(FAMILY_LABEL).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={side} onValueChange={setSide}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Long & short</SelectItem>
-            <SelectItem value="long">Long</SelectItem>
-            <SelectItem value="short">Short</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {["all", "new", "ordered", "skipped", "expired"].map((s) => (
-              <SelectItem key={s} value={s} className="capitalize">{s === "all" ? "Any status" : s}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      {q.isLoading ? (
-        <LoadingRows />
-      ) : q.error ? (
-        <ErrorState error={q.error} onRetry={() => q.refetch()} />
-      ) : !rows.length ? (
-        <EmptyState title="No signals match." body="Signals appear here once the engine's intraday scan runs." />
-      ) : (
-        <Panel>
-          {rows.map((s) => (
-            <SignalRow key={s.id} s={s} />
-          ))}
-        </Panel>
-      )}
-    </div>
-  );
+function Signals(){
+  const {data}=useSuspenseQuery(strategyPlatformOptions);useStrategyRealtime(Route.useRouteContext().user.id);
+  const search=Route.useSearch(),navigate=Route.useNavigate();
+  const rows=data.signals.filter(s=>(search.strategy==='all'||s.strategy===search.strategy)&&(!search.date||nyDate(new Date(s.at))===search.date)&&(!search.symbol||s.symbol.includes(search.symbol.toUpperCase())));
+  const update=(patch:Partial<typeof search>)=>void navigate({search:{...search,...patch},replace:true});
+  function download(){const esc=(v:unknown)=>`"${String(v??'').replaceAll('"','""')}"`;const text=[['time','strategy','symbol','side','underlying','contract','fill','status','account','feed','reason'],...rows.map(s=>[s.at,strategyLabel(s.strategy),s.symbol,s.side,s.price,s.contract,s.fill,s.status,s.environment,s.feed,s.reason])].map(r=>r.map(esc).join(',')).join('\n');const url=URL.createObjectURL(new Blob([text],{type:'text/csv'}));const a=document.createElement('a');a.href=url;a.download='pulse-real-signals.csv';a.click();URL.revokeObjectURL(url);}
+  return <div className="space-y-6"><header className="flex items-center justify-between gap-3"><h1 className="flex items-center gap-2 text-3xl font-semibold"><Radio className="size-6 text-potential"/>Signals</h1><Button variant="outline" size="icon" title="Export signals" aria-label="Export signals" disabled={!rows.length} onClick={download}><Download/></Button></header>
+    <div className="grid gap-3 sm:grid-cols-3"><Input aria-label="Signal date" type="date" value={search.date} onChange={e=>update({date:e.target.value})}/><Input aria-label="Signal symbol" placeholder="Symbol" value={search.symbol} onChange={e=>update({symbol:e.target.value})}/><Select value={search.strategy} onValueChange={strategy=>update({strategy})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="all">All strategies</SelectItem>{PLAYBOOK.map(s=><SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select></div>
+    <p className="text-xs text-muted-foreground">Latest {data.signals.length} recorded setups · Quotes may be indicative depending on your data plan.</p><RealStrategyFeed rows={rows}/>
+  </div>;
 }

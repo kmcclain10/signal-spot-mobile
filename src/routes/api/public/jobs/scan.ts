@@ -7,13 +7,9 @@ export const Route = createFileRoute("/api/public/jobs/scan")({
       POST: async ({ request }) => {
         const authFailure = await authenticateCronRequest(request);
         if (authFailure) return authFailure;
-        const { nyHour, phaseForNyHour, runScheduledScan } = await import("@/lib/server/scan.server");
-        const now = new Date();
-        const wd = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short" }).format(now);
-        const phase = phaseForNyHour(nyHour(now));
-        if (!phase || wd === "Sat" || wd === "Sun") return Response.json({ skipped: true });
-        const result = await runScheduledScan(phase);
-        return Response.json({ success: true, users: result.users, phase });
+        const { runStrategyAlerts } = await import('@/lib/server/strategy-alerts.server');
+        const result = await runStrategyAlerts();
+        return Response.json({ success: result.errors === 0, ...result });
       },
     },
   },

@@ -249,36 +249,3 @@ export const placeSignalOrder = createServerFn({ method: "POST" })
     return { order_id: order?.id ?? null, broker_order_id: placed.id, qty, side, environment: c.environment };
   });
 
-/** Loads the backtest report bundled with the engine as an engine run for the current user. */
-export const importBundledBacktest = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const r: Rec = (await import("@/data/backtest_report.json")).default;
-    const db = await admin();
-    const { data, error } = await db
-      .from("engine_runs")
-      .insert({
-        user_id: context.userId,
-        kind: "backtest",
-        status: "ok",
-        started_at: new Date(r.period[0]).toISOString(),
-        finished_at: new Date().toISOString(),
-        rule: r.rule,
-        summary: {
-          oos: r.oos_selected,
-          in_sample: r.in_sample_of_picks,
-          baseline: r.baseline_all_strategies,
-          random: r.baseline_random_picks_same_count,
-          max_drawdown_R: r.max_drawdown_R,
-          period: r.period,
-          avg_strategies_selected_per_day: r.avg_strategies_selected_per_day,
-        },
-        by_year: r.oos_by_year,
-        equity: r.equity,
-        most_selected: r.most_selected,
-      })
-      .select("id")
-      .single();
-    if (error) throw new Error(error.message);
-    return { id: data.id };
-  });

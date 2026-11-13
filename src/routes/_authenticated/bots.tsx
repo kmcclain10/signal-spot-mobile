@@ -74,7 +74,7 @@ function BotsPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <header>
         <h1 className="text-2xl font-semibold">Bots</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Your automated paper traders. Every bot here trades paper money only.</p>
+        <p className="mt-1 text-sm text-muted-foreground">IWM follows your selected account. Pulse bots remain on paper.</p>
       </header>
 
       <section className="space-y-5 rounded-lg border bg-card p-4">
@@ -83,8 +83,8 @@ function BotsPage() {
             <span className="mt-0.5 rounded-md bg-primary/15 p-2 text-primary"><Bot className="size-5" /></span>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-semibold">IWM 20-Min Window</h2>
-                <span className="flex items-center gap-1 text-xs font-semibold text-gain"><ShieldCheck className="size-3.5" />PAPER ONLY</span>
+                <h2 className="font-semibold">IWM 8/20 Momentum</h2>
+                <span className="flex items-center gap-1 text-xs font-semibold text-gain"><ShieldCheck className="size-3.5" />{data.settings?.trading_env === "live" ? "LIVE" : "PAPER"}</span>
               </div>
               <p className={cn("mt-1 text-sm font-medium", HEALTH_TONE[health.status])}>{health.detail}</p>
             </div>
@@ -160,7 +160,7 @@ function BotsPage() {
       <Button asChild variant="ghost" className="h-auto w-full justify-start gap-3 border py-4">
         <Link to="/strategies">
           <Library className="size-5 text-primary" />
-          <span className="min-w-0 whitespace-normal text-left">Strategy library<span className="mt-0.5 block text-xs font-normal text-muted-foreground">864 setups the engine tests nightly — research only, they don't trade</span></span>
+          <span className="min-w-0 whitespace-normal text-left">Strategy playbook<span className="mt-0.5 block text-xs font-normal text-muted-foreground">11 executable strategies — current entry and exit rules</span></span>
         </Link>
       </Button>
     </div>
