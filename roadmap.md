@@ -1,3 +1,9 @@
+# Real strategy platform
+- [ ] Remove legacy picks, bundled backtests and scanner from customer screens and scheduled execution.
+- [ ] Replace Home and Signals with owner-visible real IWM/Pulse triggers and execution statuses.
+- [ ] Replace the library with the executable strategy playbook and actual trade performance.
+- [ ] Verify authenticated screens, strategy alert rules and existing trading tests without sending orders.
+
 # IWM 20-Min Window
 - [x] Latest IWM overrides implemented separately from protected math: confirmed one-minute ATM cross entries, half rounded down at +35%, remaining +50%/first profitable reversal, -20% theoretical stop. Partial targets and weighted fill accounting persist; window/kill/market-close safeguards retained. Signed-in rules and settings verified; broker execution of the new policy still needs publishing and market-hours fills.
 - [x] Runner: half at +35%, remainder rides until 8 EMA close break (no +50% cap); 20-min window filters entries only. Needs publish + market-hours fills.
