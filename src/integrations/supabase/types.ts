@@ -1003,6 +1003,51 @@ export type Database = {
         }
         Relationships: []
       }
+      strategy_alerts: {
+        Row: {
+          bar_time: string
+          created_at: string
+          data_feed: string
+          environment: string
+          id: string
+          price: number
+          reason: string
+          side: string
+          strategy_id: string
+          symbol: string
+          timeframe_min: number
+          user_id: string
+        }
+        Insert: {
+          bar_time: string
+          created_at?: string
+          data_feed: string
+          environment: string
+          id?: string
+          price: number
+          reason: string
+          side: string
+          strategy_id: string
+          symbol: string
+          timeframe_min: number
+          user_id: string
+        }
+        Update: {
+          bar_time?: string
+          created_at?: string
+          data_feed?: string
+          environment?: string
+          id?: string
+          price?: number
+          reason?: string
+          side?: string
+          strategy_id?: string
+          symbol?: string
+          timeframe_min?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           cancel_at_period_end: boolean
