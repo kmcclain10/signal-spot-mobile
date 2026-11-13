@@ -141,9 +141,9 @@ function OrdersPage() {
         <div className="flex items-center gap-3">
           {notifications.enabled ? <Bell className="size-5 text-primary" /> : <BellOff className="size-5 text-muted-foreground" />}
           <div>
-            <Label htmlFor="bot-notify" className="text-sm font-medium">Bot trade notifications</Label>
+            <Label htmlFor="bot-notify" className="text-sm font-medium">Strategy & bot notifications</Label>
             <p className="text-xs text-muted-foreground">
-              {notifications.supported ? "Browser alerts when the bot enters a trade or banks profits. This device only." : "This browser doesn't support notifications."}
+              {notifications.supported ? "Browser alerts for real strategy triggers, bot trades and banking. App open, this device only." : "This browser doesn't support notifications."}
             </p>
           </div>
         </div>

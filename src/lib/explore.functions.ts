@@ -14,10 +14,9 @@ export const getExploreAssets = createServerFn({ method: "POST" }).middleware([r
   catch { return { assets: [], error: "Connect an Alpaca paper account to search tradable stocks and ETFs." }; }
 });
 export const getExploreLists = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
-  const [settings, state, picks] = await Promise.all([
-    context.supabase.from("iwm_strategy_settings").select("enabled").eq("user_id", context.userId).maybeSingle(),
+  const [settings, state] = await Promise.all([
+    context.supabase.from("iwm_strategy_settings").select("enabled,trading_env").eq("user_id", context.userId).maybeSingle(),
     context.supabase.from("iwm_strategy_state").select("last_run_at,pnl_today,trades_today,last_error,needs_review,open_trade,trading_day").eq("user_id", context.userId).maybeSingle(),
-    context.supabase.from("picks").select("id,strategy_id,trade_date,bt_win_rate").eq("user_id", context.userId).order("trade_date", { ascending: false }).limit(10),
   ]);
   let movers: { gainers: Rec[]; losers: Rec[]; last_updated?: string } | null = null, active: { most_actives: Rec[]; last_updated?: string } | null = null;
   try { const api = await apiFor(context.userId); [movers, active] = await Promise.all([
@@ -25,7 +24,7 @@ export const getExploreLists = createServerFn({ method: "POST" }).middleware([re
     api.call("/v1beta1/screener/stocks/most-actives?by=volume&top=10", "GET", undefined, true).catch(() => null),
   ]); } catch { /* Keep owner's bot status and picks accessible without a broker. */ }
   const mapMover = (r: Rec) => ({ symbol: String(r.symbol), price: Number(r.price), change: Number(r.percent_change) });
-  return { gainers: (movers?.gainers ?? []).map(mapMover), losers: (movers?.losers ?? []).map(mapMover), active: (active?.most_actives ?? []).map((r: Rec) => ({ symbol: String(r.symbol), volume: Number(r.volume), trades: Number(r.trade_count) })), moversUnavailable: !movers, activeUnavailable: !active, marketAt: movers?.last_updated ?? active?.last_updated ?? null, picks: picks.data ?? [], iwm: { enabled: !!settings.data?.enabled, state: state.data } };
+  return { gainers: (movers?.gainers ?? []).map(mapMover), losers: (movers?.losers ?? []).map(mapMover), active: (active?.most_actives ?? []).map((r: Rec) => ({ symbol: String(r.symbol), volume: Number(r.volume), trades: Number(r.trade_count) })), moversUnavailable: !movers, activeUnavailable: !active, marketAt: movers?.last_updated ?? active?.last_updated ?? null,  iwm: { env: settings.data?.trading_env ?? "paper", enabled: !!settings.data?.enabled, state: state.data } };
 });
 export const getStockQuote = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(i => quoteSymbol.parse(i)).handler(async ({ data, context }) => {
   const api = await apiFor(context.userId);

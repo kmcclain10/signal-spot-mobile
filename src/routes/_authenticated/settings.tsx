@@ -103,7 +103,7 @@ function SettingsPage() {
     onSuccess: (saved) => {
       if (!saved) return;
       qc.invalidateQueries({ queryKey: ["settings"] });
-      toast.success("Saved — the engine uses these on its next run.");
+      toast.success("Watchlist saved.");
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Save failed"),
   });
@@ -150,33 +150,7 @@ function SettingsPage() {
         </div>
       </Panel>
 
-      <Panel className="p-4">
-        <h2 className="mb-3 text-sm font-semibold">Selection rule</h2>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <NumField label="Lookback" suffix="days" value={f.lookback_days} onChange={(v) => set("lookback_days", v)} />
-          <NumField label="Min trades" value={f.min_trades} onChange={(v) => set("min_trades", v)} />
-          <NumField label="Min win rate" suffix="%" value={f.min_win_rate_pct} onChange={(v) => set("min_win_rate_pct", v)} />
-          <NumField label="Min profit factor" step={0.1} value={f.min_profit_factor} onChange={(v) => set("min_profit_factor", v)} />
-        </div>
-      </Panel>
-
-      <Panel className="p-4">
-        <h2 className="mb-3 text-sm font-semibold">Risk</h2>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-          <NumField label="Risk per trade" suffix="$" value={f.risk_per_trade_usd} onChange={(v) => set("risk_per_trade_usd", v)} />
-          <NumField label="Max open positions" value={f.max_open_positions} onChange={(v) => set("max_open_positions", v)} />
-          <NumField label="Max daily loss" suffix="$" value={f.max_daily_loss_usd} onChange={(v) => set("max_daily_loss_usd", v)} />
-        </div>
-        <p className="mt-2 text-xs text-muted-foreground">Order size = risk per trade ÷ distance from entry to stop. New orders are blocked once the daily loss limit is hit.</p>
-      </Panel>
-
-      <Panel className="p-4">
-        <h2 className="mb-3 text-sm font-semibold">Trading mode</h2>
-        <div className="grid max-w-xs grid-cols-2 gap-1 rounded-md border p-1">
-          <Button variant="ghost" onClick={() => set("trading_mode", "paper")} className={cn(f.trading_mode === "paper" ? "bg-accent" : "text-muted-foreground")}>Paper</Button>
-          <Button variant="ghost" onClick={() => { setConfirmText(""); setLiveOpen(true); }} className={cn(f.trading_mode === "live" ? "bg-loss text-destructive-foreground" : "text-muted-foreground")}>Live</Button>
-        </div>
-      </Panel>
+      <Button asChild variant="outline"><Link to="/bots">Strategy risk & execution controls</Link></Button>
 
       <Button onClick={() => save.mutate(f)} disabled={save.isPending}>{save.isPending ? "Saving…" : "Save settings"}</Button>
 
@@ -185,7 +159,7 @@ function SettingsPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-loss"><AlertTriangle className="size-5" /> Switch to live trading?</DialogTitle>
             <DialogDescription>
-              Live orders use real money. The backtest showed picks that won 67% in-sample won only 29% the next day. Paper trade for at least a month first.
+              Live orders use real money.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">

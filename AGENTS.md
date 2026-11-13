@@ -29,3 +29,5 @@
 - Face ID unlock is a per-device local gate on the background lock only (no server credential); sensitive actions still need password confirmation because the database checks password authentication.
 - Subscription tiers are enforced by a database trigger on bot enable plus webhook-driven bot shutdown; plan_grants gives complimentary access without Stripe so owners are never locked out.
 - IWM and the Trade desk route to the owner-selected Alpaca account (iwm_strategy_settings.trading_env); a DB trigger blocks switching with open exposure, requires fresh password for live and resets the bankroll so paper balances never size real orders. Pulse, Home and Explore stay paper.
+
+- Customer signals and performance read owner-scoped strategy alerts and actual IWM/Pulse fills; never use legacy picks or bundled backtests. Read-only alert evaluation reuses executable strategy math and must never submit broker orders.

@@ -92,6 +92,13 @@
       "when": 1794529208267,
       "tag": "0012_strategies_signed_in_read",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794541797367,
+      "tag": "0013_real_strategy_alerts",
+      "breakpoints": true
     }
   ]
 }

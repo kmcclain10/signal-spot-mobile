@@ -1,162 +1,35 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { X, CandlestickChart, Activity } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useLatestBacktest, useRealtimeInvalidate } from "@/hooks/use-app-data";
-import { isBeforeSignals, nyDate } from "@/lib/market-hours";
-import { num, pct } from "@/lib/format";
-import { strategySetup, parseStrategyId } from "@/lib/strategy-names";
-import { EmptyState, ErrorState, LoadingRows, Panel, SideBadge } from "@/components/common";
-import { SignalRow, type Signal } from "@/components/SignalRow";
-import { Button } from "@/components/ui/button";
-import { HomePortfolio, homePortfolioOptions } from "@/components/HomePortfolio";
-
-export const Route = createFileRoute("/_authenticated/")({
-  head: () => ({
-    meta: [
-      { title: "Home — Pulse Signals" },
-      { name: "description", content: "Your paper portfolio history, positions, buying power, live watchlist and strategy signals." },
-      { property: "og:title", content: "Home — Pulse Signals" },
-      { property: "og:description", content: "Track your paper portfolio, positions, buying power and watchlist." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(homePortfolioOptions),
-  component: Today,
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { Activity, ArrowRight, CandlestickChart } from 'lucide-react';
+import { HomePortfolio, homePortfolioOptions } from '@/components/HomePortfolio';
+import { Button } from '@/components/ui/button';
+import { ErrorState } from '@/components/common';
+import { RealStrategyFeed } from '@/components/RealStrategyFeed';
+import { strategyPlatformOptions, useStrategyRealtime } from '@/hooks/use-strategy-platform';
+import { strategyLabel } from '@/lib/strategy-platform';
+import { botHealth } from '@/lib/bots-rules';
+import { nyDate } from '@/lib/market-hours';
+import { cn } from '@/lib/utils';
+export const Route = createFileRoute('/_authenticated/')({
+  head:()=>({meta:[{title:'Home — Pulse Signals'},{name:'description',content:'Your Alpaca portfolio, real strategy triggers and active trading fleet.'},{property:'og:title',content:'Home — Pulse Signals'},{property:'og:description',content:'Your account and real IWM and Pulse strategy activity.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'}]}),
+  loader:async({context})=>{await Promise.all([context.queryClient.ensureQueryData(homePortfolioOptions),context.queryClient.ensureQueryData(strategyPlatformOptions)]);},
+  errorComponent:({error})=><ErrorState error={error}/>,notFoundComponent:()=> <p>Home unavailable.</p>,component:Home,
 });
-
-function HonestyBanner() {
-  const run = useLatestBacktest();
-  const [hidden, setHidden] = useState(true);
-  const key = `honesty-dismissed-${nyDate()}`;
-  useEffect(() => setHidden(localStorage.getItem(key) === "1"), [key]);
-  const oos = (run.data?.summary as any)?.oos;
-  if (hidden || !oos) return null;
-  return (
-    <div className="flex items-start justify-between gap-3 rounded-[10px] border border-warning/40 bg-warning/10 px-4 py-2.5 text-sm">
-      <span>
-        Last backtest out-of-sample: <span className="num">{pct(oos.win_rate)}</span> win rate · PF{" "}
-        <span className="num">{num(oos.profit_factor)}</span> — paper trade first.
-      </span>
-      <button
-        aria-label="Dismiss"
-        onClick={() => {
-          localStorage.setItem(key, "1");
-          setHidden(true);
-        }}
-      >
-        <X className="size-4 text-muted-foreground" />
-      </button>
-    </div>
-  );
-}
-
-function Picks() {
-  const today = nyDate();
-  const q = useQuery({
-    queryKey: ["picks", today],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("picks").select("*").eq("trade_date", today).order("bt_win_rate", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-  return (
-    <section>
-      <h2 className="mb-3 text-sm font-semibold">Today's picks</h2>
-      {q.isLoading ? (
-        <LoadingRows n={1} />
-      ) : q.error ? (
-        <ErrorState error={q.error} onRetry={() => q.refetch()} />
-      ) : !q.data?.length ? (
-        <EmptyState title="No strategies passed tonight's filters — that's normal." body="No picks = no trades." />
-      ) : (
-        <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2">
-          {q.data.map((p) => {
-            const s = parseStrategyId(p.strategy_id);
-            return (
-              <Panel key={p.id} className="w-64 shrink-0 snap-start p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="text-sm font-medium leading-snug">{strategySetup(p.strategy_id)}</div>
-                  {s && <SideBadge side={s.side} />}
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  stop {s?.stop} ATR · {s?.target == null ? "exit at close" : `target ${s.target}R`}
-                </div>
-                <div className="num mt-3 grid grid-cols-3 text-xs">
-                  <div>
-                    <div className="text-muted-foreground">WR</div>
-                    {pct(p.bt_win_rate)}
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">PF</div>
-                    {num(p.bt_profit_factor)}
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">Trades</div>
-                    {p.bt_trades ?? "—"}
-                  </div>
-                </div>
-              </Panel>
-            );
-          })}
-        </div>
-      )}
+function Home(){
+  const {data}=useSuspenseQuery(strategyPlatformOptions);
+  useStrategyRealtime(Route.useRouteContext().user.id);
+  const today=nyDate();
+  const signals=data.signals.filter(s=>nyDate(new Date(s.at))===today);
+  const health=botHealth(new Date(),data.settings,data.state);
+  const active=data.bots.filter(b=>b.enabled&&!b.kill_switch);
+  return <div className="space-y-8">
+    <header className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-3xl font-semibold">Home</h1><Button asChild><Link to="/trade"><CandlestickChart/>Trade</Link></Button></header>
+    <HomePortfolio/>
+    <section className="border-y py-5"><div className="flex items-center justify-between"><h2 className="flex items-center gap-2 font-semibold"><Activity className="size-4 text-primary"/>Strategy fleet</h2><Button asChild variant="link" size="sm"><Link to="/bots">Manage<ArrowRight/></Link></Button></div>
+      <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3"><Link to="/iwm" className="flex items-center gap-2 text-sm"><span className={cn('size-2 rounded-full',health.status==='running'?'bg-gain':health.status==='offline'?'bg-loss':'bg-muted-foreground')}/>IWM 8/20 · {data.settings?.trading_env==='live'?'LIVE':'PAPER'} · {health.detail}</Link>{active.map(b=><Link key={b.id} to="/bots" className="text-sm text-potential">{strategyLabel((b.config as Record<string,any>).strategyId)} · PAPER</Link>)}</div>
+      <div className="num mt-5 grid grid-cols-2 gap-4"><div><p className="font-sans text-xs text-muted-foreground">IWM strategy balance</p><p className="mt-1 text-xl">{data.state?.balance!=null?`$${Number(data.state.balance).toFixed(2)}`:'—'}</p></div><div><p className="font-sans text-xs text-muted-foreground">WMT savings purchased</p><p className="mt-1 text-xl text-banked">{data.state?`$${Number(data.state.savings_total??0).toFixed(2)}`:'—'}</p></div></div>
     </section>
-  );
-}
-
-function LiveSignals() {
-  const today = nyDate();
-  const q = useQuery({
-    queryKey: ["signals", "today", today],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("signals")
-        .select("*")
-        .eq("trade_date", today)
-        .order("signal_time", { ascending: false });
-      if (error) throw error;
-      return data as unknown as Signal[];
-    },
-  });
-  const [early, setEarly] = useState(false);
-  useEffect(() => setEarly(isBeforeSignals()), []);
-  return (
-    <section>
-      <h2 className="mb-3 text-sm font-semibold">Live signals</h2>
-      {q.isLoading ? (
-        <LoadingRows />
-      ) : q.error ? (
-        <ErrorState error={q.error} onRetry={() => q.refetch()} />
-      ) : !q.data?.length ? (
-        <EmptyState
-          title={early ? "Signals start after the open." : "No signals yet today."}
-          body="The engine scans your watchlist every 5 minutes during market hours."
-        />
-      ) : (
-        <Panel>
-          {q.data.map((s) => (
-            <SignalRow key={s.id} s={s} />
-          ))}
-        </Panel>
-      )}
-    </section>
-  );
-}
-
-function Today() {
-  useRealtimeInvalidate("signals", [["signals"]]);
-  useRealtimeInvalidate("picks", [["picks"]]);
-  return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-3xl font-semibold">Home</h1><div className="flex gap-2"><Button variant="outline" asChild><Link to="/iwm"><Activity />IWM bot</Link></Button><Button asChild><Link to="/trade"><CandlestickChart />Trade</Link></Button></div></header>
-      <HomePortfolio />
-      <HonestyBanner />
-      <Picks />
-      <LiveSignals />
-    </div>
-  );
+    <section><div className="mb-4 flex flex-wrap items-center justify-between gap-2"><h2 className="text-xl font-semibold">Today's strategy signals <span className="num text-sm text-potential">{signals.length}</span></h2><Button asChild variant="link"><Link to="/signals">History<ArrowRight/></Link></Button></div><RealStrategyFeed rows={signals.slice(0,12)}/></section>
+    <div className="flex gap-4 border-t pt-4"><Button asChild variant="outline"><Link to="/strategies">Strategy playbook</Link></Button><Button asChild variant="ghost"><Link to="/performance">Actual performance<ArrowRight/></Link></Button></div>
+  </div>;
 }
