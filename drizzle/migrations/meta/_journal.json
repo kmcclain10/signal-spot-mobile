@@ -99,6 +99,13 @@
       "when": 1794541797367,
       "tag": "0013_real_strategy_alerts",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794543417114,
+      "tag": "0014_personal_strategy_alerts",
+      "breakpoints": true
     }
   ]
 }

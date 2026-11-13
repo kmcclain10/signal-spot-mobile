@@ -1003,6 +1003,30 @@ export type Database = {
         }
         Relationships: []
       }
+      strategy_alert_preferences: {
+        Row: {
+          automatic_enabled: boolean
+          custom_rules: Json
+          strategy_ids: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          automatic_enabled?: boolean
+          custom_rules?: Json
+          strategy_ids?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          automatic_enabled?: boolean
+          custom_rules?: Json
+          strategy_ids?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       strategy_alerts: {
         Row: {
           bar_time: string
@@ -1045,6 +1069,30 @@ export type Database = {
           symbol?: string
           timeframe_min?: number
           user_id?: string
+        }
+        Relationships: []
+      }
+      strategy_scan_universe: {
+        Row: {
+          companies: Json
+          id: string
+          refreshed_at: string
+          source_url: string
+          symbols: string[]
+        }
+        Insert: {
+          companies: Json
+          id: string
+          refreshed_at?: string
+          source_url: string
+          symbols: string[]
+        }
+        Update: {
+          companies?: Json
+          id?: string
+          refreshed_at?: string
+          source_url?: string
+          symbols?: string[]
         }
         Relationships: []
       }

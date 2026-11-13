@@ -3,7 +3,7 @@ import { runStrategyAlerts } from '@/lib/server/strategy-alerts.server';
 function harness(tier:string|null,isOpen:boolean){
   const upsert=vi.fn(()=>({select:async()=>({data:[],error:null})}));
   const db:any={rpc:vi.fn(async()=>({data:tier,error:null})),from:(table:string)=>{
-    const result={data:table==='connections'?[{user_id:'owner'}]:table==='pulse_bot_configs'?[]:null,error:null};
+    const result={data:table==='connections'?[{user_id:'owner'}]:table==='strategy_scan_universe'?{symbols:['AAPL','NVDA','MSFT','GOOG','AMZN','AVGO','META','TSLA','LLY','WMT'],refreshed_at:'2026-11-12T15:00:00Z'}:null,error:null};
     const q:any={select:()=>q,eq:()=>q,maybeSingle:async()=>result,then:(r:any)=>Promise.resolve(result).then(r),upsert};return q;
   }};
   const api:any={clock:vi.fn(async()=>({timestamp:'2026-11-12T15:00:00Z',is_open:isOpen})),call:vi.fn(async()=>({bars:{},next_page_token:null})),submit:vi.fn(),cancel:vi.fn()};
@@ -23,7 +23,7 @@ describe('read-only strategy alerts',()=>{
     const h=harness('alerts',true);
     h.api.clock.mockResolvedValue({timestamp:'2026-11-12T16:00:00Z',is_open:true});
     const bars=Array.from({length:18},(_,i)=>({t:new Date(Date.parse('2026-11-12T14:30:00Z')+i*300000).toISOString(),o:100,h:i===17?110:102,l:99,c:i===17?110:100}));
-    h.api.call.mockImplementation(async(path:string)=>({bars:path.includes('symbols=IWM')?{IWM:[...bars].reverse()}:{},next_page_token:null}));
+    h.api.call.mockImplementation(async(path:string)=>({bars:new URLSearchParams(path.split('?')[1]).get('symbols')?.split(',').includes('IWM')?{IWM:[...bars].reverse()}:{},next_page_token:null}));
     await runStrategyAlerts(h);
     expect(h.upsert).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({strategy_id:'iwm',symbol:'IWM',side:'long',price:110,bar_time:'2026-11-12T15:55:00.000Z'})]),expect.objectContaining({ignoreDuplicates:true}));
     expect(h.api.submit).not.toHaveBeenCalled();

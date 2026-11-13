@@ -1,4 +1,5 @@
 # Real strategy platform
+- [x] Automatic SPY/IWM/QQQ plus daily verified top-ten Alpaca-tradable US market-cap scanning; owner-selected strategies and custom direction/symbol alerts. Saved AMD/NFLX selections read back after reload and restored; 14 targeted tests pass, desktop/mobile verified without orders. Published market-hours evaluation remains pending the next session.
 - [x] Remove legacy picks, bundled backtests and scanner from customer screens and scheduled execution; retain deprecated database history, disable legacy signal orders.
 - [x] Replace Home and Signals with owner-visible real IWM/Pulse triggers and execution statuses; managed read-only scanning every minute, opt-in browser notifications while open.
 - [x] Replace the library with eleven executable strategies and actual trade performance; historical IWM account mode remains explicitly unrecorded.
