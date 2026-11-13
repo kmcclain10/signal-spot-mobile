@@ -1,4 +1,5 @@
 # Real strategy platform
+- [ ] Automatic SPY/IWM/QQQ plus verified top-ten US market-cap scanning; owner-selected strategies and custom alert symbols, saved and tested without orders.
 - [x] Remove legacy picks, bundled backtests and scanner from customer screens and scheduled execution; retain deprecated database history, disable legacy signal orders.
 - [x] Replace Home and Signals with owner-visible real IWM/Pulse triggers and execution statuses; managed read-only scanning every minute, opt-in browser notifications while open.
 - [x] Replace the library with eleven executable strategies and actual trade performance; historical IWM account mode remains explicitly unrecorded.

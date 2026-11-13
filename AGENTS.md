@@ -31,3 +31,4 @@
 - IWM and the Trade desk route to the owner-selected Alpaca account (iwm_strategy_settings.trading_env); a DB trigger blocks switching with open exposure, requires fresh password for live and resets the bankroll so paper balances never size real orders. Pulse, Home and Explore stay paper.
 
 - Customer signals and performance read owner-scoped strategy alerts and actual IWM/Pulse fills; never use legacy picks or bundled backtests. Read-only alert evaluation reuses executable strategy math and must never submit broker orders.
+- Alert universes use a persisted, daily refreshed US market-cap ranking filtered to Alpaca-tradable companies; batch bars by timeframe and keep owner alert preferences separate from execution settings so personal alerts never enable bots.
