@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Activity,
   BarChart3,
+  Bell,
   CandlestickChart,
   Home,
   Bot,
@@ -26,13 +27,13 @@ import { useBotNotifications } from '@/hooks/use-bot-notifications';
 
 const NAV = [
   { to: "/", label: "Home", icon: Home },
-  { to: "/explore", label: "Explore", icon: Search },
+  { to: "/signals", label: "Alerts", icon: Bell },
   { to: "/bots", label: "Bots", icon: Bot },
   { to: "/orders", label: "Activity", icon: Wallet },
   { to: "/settings", label: "Account", icon: UserRound },
 ] as const;
 const SECONDARY = [
-  { to: "/signals", label: "Signals", icon: Activity },
+  { to: "/explore", label: "Explore", icon: Search },
   { to: "/trade", label: "Trade", icon: CandlestickChart },
   { to: "/iwm", label: "IWM 8/20 Momentum", icon: Activity },
   { to: "/strategies", label: "Strategy playbook", icon: BarChart3 },
