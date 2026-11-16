@@ -22,7 +22,7 @@ export const getStrategyPlatform = createServerFn({method:'POST'}).middleware([r
   const real: RealSignal[] = (alerts.data??[]).map(a=>({id:a.id,strategy:a.strategy_id,symbol:a.symbol,side:a.side,at:a.created_at,barTime:a.bar_time,price:numeric(a.price),reason:a.reason,status:'alert',environment:a.environment,feed:a.data_feed,contract:null,fill:null}));
   for(const s of signals.data??[]) {
     const filled = (trades.data??[]).find(t=>t.side===s.side && Date.parse(t.entry_time)>=Date.parse(s.bar_time) && Date.parse(t.entry_time)-Date.parse(s.bar_time)<450000);
-    real.push({id:s.id,strategy:'iwm',symbol:'IWM',side:s.side==='CALL'?'long':'short',at:s.created_at,barTime:s.bar_time,price:numeric(s.price),reason:s.detail??'8/20 EMA cross',status:filled ? filled.exit_time?'closed':'filled' : s.action??'evaluating',environment:'unrecorded',feed:'Engine feed',contract:filled?.option_symbol??null,fill:filled?numeric(filled.entry_premium):null});
+    real.push({id:s.id,strategy:'iwm',symbol:'IWM',side:s.side==='CALL'?'long':'short',at:s.created_at,barTime:s.bar_time,price:numeric(s.price),reason:s.detail??'9/20 EMA cross',status:filled ? filled.exit_time?'closed':'filled' : s.action??'evaluating',environment:'unrecorded',feed:'Engine feed',contract:filled?.option_symbol??null,fill:filled?numeric(filled.entry_premium):null});
   }
   for(const e of events.data??[]) {
     const c=botMap.get(e.bot_id), d=e.detail as Rec;

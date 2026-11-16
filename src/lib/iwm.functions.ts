@@ -56,7 +56,7 @@ export const verifyIwmConnection = createServerFn({method:"POST"})
     const {supabaseAdmin} = await import("@/integrations/supabase/client.server");
     const cur=await context.supabase.from("iwm_strategy_settings").select("trading_env").eq("user_id",context.userId).maybeSingle();
     const api=await iwmAlpaca(supabaseAdmin,context.userId,undefined,cur.data?.trading_env==="live"?"live":"paper");
-    return api.verify({...DEFAULT_CONFIG,timeframeMin:IWM_TIMEFRAME_MIN},"iex","indicative");
+    return api.verify({...DEFAULT_CONFIG,timeframeMin:IWM_TIMEFRAME_MIN,emaFast:9},"iex","indicative");
   });
 
 /** Initialize disabled defaults and exercise a market-closed run without any broker order. */

@@ -35,7 +35,7 @@ const NAV = [
 const SECONDARY = [
   { to: "/explore", label: "Explore", icon: Search },
   { to: "/trade", label: "Trade", icon: CandlestickChart },
-  { to: "/iwm", label: "IWM 8/20 Momentum", icon: Activity },
+  { to: "/iwm", label: "IWM 9/20 Momentum", icon: Activity },
   { to: "/strategies", label: "Strategy playbook", icon: BarChart3 },
   { to: "/performance", label: "Performance", icon: BarChart3 },
   { to: "/connections", label: "Connections", icon: Plug },

@@ -55,27 +55,27 @@ const wait = (note: string): StrategySignal => ({ note });
 
 // ------------------------------------------------------------------ 1
 const window20: StrategyDef = {
-  id: "window20", botName: "Window 20", name: "20-Minute Window (8/20 EMA + two-pole dot)",
+  id: "window20", botName: "Window 20", name: "20-Minute Window (9/20 EMA + two-pole dot)",
   category: "Momentum", style: "intraday",
-  summary: "Your original setup: an 8/20 EMA cross and a matching oscillator dot inside one 20-minute window, entered on the Nth candle.",
-  rules: ["8 EMA above 20 EMA (calls) or below (puts)", "8/20 cross inside the current 20-minute window (10:00–3:00 ET)",
+  summary: "Your original setup: an 9/20 EMA cross and a matching oscillator dot inside one 20-minute window, entered on the Nth candle.",
+  rules: ["9 EMA above 20 EMA (calls) or below (puts)", "9/20 cross inside the current 20-minute window (10:00–3:00 ET)",
     "Matching two-pole oscillator dot (length 15)", "Enter on exactly the Nth consecutive candle after the cross, never the window's last bar",
-    "Strategy exit: candle closes on the wrong side of the 8 EMA"],
-  timeframes: [1, 2, 4, 5, 10], defaultTimeframe: 2, minBars: 60,
+    "Strategy exit: candle closes on the wrong side of the 9 EMA"],
+  timeframes: [1, 2, 4, 5, 10], defaultTimeframe: 5, minBars: 60,
   params: [
     P("entryCandle", "Entry candle #", 1, 5, 1, [3, 3, 2, 1], "Which consecutive candle after the cross triggers entry"),
     P("requireDot", "Require oscillator dot (1=yes)", 0, 1, 1, [1, 1, 1, 0], "Turn off to trade the EMA cross alone"),
     P("dotLookbackBars", "Dot lookback (bars, 0=same window)", 0, 30, 1, [0, 0, 10, 0], "How far back the dot may be"),
-    P("emaFast", "Fast EMA", 3, 20, 1, [8, 8, 8, 8], ""), P("emaSlow", "Slow EMA", 10, 50, 1, [20, 20, 20, 20], ""),
+    P("emaFast", "Fast EMA", 3, 20, 1, [9, 9, 9, 9], ""), P("emaSlow", "Slow EMA", 10, 50, 1, [20, 20, 20, 20], ""),
     P("oscLength", "Oscillator length", 5, 40, 1, [15, 15, 15, 15], ""),
   ],
   evaluate(b, p, ctx) {
     const cfg = { ...W20.DEFAULT_CONFIG, timeframeMin: ctx.timeframe, emaFast: p.emaFast, emaSlow: p.emaSlow,
       oscLength: p.oscLength, entryCandle: p.entryCandle, requireDot: p.requireDot === 1, dotLookbackBars: p.dotLookbackBars };
     const rows = W20.addIndicators(b, cfg); const last = rows[rows.length - 1];
-    const out: StrategySignal = { note: "No 8/20 setup in this window",
-      exitLong: last.c < last.emaFast ? "Closed below 8 EMA" : undefined,
-      exitShort: last.c > last.emaFast ? "Closed above 8 EMA" : undefined };
+    const out: StrategySignal = { note: "No 9/20 setup in this window",
+      exitLong: last.c < last.emaFast ? "Closed below 9 EMA" : undefined,
+      exitShort: last.c > last.emaFast ? "Closed above 9 EMA" : undefined };
     for (const s of W20.evaluate(rows, ctx.memo, cfg)) {
       if (s.kind === "potential") out.note = `Setup forming (${s.side === "CALL" ? "long" : "short"}): ${s.detail}`;
       if (s.kind === "entry") out.entry = { side: s.side === "CALL" ? "long" : "short", reason: `Window ${s.window}: ${s.detail}` };
@@ -181,7 +181,7 @@ const ttm: StrategyDef = {
   summary: "Waits for volatility to compress (Bollinger Bands inside Keltner Channels), then trades the direction of momentum when it releases.",
   rules: ["Squeeze on: Bollinger Bands (20, 2) inside Keltner Channels (20, 1.5) for at least N bars", "Squeeze fires: bands expand back outside",
     "Long if momentum is above zero and rising (short: below zero and falling)", "Strategy exit: momentum fades for N bars in a row"],
-  timeframes: [5, 15, 30, 60, 1440], defaultTimeframe: 15, minBars: 45,
+  timeframes: [5, 15, 30, 60, 1440], defaultTimeframe: 5, minBars: 45,
   params: [
     P("minSqueezeBars", "Minimum squeeze length (bars)", 1, 20, 1, [6, 4, 2, 1], ""),
     P("kcMult", "Keltner multiplier", 1, 2.5, 0.1, [1.5, 1.5, 2, 2], "1.5 = classic squeeze; 2.0 also counts low-compression squeezes (Squeeze Pro)"),
@@ -231,7 +231,7 @@ const macdCross: StrategyDef = {
   summary: "Trades MACD crossing its signal line, only in the direction of the longer trend.",
   rules: ["MACD (12, 26, 9) crosses above its signal line (short: below)", "Price above the trend EMA (short: below)",
     "Conservative: cross must happen below the zero line (above for shorts)", "Strategy exit: MACD crosses back"],
-  timeframes: [5, 15, 30, 60, 1440], defaultTimeframe: 15, minBars: 60,
+  timeframes: [5, 15, 30, 60, 1440], defaultTimeframe: 5, minBars: 60,
   params: [
     P("trendLen", "Trend EMA length", 20, 200, 10, [200, 200, 100, 50], ""),
     P("requireZeroSide", "Cross must be on the far side of zero (1=yes)", 0, 1, 1, [1, 0, 0, 0], ""),
@@ -254,7 +254,7 @@ const bandBounce: StrategyDef = {
   summary: "Buys when price closes back inside the lower Bollinger Band from an oversold reading and targets the middle band.",
   rules: ["Previous bar closed below the lower band (short: above the upper band)", "This bar closes back inside the band",
     "RSI(14) was oversold (short: overbought)", "Strategy exit: price reaches the middle band"],
-  timeframes: [5, 15, 30, 60, 1440], defaultTimeframe: 15, minBars: 40,
+  timeframes: [5, 15, 30, 60, 1440], defaultTimeframe: 5, minBars: 40,
   params: [
     P("bbMult", "Band width (std devs)", 1.5, 3, 0.1, [2.2, 2, 2, 1.5], "Wider = rarer, deeper extremes"),
     P("rsiMax", "RSI(14) oversold level", 15, 50, 1, [30, 35, 40, 50], "Short side uses 100 minus this"),
@@ -278,7 +278,7 @@ const superTrendDef: StrategyDef = {
   summary: "Follows the Supertrend line: long when it flips up, out (or short) when it flips down.",
   rules: ["Supertrend (ATR 10 × multiplier) flips from down to up (short: up to down)", "Conservative: price must also be above the 200 EMA (short: below)",
     "Strategy exit: Supertrend flips the other way"],
-  timeframes: [5, 15, 30, 60, 1440], defaultTimeframe: 15, minBars: 30,
+  timeframes: [5, 15, 30, 60, 1440], defaultTimeframe: 5, minBars: 30,
   params: [
     P("atrLen", "ATR length", 5, 30, 1, [10, 10, 10, 10], ""),
     P("mult", "ATR multiplier", 1, 5, 0.1, [3.5, 3, 2.5, 2], "Lower = faster flips, more trades"),
