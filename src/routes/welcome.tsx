@@ -25,7 +25,7 @@ export const Route = createFileRoute("/welcome")({
 
 const features = [
   { icon: Bell, t: "Instant setup alerts", d: "The moment a strategy triggers, you see the ticker, CALL or PUT, price and reason." },
-  { icon: Zap, t: "11 real strategies", d: "8/20 EMA momentum, The Scalpers, ORB, VWAP reclaim, SuperTrend and more — no fake backtests." },
+  { icon: Zap, t: "11 real strategies", d: "9/20 EMA momentum, The Scalpers, ORB, VWAP reclaim, SuperTrend and more — no fake backtests." },
   { icon: LineChart, t: "Market-wide scanning", d: "SPY, QQQ, IWM and the 10 largest US companies scanned every minute, plus your own picks." },
   { icon: Bot, t: "AI bots (optional)", d: "Let bots enter, take profit and exit for you on your own Alpaca account." },
 ];

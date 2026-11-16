@@ -241,7 +241,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
     if (state.open_trade) {
       if (forced) state.open_trade.exitRequested=settings.kill_switch ? "Kill switch":"Force exit before market close";
 
-      // The 20-minute window filters entries only; open trades ride past it until the 8 EMA close break.
+      // The 20-minute window filters entries only; open trades ride past it until the 9 EMA close break.
       const windowExit = false;
       let quote:any;
       try { quote=await api.quote(state.open_trade.optionSymbol,settings.options_feed); }
@@ -272,7 +272,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
         const t=state.open_trade;
         const flip=oppositeCross(t,ind);
         if (!t.exitRequested && flip) {
-          t.exitRequested=`Opposite 8/20 cross — flip to ${flip}`;
+          t.exitRequested=`Opposite 9/20 cross — flip to ${flip}`;
           if (settings.enabled && !forced) state.flip_signal={side:flip,barTime:last.t,price:last.c,ema8:ind.emaFast,ema20:ind.emaSlow};
           await checkpoint(); await requestExit(t.exitRequested);
         }
@@ -288,7 +288,7 @@ export async function runIwmUser(db:any,settings:Rec,apiOverride?:Api) {
       const f=state.flip_signal; state.flip_signal=null;
       const window=windowOf(f.barTime,cfg);
       if (settings.enabled && !forced && window!==null && now.getTime()-Date.parse(f.barTime)<=cfg.timeframeMin*60000+90000) {
-        await enterSignals([{kind:'entry',side:f.side,barTime:f.barTime,window,price:f.price,detail:`Flip on opposite ${cfg.timeframeMin}-minute 8/20 EMA cross`}],{emaFast:f.ema8,emaSlow:f.ema20,osc:NaN});
+        await enterSignals([{kind:'entry',side:f.side,barTime:f.barTime,window,price:f.price,detail:`Flip on opposite ${cfg.timeframeMin}-minute 9/20 EMA cross`}],{emaFast:f.ema8,emaSlow:f.ema20,osc:NaN});
       }
       await checkpoint();
     }

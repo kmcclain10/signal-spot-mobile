@@ -83,7 +83,7 @@ function BotsPage() {
             <span className="mt-0.5 rounded-md bg-primary/15 p-2 text-primary"><Bot className="size-5" /></span>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-semibold">IWM 8/20 Momentum</h2>
+                <h2 className="font-semibold">IWM 9/20 Momentum</h2>
                 <span className="flex items-center gap-1 text-xs font-semibold text-gain"><ShieldCheck className="size-3.5" />{data.settings?.trading_env === "live" ? "LIVE" : "PAPER"}</span>
               </div>
               <p className={cn("mt-1 text-sm font-medium", HEALTH_TONE[health.status])}>{health.detail}</p>

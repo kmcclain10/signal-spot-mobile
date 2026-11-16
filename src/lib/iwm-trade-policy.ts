@@ -20,7 +20,7 @@ export function crossEntry(row: IndRow, seen: Set<string>, cfg: StrategyConfig, 
   const key = `cross|${row.t}|${side}`;
   if (seen.has(key)) return [];
   seen.add(key);
-  return [{ kind:'entry',side,barTime:row.t,window,price:row.c,detail:`Confirmed ${cfg.timeframeMin}-minute 8/20 EMA cross` }];
+  return [{ kind:'entry',side,barTime:row.t,window,price:row.c,detail:`Confirmed ${cfg.timeframeMin}-minute 9/20 EMA cross` }];
 }
 /** Hold-and-scale rules: no stop loss, half at +20%, the rest at +100%, break-even lock after +20%, 60-minute time exit. */
 export const IWM_HALF_TARGET_PCT = 20;
@@ -50,7 +50,7 @@ export const riskBalance = (balance: number) => Math.max(0, Number(balance)*IWM_
 export function tradeBankAmount(pnl: number): number {
   return pnl>0 ? Math.floor(pnl*IWM_BANK_PROFIT_SHARE*100)/100 : 0;
 }
-/** Opposite 8/20 cross while holding: close and flip to the new direction. */
+/** Opposite 9/20 cross while holding: close and flip to the new direction. */
 export function oppositeCross(trade: Record<string,any>, row: IndRow): 'CALL'|'PUT'|null {
   if (!(Date.parse(row.t)>=Date.parse(trade.entryCloseTime))) return null;
   if (trade.side==='CALL' && row.bearCross) return 'PUT';
@@ -64,7 +64,7 @@ export function nearestAtmContracts<T extends {strike_price: string | number}>(c
   const distances=contracts.map(c=>Math.abs(Number(c.strike_price)-spot)).filter(Number.isFinite);
   const nearest=Math.min(...distances);
   return contracts.filter(c=>Math.abs(Number(c.strike_price)-spot)<=nearest+1e-8);
-}/** Trend failure: a closed one-minute bar on the wrong side of the 8 EMA, after the entry bar. */
+}/** Trend failure: a closed one-minute bar on the wrong side of the 9 EMA, after the entry bar. */
 export function emaCloseBreak(trade: Record<string,any>, row: IndRow): boolean {
   if (!(Date.parse(row.t)>=Date.parse(trade.entryCloseTime)) || !Number.isFinite(row.emaFast)) return false;
   return trade.side==='CALL' ? row.c<row.emaFast : row.c>row.emaFast;
@@ -78,7 +78,7 @@ export function takeTheBid(entryPremium: number, bid?: number, ask?: number): bo
   return Number(bid)>Number(entryPremium) && Number(ask)>=Number(bid) && Number(ask)-Number(bid)<=IWM_TIGHT_SPREAD+1e-9;
 }
 
-/** Trend exit: the 8 EMA crosses back over the 20 EMA against the trade, after the entry bar closed. */
+/** Trend exit: the 9 EMA crosses back over the 20 EMA against the trade, after the entry bar closed. */
 export function emaCrossBack(trade: Record<string,any>, row: IndRow): boolean {
   if (!(Date.parse(row.t)>=Date.parse(trade.entryCloseTime)) || !Number.isFinite(row.emaFast) || !Number.isFinite(row.emaSlow)) return false;
   return trade.side==='CALL' ? row.emaFast<row.emaSlow : row.emaFast>row.emaSlow;
