@@ -153,7 +153,7 @@ const emaPullback: StrategyDef = {
   summary: "In a stacked uptrend, waits for a pullback to the 21 EMA and enters when price closes back above the 9 EMA.",
   rules: ["Trend: 9 EMA > 21 EMA > 50 EMA (short: reversed)", "Pullback: a recent low touched the 21 EMA",
     "Entry: close crosses back above the 9 EMA", "Strategy exit: close below the 21 EMA"],
-  timeframes: [1, 2, 5, 15, 30, 60, 1440], defaultTimeframe: 5, minBars: 60,
+  timeframes: [1, 2, 5, 15, 30, 60, 1440], defaultTimeframe: 15, minBars: 60,
   params: [
     P("fast", "Fast EMA", 5, 20, 1, [9, 9, 9, 9], ""), P("mid", "Middle EMA", 10, 50, 1, [21, 21, 21, 21], ""),
     P("slow", "Slow EMA", 30, 200, 5, [50, 50, 50, 50], ""),
@@ -181,7 +181,7 @@ const ttm: StrategyDef = {
   summary: "Waits for volatility to compress (Bollinger Bands inside Keltner Channels), then trades the direction of momentum when it releases.",
   rules: ["Squeeze on: Bollinger Bands (20, 2) inside Keltner Channels (20, 1.5) for at least N bars", "Squeeze fires: bands expand back outside",
     "Long if momentum is above zero and rising (short: below zero and falling)", "Strategy exit: momentum fades for N bars in a row"],
-  timeframes: [5, 15, 30, 60, 1440], defaultTimeframe: 5, minBars: 45,
+  timeframes: [5, 15, 30, 60, 1440], defaultTimeframe: 15, minBars: 45,
   params: [
     P("minSqueezeBars", "Minimum squeeze length (bars)", 1, 20, 1, [6, 4, 2, 1], ""),
     P("kcMult", "Keltner multiplier", 1, 2.5, 0.1, [1.5, 1.5, 2, 2], "1.5 = classic squeeze; 2.0 also counts low-compression squeezes (Squeeze Pro)"),
@@ -231,7 +231,7 @@ const macdCross: StrategyDef = {
   summary: "Trades MACD crossing its signal line, only in the direction of the longer trend.",
   rules: ["MACD (12, 26, 9) crosses above its signal line (short: below)", "Price above the trend EMA (short: below)",
     "Conservative: cross must happen below the zero line (above for shorts)", "Strategy exit: MACD crosses back"],
-  timeframes: [5, 15, 30, 60, 1440], defaultTimeframe: 5, minBars: 60,
+  timeframes: [5, 15, 30, 60, 1440], defaultTimeframe: 15, minBars: 60,
   params: [
     P("trendLen", "Trend EMA length", 20, 200, 10, [200, 200, 100, 50], ""),
     P("requireZeroSide", "Cross must be on the far side of zero (1=yes)", 0, 1, 1, [1, 0, 0, 0], ""),
@@ -254,7 +254,7 @@ const bandBounce: StrategyDef = {
   summary: "Buys when price closes back inside the lower Bollinger Band from an oversold reading and targets the middle band.",
   rules: ["Previous bar closed below the lower band (short: above the upper band)", "This bar closes back inside the band",
     "RSI(14) was oversold (short: overbought)", "Strategy exit: price reaches the middle band"],
-  timeframes: [5, 15, 30, 60, 1440], defaultTimeframe: 5, minBars: 40,
+  timeframes: [5, 15, 30, 60, 1440], defaultTimeframe: 15, minBars: 40,
   params: [
     P("bbMult", "Band width (std devs)", 1.5, 3, 0.1, [2.2, 2, 2, 1.5], "Wider = rarer, deeper extremes"),
     P("rsiMax", "RSI(14) oversold level", 15, 50, 1, [30, 35, 40, 50], "Short side uses 100 minus this"),
@@ -278,7 +278,7 @@ const superTrendDef: StrategyDef = {
   summary: "Follows the Supertrend line: long when it flips up, out (or short) when it flips down.",
   rules: ["Supertrend (ATR 10 × multiplier) flips from down to up (short: up to down)", "Conservative: price must also be above the 200 EMA (short: below)",
     "Strategy exit: Supertrend flips the other way"],
-  timeframes: [5, 15, 30, 60, 1440], defaultTimeframe: 5, minBars: 30,
+  timeframes: [5, 15, 30, 60, 1440], defaultTimeframe: 15, minBars: 30,
   params: [
     P("atrLen", "ATR length", 5, 30, 1, [10, 10, 10, 10], ""),
     P("mult", "ATR multiplier", 1, 5, 0.1, [3.5, 3, 2.5, 2], "Lower = faster flips, more trades"),
