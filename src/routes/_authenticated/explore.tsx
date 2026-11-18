@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 const assetsOptions = queryOptions({ queryKey: ["explore-assets"], queryFn: () => getExploreAssets(), staleTime: 3600000 });
 const listsOptions = queryOptions({ queryKey: ["explore-lists"], queryFn: () => getExploreLists(), staleTime: 30000 });
 export const Route = createFileRoute("/_authenticated/explore")({
+  staticData: { sitemap: false },
   head: () => ({ meta: [{ title: "Explore Stocks & ETFs — Pulse Signals" }, { name: "description", content: "Search tradable stocks and ETFs, view movers, most-active stocks, strategy signals and IWM status." }, { property: "og:title", content: "Explore Stocks & ETFs — Pulse Signals" }, { property: "og:description", content: "Stock search, market lists and paper strategy signals." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   loader: async ({ context }) => { await Promise.all([context.queryClient.ensureQueryData(assetsOptions), context.queryClient.ensureQueryData(listsOptions)]); }, component: ExplorePage,
 });

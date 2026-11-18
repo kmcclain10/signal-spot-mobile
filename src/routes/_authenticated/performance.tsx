@@ -7,6 +7,7 @@ import { EmptyState,ErrorState,StatCard } from '@/components/common';
 import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 export const Route=createFileRoute('/_authenticated/performance')({
+  staticData: { sitemap: false },
  validateSearch:(s:Record<string,unknown>):{strategy?:string;account?:string}=>({strategy:typeof s.strategy==='string'?s.strategy:'all',account:typeof s.account==='string'?s.account:'all'}),
  head:()=>({meta:[{title:'Actual Trade Performance — Pulse Signals'},{name:'description',content:'Realized trade profit, win rate, drawdown and cumulative P&L from real strategy fills.'},{property:'og:title',content:'Actual Trade Performance — Pulse Signals'},{property:'og:description',content:'Actual IWM and Pulse bot results, with no simulated backtests.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'}]}),
  loader:({context})=>context.queryClient.ensureQueryData(realPerformanceOptions),errorComponent:({error})=><ErrorState error={error}/>,notFoundComponent:()=> <p>Performance unavailable.</p>,component:Performance,

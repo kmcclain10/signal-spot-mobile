@@ -20,6 +20,7 @@ import { SeparateBots, separateBotsOptions } from "@/components/SeparateBots";
 
 const options = queryOptions({ queryKey: ["bots-overview"], queryFn: () => getBotsOverview(), refetchInterval: 30000 });
 export const Route = createFileRoute("/_authenticated/bots")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Bots — Pulse Signals" },

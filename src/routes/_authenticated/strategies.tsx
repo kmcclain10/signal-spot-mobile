@@ -6,6 +6,7 @@ import { strategyPlatformOptions, useStrategyRealtime } from '@/hooks/use-strate
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/common';
 export const Route=createFileRoute('/_authenticated/strategies')({
+  staticData: { sitemap: false },
   head:()=>({meta:[{title:'Strategy Playbook — Pulse Signals'},{name:'description',content:'The eleven executable IWM and Pulse strategies, their entry rules and trading controls.'},{property:'og:title',content:'Strategy Playbook — Pulse Signals'},{property:'og:description',content:'Real strategies. Current rules. Your active fleet.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'}]}),
   loader:({context})=>context.queryClient.ensureQueryData(strategyPlatformOptions),errorComponent:({error})=><ErrorState error={error}/>,notFoundComponent:()=> <p>Playbook unavailable.</p>,component:Playbook,
 });

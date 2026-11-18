@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export const Route = createFileRoute('/reset-password')({
-  head: () => ({ meta: [{ title: 'Set your password — Pulse Signals' }, { name: 'description', content: 'Securely add or reset your Pulse Signals account password.' }, { property: 'og:title', content: 'Set your password — Pulse Signals' }, { property: 'og:description', content: 'Recover account access and confirm paper bot adjustments.' }, { property: 'og:type', content: 'website' }, { name: 'twitter:card', content: 'summary' }] }),
+  staticData: { sitemap: false },
+  head: () => ({ meta: [{ title: 'Set your password — Pulse Signals' }, { name: 'description', content: 'Securely add or reset your Pulse Signals account password.' }, { property: 'og:title', content: 'Set your password — Pulse Signals' }, { property: 'og:description', content: 'Recover account access and confirm paper bot adjustments.' }, { property: 'og:type', content: 'website' }, { name: 'twitter:card', content: 'summary' }, { name: 'robots', content: 'noindex' }] }),
   component: ResetPassword,
 });
 function ResetPassword() {

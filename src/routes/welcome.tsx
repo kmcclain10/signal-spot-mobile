@@ -6,6 +6,7 @@ const URL = "https://signal-spot-mobile.lovable.app";
 const IMG = `${URL}/icons/og-image.png`;
 
 export const Route = createFileRoute("/welcome")({
+  staticData: { sitemap: true },
   head: () => ({
     meta: [
       { title: "Pulse Signals — Real-time options alerts & AI trading bots" },

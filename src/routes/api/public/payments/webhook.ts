@@ -50,6 +50,7 @@ async function deleteSub(sub: any, env: StripeEnv) {
 }
 
 export const Route = createFileRoute("/api/public/payments/webhook")({
+  staticData: { sitemap: false },
   server: {
     handlers: {
       POST: async ({ request }) => {

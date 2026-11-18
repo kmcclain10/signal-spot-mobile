@@ -3,6 +3,7 @@ import { authenticateCronRequest } from "@/integrations/supabase/cron-auth";
 import { iwmScheduleTime } from "@/lib/iwm-engine-rules";
 
 export const Route=createFileRoute("/api/public/jobs/iwm-window-strategy")({
+  staticData: { sitemap: false },
   server:{handlers:{POST:async({request})=> {
     const authFailure=await authenticateCronRequest(request);
     if(authFailure) return authFailure;

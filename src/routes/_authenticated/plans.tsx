@@ -15,6 +15,7 @@ import { usePlan } from "@/hooks/use-plan";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/plans")({
+  staticData: { sitemap: false },
   validateSearch: (s: Record<string, unknown>): { checkout?: string } => ({
     checkout: typeof s.checkout === "string" ? s.checkout : undefined,
   }),

@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/orders")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Activity — Pulse Signals" },

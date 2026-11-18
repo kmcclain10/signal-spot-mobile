@@ -11,6 +11,7 @@ import { botHealth } from '@/lib/bots-rules';
 import { nyDate } from '@/lib/market-hours';
 import { cn } from '@/lib/utils';
 export const Route = createFileRoute('/_authenticated/')({
+  staticData: { sitemap: false },
   head:()=>({meta:[{title:'Home — Pulse Signals'},{name:'description',content:'Your Alpaca portfolio, real strategy triggers and active trading fleet.'},{property:'og:title',content:'Home — Pulse Signals'},{property:'og:description',content:'Your account and real IWM and Pulse strategy activity.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'}]}),
   loader:async({context})=>{await Promise.all([context.queryClient.ensureQueryData(homePortfolioOptions),context.queryClient.ensureQueryData(strategyPlatformOptions)]);},
   errorComponent:({error})=><ErrorState error={error}/>,notFoundComponent:()=> <p>Home unavailable.</p>,component:Home,

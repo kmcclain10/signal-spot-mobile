@@ -16,6 +16,7 @@ import { useAccountConfirmation } from "@/components/AccountSecurity";
 import { sensitiveAccountChange } from "@/lib/account-rules";
 
 export const Route = createFileRoute("/_authenticated/settings")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Account & Security — Pulse Signals" },

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { lovable } from '@/integrations/lovable';
 
 export const Route = createFileRoute("/auth")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Sign in — Pulse Signals" },
