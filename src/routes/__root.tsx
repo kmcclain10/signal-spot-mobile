@@ -86,6 +86,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-title", content: "Pulse Signals" },
       { title: "Pulse Signals" },
       { name: "description", content: "AI-powered day-trading signals, automated paper-trading bots and a full trade desk, all in your pocket." },
+      { property: "og:site_name", content: "Pulse Signals" },
+      { property: "og:type", content: "website" },
+      { property: "og:title", content: "Pulse Signals — Real-time options & stock trading alerts" },
+      { property: "og:description", content: "Real strategy alerts on SPY, QQQ, IWM and the largest US stocks, with optional AI trading bots. Start a 7-day free trial." },
+      { name: "twitter:card", content: "summary" },
     ],
     links: [
       {
