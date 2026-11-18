@@ -98,13 +98,14 @@ function PlansPage() {
                   <h2 className="text-lg font-semibold">{p.name}</h2>
                   <p className="mt-2"><span className="num text-3xl font-semibold">${cycle === "monthly" ? p.monthly : p.yearly}</span>
                     <span className="text-sm text-muted-foreground">/{cycle === "monthly" ? "mo" : "yr"}</span></p>
+                  <p className="mt-1 text-xs text-muted-foreground">7 days free, then billed. Cancel anytime before day 8.</p>
                   <ul className="my-4 flex-1 space-y-2 text-sm">
                     {p.features.map((f) => <li key={f} className="flex gap-2"><Check className="h-4 w-4 text-primary" />{f}</li>)}
                   </ul>
                   <Button disabled={current || (tier === "bots" && t === "alerts")} onClick={() => {
                     try { getStripeEnvironment(); setSelected(priceIdFor(t, cycle)); } catch (e) { toast.error((e as Error).message); }
                   }}>
-                    {current ? "Current plan" : tier === "alerts" && t === "bots" ? "Upgrade" : "Subscribe"}
+                    {current ? "Current plan" : tier === "alerts" && t === "bots" ? "Upgrade" : "Start 7-day free trial"}
                   </Button>
                 </Panel>
               );

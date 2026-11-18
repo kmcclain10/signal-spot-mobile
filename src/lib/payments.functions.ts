@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { type StripeEnv, createStripeClient, getStripeErrorMessage } from "@/lib/stripe.server";
 
+export const TRIAL_DAYS = 7;
 const PRICE_IDS = new Set(["alerts_monthly", "alerts_yearly", "bots_monthly", "bots_yearly"]);
 
 async function resolveOrCreateCustomer(
@@ -46,6 +47,9 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       const prices = await stripe.prices.list({ lookup_keys: [data.priceId] });
       if (!prices.data.length) throw new Error("Price not found");
       const customerId = await resolveOrCreateCustomer(stripe, { email: user?.email ?? undefined, userId });
+      // One free trial per customer: skip it if they have ever subscribed before.
+      const priorSubs = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 1 });
+      const trialDays = priorSubs.data.length ? undefined : TRIAL_DAYS;
       const session = await stripe.checkout.sessions.create({
         line_items: [{ price: prices.data[0].id, quantity: 1 }],
         mode: "subscription",
@@ -54,7 +58,8 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
         customer: customerId,
         managed_payments: { enabled: true },
         metadata: { userId, managed_payments: "true" },
-        subscription_data: { metadata: { userId } },
+        payment_method_collection: "always",
+        subscription_data: { metadata: { userId }, ...(trialDays && { trial_period_days: trialDays }) },
       } as Stripe.Checkout.SessionCreateParams);
       return { clientSecret: session.client_secret ?? "" };
     } catch (error) {

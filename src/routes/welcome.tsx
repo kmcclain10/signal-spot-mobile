@@ -43,7 +43,7 @@ function Landing() {
         <h1 className="text-4xl font-black leading-tight md:text-6xl">Know the trade <span className="text-primary">the moment it sets up.</span></h1>
         <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">Real-time CALL and PUT alerts from 11 rule-based strategies — with the exact setup, price and reason. Trade them yourself or let AI bots do it.</p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-          <Link to="/auth" className="rounded-md bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90">Start getting alerts</Link>
+          <Link to="/auth" className="rounded-md bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90">Start 7-day free trial</Link>
           <a href="#pricing" className="rounded-md border border-border px-6 py-3 font-semibold hover:bg-muted">See pricing</a>
         </div>
       </section>
@@ -60,7 +60,7 @@ function Landing() {
 
       <section id="pricing" className="mx-auto max-w-5xl px-5 pb-20">
         <h2 className="text-center text-3xl font-black">Simple pricing</h2>
-        <p className="mt-2 text-center text-muted-foreground">Cancel anytime. Save two months with yearly.</p>
+        <p className="mt-2 text-center text-muted-foreground">Start with a 7-day free trial. Card required, cancel anytime. Save two months with yearly.</p>
         <div className="mt-8 grid gap-5 md:grid-cols-2">
           {(["alerts", "bots"] as const).map((k) => {
             const p = PLANS[k];
