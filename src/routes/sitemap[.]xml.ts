@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getRouterInstance } from "@tanstack/react-start";
+import { PLAYBOOK } from "@/lib/strategy-platform";
+import { strategySlug } from "@/lib/strategy-seo";
 import { sitemapStaticPaths, sitemapXML, type SitemapEntry } from "@/lib/sitemap";
 
 const BASE_URL = "https://thesignalspot.com";
@@ -17,7 +19,7 @@ export const Route = createFileRoute("/sitemap.xml")({
         }
         const router = await getRouterInstance();
         const entries: SitemapEntry[] = sitemapStaticPaths(router).map((path) => ({ path }));
-        // Add queries for dynamic pages selected for SEO, using sitemapPathForLocation.
+        for (const s of PLAYBOOK) entries.push({ path: `/strategies/${strategySlug(s.id)}` });
         if (entries.length === 0) {
           return new Response(
             'No pages are included in this sitemap. Check route decisions and ancestor exclusions. Setting "exclude-subtree" on the root excludes the entire site.',

@@ -26,6 +26,8 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSignalsRouteImport } from './routes/_authenticated/signals'
 import { Route as AuthenticatedStrategiesRouteImport } from './routes/_authenticated/strategies'
 import { Route as AuthenticatedTradeRouteImport } from './routes/_authenticated/trade'
+import { Route as StrategiesIndexRouteImport } from './routes/strategies/index'
+import { Route as StrategiesSlugRouteImport } from './routes/strategies/$slug'
 import { Route as AuthenticatedQuoteSymbolRouteImport } from './routes/_authenticated/quote.$symbol'
 import { Route as ApiPublicJobsIwmWindowStrategyRouteImport } from './routes/api/public/jobs/iwm-window-strategy'
 import { Route as ApiPublicJobsPulseBotsRouteImport } from './routes/api/public/jobs/pulse-bots'
@@ -118,6 +120,16 @@ const AuthenticatedTradeRoute = AuthenticatedTradeRouteImport.update({
   path: '/trade',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const StrategiesIndexRoute = StrategiesIndexRouteImport.update({
+  id: '/strategies/',
+  path: '/strategies/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StrategiesSlugRoute = StrategiesSlugRouteImport.update({
+  id: '/strategies/$slug',
+  path: '/strategies/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedQuoteSymbolRoute =
   AuthenticatedQuoteSymbolRouteImport.update({
     id: '/quote/$symbol',
@@ -164,6 +176,8 @@ export interface FileRoutesByFullPath {
   '/signals': typeof AuthenticatedSignalsRoute
   '/strategies': typeof AuthenticatedStrategiesRoute
   '/trade': typeof AuthenticatedTradeRoute
+  '/strategies/$slug': typeof StrategiesSlugRoute
+  '/strategies/': typeof StrategiesIndexRoute
   '/quote/$symbol': typeof AuthenticatedQuoteSymbolRoute
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
   '/api/public/jobs/pulse-bots': typeof ApiPublicJobsPulseBotsRoute
@@ -184,8 +198,9 @@ export interface FileRoutesByTo {
   '/plans': typeof AuthenticatedPlansRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/signals': typeof AuthenticatedSignalsRoute
-  '/strategies': typeof AuthenticatedStrategiesRoute
+  '/strategies': typeof StrategiesIndexRoute
   '/trade': typeof AuthenticatedTradeRoute
+  '/strategies/$slug': typeof StrategiesSlugRoute
   '/': typeof AuthenticatedIndexRoute
   '/quote/$symbol': typeof AuthenticatedQuoteSymbolRoute
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
@@ -211,7 +226,9 @@ export interface FileRoutesById {
   '/_authenticated/signals': typeof AuthenticatedSignalsRoute
   '/_authenticated/strategies': typeof AuthenticatedStrategiesRoute
   '/_authenticated/trade': typeof AuthenticatedTradeRoute
+  '/strategies/$slug': typeof StrategiesSlugRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/strategies/': typeof StrategiesIndexRoute
   '/_authenticated/quote/$symbol': typeof AuthenticatedQuoteSymbolRoute
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
   '/api/public/jobs/pulse-bots': typeof ApiPublicJobsPulseBotsRoute
@@ -237,6 +254,8 @@ export interface FileRouteTypes {
     | '/signals'
     | '/strategies'
     | '/trade'
+    | '/strategies/$slug'
+    | '/strategies/'
     | '/quote/$symbol'
     | '/api/public/jobs/iwm-window-strategy'
     | '/api/public/jobs/pulse-bots'
@@ -259,6 +278,7 @@ export interface FileRouteTypes {
     | '/signals'
     | '/strategies'
     | '/trade'
+    | '/strategies/$slug'
     | '/'
     | '/quote/$symbol'
     | '/api/public/jobs/iwm-window-strategy'
@@ -283,7 +303,9 @@ export interface FileRouteTypes {
     | '/_authenticated/signals'
     | '/_authenticated/strategies'
     | '/_authenticated/trade'
+    | '/strategies/$slug'
     | '/_authenticated/'
+    | '/strategies/'
     | '/_authenticated/quote/$symbol'
     | '/api/public/jobs/iwm-window-strategy'
     | '/api/public/jobs/pulse-bots'
@@ -297,6 +319,8 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   WelcomeRoute: typeof WelcomeRoute
+  StrategiesSlugRoute: typeof StrategiesSlugRoute
+  StrategiesIndexRoute: typeof StrategiesIndexRoute
   ApiPublicJobsIwmWindowStrategyRoute: typeof ApiPublicJobsIwmWindowStrategyRoute
   ApiPublicJobsPulseBotsRoute: typeof ApiPublicJobsPulseBotsRoute
   ApiPublicJobsScanRoute: typeof ApiPublicJobsScanRoute
@@ -424,6 +448,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTradeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/strategies/': {
+      id: '/strategies/'
+      path: '/strategies'
+      fullPath: '/strategies/'
+      preLoaderRoute: typeof StrategiesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/strategies/$slug': {
+      id: '/strategies/$slug'
+      path: '/strategies/$slug'
+      fullPath: '/strategies/$slug'
+      preLoaderRoute: typeof StrategiesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/quote/$symbol': {
       id: '/_authenticated/quote/$symbol'
       path: '/quote/$symbol'
@@ -503,6 +541,8 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   WelcomeRoute: WelcomeRoute,
+  StrategiesSlugRoute: StrategiesSlugRoute,
+  StrategiesIndexRoute: StrategiesIndexRoute,
   ApiPublicJobsIwmWindowStrategyRoute: ApiPublicJobsIwmWindowStrategyRoute,
   ApiPublicJobsPulseBotsRoute: ApiPublicJobsPulseBotsRoute,
   ApiPublicJobsScanRoute: ApiPublicJobsScanRoute,

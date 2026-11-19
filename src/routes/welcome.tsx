@@ -36,6 +36,7 @@ function Landing() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
         <div className="flex items-center gap-2 font-bold"><Activity className="h-6 w-6 text-primary" /> Pulse Signals</div>
+        <Link to="/strategies" className="text-sm text-muted-foreground hover:text-foreground">Strategies</Link>
         <Link to="/auth" className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted">Sign in</Link>
       </header>
 
