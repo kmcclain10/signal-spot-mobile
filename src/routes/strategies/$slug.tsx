@@ -64,7 +64,7 @@ function StrategyPage() {
         </section>
         <section className="mt-8">
           <h2 className="text-xl font-semibold">How the alerts work</h2>
-          <p className="mt-2 text-muted-foreground">Pulse Signals scans SPY, QQQ, IWM and the largest US companies on the {tfLabel(s.timeframe)} chart. When the {s.name} setup triggers, you get the ticker, CALL or PUT direction, price and the reason, instantly.</p>
+          <p className="mt-2 text-muted-foreground">Pulse Signals scans SPY, QQQ, IWM and the largest US companies on the {tfLabel(s.timeframe)} chart. When the {s.name.replace(/^The /, "")} setup triggers, you get the ticker, CALL or PUT direction, price and the reason, instantly.</p>
           <Link to="/welcome" className="mt-5 inline-block rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground hover:opacity-90">Start 7-day free trial</Link>
         </section>
         <section className="mt-12">
