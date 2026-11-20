@@ -6,13 +6,13 @@ export const PLANS: Record<PlanTier, { name: string; monthly: number; yearly: nu
     name: "Alerts Only",
     monthly: 49,
     yearly: 490,
-    features: ["Real-time setup alerts", "Signal feed & breakout triggers", "Discord / Telegram & push alerts", "No automated orders"],
+    features: ["Rule-based setup alerts in the member feed", "Signal feed & breakout triggers", "Optional browser notifications while the app is open", "No automated orders"],
   },
   bots: {
     name: "Full AI Bot Assistance",
     monthly: 99,
     yearly: 990,
-    features: ["Everything in Alerts", "IWM strategy bot", "All Pulse bots", "Automated entries, exits & profit locks"],
+    features: ["Everything in Alerts", "IWM strategy bot in your selected paper or live account", "All 10 additional Pulse bots (paper-only)", "Optional automated entries and exits following published rules, plus trailing exits where provided"],
   },
 };
 

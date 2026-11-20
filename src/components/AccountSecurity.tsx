@@ -9,11 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { LegalLinks } from '@/components/SiteFooter';
 
 const Confirmation = createContext<() => Promise<boolean>>(async () => false);
 export const useAccountConfirmation = () => useContext(Confirmation);
 export function Disclosures() {
-  return <div className="space-y-3 text-sm text-muted-foreground"><p><strong className="text-foreground">Not investment advice.</strong> Pulse Signals provides trading tools, not personalized investment recommendations. Trading can lose money.</p><p><strong className="text-foreground">Paper trading.</strong> Simulated orders, fills and returns do not represent real-money results. IWM automation is paper-only. Banking shown by the bot is accounting, not a money transfer.</p><a className="inline-flex min-h-11 items-center text-primary underline" href="https://alpaca.markets/disclosures" target="_blank" rel="noopener noreferrer">Alpaca disclosures</a></div>;
+  return <div className="space-y-3 text-sm text-muted-foreground"><p><strong className="text-foreground">Not investment advice.</strong> Pulse Signals provides general rule-based market information, not personalized investment recommendations. Trading can lose all money used.</p><p><strong className="text-foreground">Account mode.</strong> Additional Pulse bots are paper-only. IWM and the Trade desk use your selected paper or live Alpaca account. Simulated results are not real-money results. IWM may allocate part of winning profits toward Walmart shares (WMT); it is not a guaranteed return or advice to buy Walmart.</p><p>By creating or using your account, you acknowledge our <LegalLinks />.</p><a className="inline-flex min-h-11 items-center text-primary underline" href="https://alpaca.markets/disclosures" target="_blank" rel="noopener noreferrer">Alpaca disclosures</a></div>;
 }
 export function AccountSecurity({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false), [password, setPassword] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState("");

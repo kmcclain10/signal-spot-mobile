@@ -11,6 +11,8 @@ import {
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { SiteFooter } from '@/components/SiteFooter';
+import { PUBLIC_DESCRIPTION, PUBLIC_SITE } from '@/lib/public-content';
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -86,14 +88,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-status-bar-style", content: "black" },
       { name: "apple-mobile-web-app-title", content: "Pulse Signals" },
       { title: "Pulse Signals" },
-      { name: "description", content: "AI-powered day-trading signals, automated paper-trading bots and a full trade desk, all in your pocket." },
+      { name: "description", content: PUBLIC_DESCRIPTION },
       { property: "og:site_name", content: "Pulse Signals" },
       { property: "og:type", content: "website" },
       { property: "og:title", content: "Pulse Signals — Real-time options & stock trading alerts" },
-      { property: "og:description", content: "Real strategy alerts on SPY, QQQ, IWM and the largest US stocks, with optional AI trading bots. Start a 7-day free trial." },
+      { property: "og:description", content: PUBLIC_DESCRIPTION },
+      { property: 'og:url', content: `${PUBLIC_SITE}/welcome` },
+      { name: 'twitter:url', content: `${PUBLIC_SITE}/welcome` },
       { name: "twitter:card", content: "summary" },
     ],
     links: [
+      { rel: 'canonical', href: `${PUBLIC_SITE}/welcome` },
       {
         rel: "stylesheet",
         href: appCss,
@@ -150,6 +155,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <SiteFooter />
       <Toaster theme="dark" position="top-center" />
     </QueryClientProvider>
   );

@@ -3,6 +3,7 @@ import { getRouterInstance } from "@tanstack/react-start";
 import { PLAYBOOK } from "@/lib/strategy-platform";
 import { strategySlug } from "@/lib/strategy-seo";
 import { sitemapStaticPaths, sitemapXML, type SitemapEntry } from "@/lib/sitemap";
+import { PUBLIC_UPDATED } from '@/lib/public-content';
 
 const BASE_URL = "https://thesignalspot.com";
 
@@ -18,8 +19,9 @@ export const Route = createFileRoute("/sitemap.xml")({
           });
         }
         const router = await getRouterInstance();
-        const entries: SitemapEntry[] = sitemapStaticPaths(router).map((path) => ({ path }));
-        for (const s of PLAYBOOK) entries.push({ path: `/strategies/${strategySlug(s.id)}` });
+        const entries: SitemapEntry[] = sitemapStaticPaths(router).map((path) => ({ path, ...(PUBLIC_UPDATED[path.replace(/\/$/, '')] ? { lastmod: PUBLIC_UPDATED[path.replace(/\/$/, '')] } : {}) }));
+        // All strategy pages received substantive rule-copy corrections in this editorial revision.
+        for (const s of PLAYBOOK) entries.push({ path: `/strategies/${strategySlug(s.id)}`, lastmod: '2026-11-20' });
         if (entries.length === 0) {
           return new Response(
             'No pages are included in this sitemap. Check route decisions and ancestor exclusions. Setting "exclude-subtree" on the root excludes the entire site.',

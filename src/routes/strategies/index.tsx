@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Activity } from "lucide-react";
 import { PLAYBOOK } from "@/lib/strategy-platform";
 import { SITE, strategySlug, tfLabel } from "@/lib/strategy-seo";
+import { publicStrategy } from '@/lib/public-strategies';
+import { Button } from '@/components/ui/button';
 
 const TITLE = "Options & Stock Trading Strategies — 9/20 EMA, ORB, VWAP | Pulse Signals";
 const DESC = "Explore 11 rule-based trading strategies: 9/20 EMA cross, opening range breakout, VWAP reclaim, SuperTrend, MACD, TTM Squeeze and more, with real-time alerts.";
@@ -17,6 +19,7 @@ export const Route = createFileRoute("/strategies/")({
       { property: "og:type", content: "website" },
       { property: "og:url", content: `${SITE}/strategies` },
       { name: "twitter:card", content: "summary" },
+      { name: 'twitter:url', content: `${SITE}/strategies` },
     ],
     links: [{ rel: "canonical", href: `${SITE}/strategies` }],
     scripts: [{
@@ -36,7 +39,7 @@ export function PublicHeader() {
       <Link to="/welcome" className="flex items-center gap-2 font-bold"><Activity className="h-6 w-6 text-primary" /> Pulse Signals</Link>
       <nav className="flex items-center gap-3 text-sm">
         <Link to="/strategies" className="text-muted-foreground hover:text-foreground">Strategies</Link>
-        <Link to="/auth" className="rounded-md border border-border px-4 py-2 font-medium hover:bg-muted">Sign in</Link>
+        <Button asChild variant="outline" size="sm"><Link to="/auth">Sign in</Link></Button>
       </nav>
     </header>
   );
@@ -54,7 +57,7 @@ function StrategiesIndex() {
             <Link key={s.id} to="/strategies/$slug" params={{ slug: strategySlug(s.id) }} className="rounded-lg border border-border bg-card p-5 hover:border-primary">
               <div className="text-xs uppercase tracking-wide text-primary">{s.category} · {tfLabel(s.timeframe)} chart</div>
               <h2 className="mt-1 text-lg font-semibold">{s.name}</h2>
-              <p className="mt-2 text-sm text-muted-foreground">{s.summary}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{publicStrategy(s.id)?.summary ?? s.summary}</p>
             </Link>
           ))}
         </div>

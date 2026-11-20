@@ -4,6 +4,7 @@ import { passwordUpdate } from '@/lib/auth-actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NEW_PASSWORD_MIN, PASSWORD_MAX } from '@/lib/signup-rules';
 
 export function PasswordSettings() {
   const [password, setPassword] = useState(''), [repeat, setRepeat] = useState(''), [busy, setBusy] = useState(false), [message, setMessage] = useState('');
@@ -14,5 +15,5 @@ export function PasswordSettings() {
       setPassword(''); setRepeat(''); setMessage('Password saved. Use it to confirm bot changes.');
     } catch (e) { setMessage(e instanceof Error ? e.message : 'Could not save password.'); } finally { setBusy(false); }
   }
-  return <form onSubmit={save} className="max-w-md space-y-3"><p className="text-sm text-muted-foreground">Add or change your password right here — no email needed.</p><Label htmlFor="new-password">New password</Label><Input id="new-password" type="password" autoComplete="new-password" required value={password} onChange={e => setPassword(e.target.value)} /><Label htmlFor="repeat-password">Confirm password</Label><Input id="repeat-password" type="password" autoComplete="new-password" required value={repeat} onChange={e => setRepeat(e.target.value)} /><Button disabled={busy}>Save password</Button>{message && <p role="status" className="text-sm">{message}</p>}</form>;
+  return <form onSubmit={save} className="max-w-md space-y-3"><p className="text-sm text-muted-foreground">Add or change your password right here — no email needed.</p><Label htmlFor="new-password">New password</Label><Input id="new-password" type="password" autoComplete="new-password" minLength={NEW_PASSWORD_MIN} maxLength={PASSWORD_MAX} required value={password} onChange={e => setPassword(e.target.value)} /><Label htmlFor="repeat-password">Confirm password</Label><Input id="repeat-password" type="password" autoComplete="new-password" maxLength={PASSWORD_MAX} required value={repeat} onChange={e => setRepeat(e.target.value)} /><Button disabled={busy}>Save password</Button>{message && <p role="status" className="text-sm">{message}</p>}</form>;
 }

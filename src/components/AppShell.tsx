@@ -150,7 +150,7 @@ export function AppShell() {
         <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-2 border-b bg-background/95 px-4 backdrop-blur sm:px-6">
           <div className="flex items-center gap-2 lg:hidden">
             <Activity className="size-4 text-primary" />
-            <span className="text-sm font-semibold">Pulse</span>
+            <span className="text-xs font-semibold">Pulse Signals</span>
           </div>
           <MarketStatus />
           <div className="flex items-center gap-1"><ModeBadge /><Button asChild size="icon" variant="ghost" aria-label="Trade" title="Trade"><Link to="/trade"><CandlestickChart /></Link></Button><Button size="icon" variant="ghost" aria-label="Refresh account" title="Refresh account" disabled={refreshing} onClick={refresh}><RefreshCw className={refreshing ? "animate-spin" : ""} /></Button><Button size="icon" variant="ghost" className="lg:hidden" aria-label="More pages" onClick={() => setMore(true)}><Menu /></Button></div>

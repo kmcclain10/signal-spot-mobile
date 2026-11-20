@@ -1,3 +1,9 @@
+# Launch audit adjustments
+- [ ] Add public legal/contact pages and a shared footer; require signup acknowledgment.
+- [ ] Correct marketing, brand, strategy parameters and custom-domain metadata without changing trading rules.
+- [ ] Harden new-password validation, extend sitemap and add legacy URL redirects.
+- [ ] Verify public desktop/mobile pages and signup safeguards; document counsel and hosted-setting blockers.
+
 # Real strategy platform
 - [x] Automatic SPY/IWM/QQQ plus daily verified top-ten Alpaca-tradable US market-cap scanning; owner-selected strategies and custom direction/symbol alerts. Saved AMD/NFLX selections read back after reload and restored; 14 targeted tests pass, desktop/mobile verified without orders. Published market-hours evaluation remains pending the next session.
 - [x] Remove legacy picks, bundled backtests and scanner from customer screens and scheduled execution; retain deprecated database history, disable legacy signal orders.

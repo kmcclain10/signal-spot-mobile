@@ -7,23 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { lovable } from '@/integrations/lovable';
+import { LegalLinks } from '@/components/SiteFooter';
+import { PUBLIC_DESCRIPTION, publicHead } from '@/lib/public-content';
+import { NEW_PASSWORD_MIN, PASSWORD_MAX, validateSignup } from '@/lib/signup-rules';
 
 export const Route = createFileRoute("/auth")({
   staticData: { sitemap: false },
-  head: () => ({
-    meta: [
-      { title: "Sign in — Pulse Signals" },
-      { name: "description", content: "Sign in to Pulse Signals — AI-powered day-trading signals, automated paper-trading bots and a full trade desk, all in your pocket." },
-      { property: "og:title", content: "Sign in — Pulse Signals" },
-      { property: "og:description", content: "AI-powered day-trading signals, automated paper-trading bots and a full trade desk, all in your pocket." },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://signal-spot-mobile.lovable.app/auth" },
-      { property: "og:image", content: "https://signal-spot-mobile.lovable.app/icons/og-image.png" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "https://signal-spot-mobile.lovable.app/icons/og-image.png" },
-    ],
-    links: [{ rel: "canonical", href: "https://signal-spot-mobile.lovable.app/auth" }],
-  }),
+  head: () => publicHead('Sign in', PUBLIC_DESCRIPTION, '/auth'),
   component: AuthPage,
 });
 
@@ -35,6 +25,7 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState('');
   const [message, setMessage] = useState('');
+  const [accepted, setAccepted] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -53,10 +44,11 @@ function AuthPage() {
         if (error) throw error;
         navigate({ to: "/", replace: true });
       } else {
+        validateSignup(password, accepted);
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin, data: { full_name: name.trim() } },
+          options: { emailRedirectTo: window.location.origin, data: { full_name: name.trim(), signup_legal_version: '2026-11-20', signup_legal_accepted_at: new Date().toISOString() } },
         });
         if (error) throw error;
         if (data.session) navigate({ to: "/", replace: true });
@@ -102,12 +94,14 @@ function AuthPage() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="pw">Password</Label>
-            <Input id="pw" type="password" autoComplete={mode === 'up' ? 'new-password' : 'current-password'} required minLength={mode === 'up' ? 6 : 1} value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input id="pw" type="password" autoComplete={mode === 'up' ? 'new-password' : 'current-password'} required minLength={mode === 'up' ? NEW_PASSWORD_MIN : 1} maxLength={PASSWORD_MAX} value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
-          <Button type="submit" className="w-full" disabled={busy}>
+          {mode === 'up' && <div className="flex items-start gap-3 text-xs leading-5"><input id="signup-legal" type="checkbox" required checked={accepted} onChange={e => setAccepted(e.target.checked)} className="mt-1 size-4 shrink-0 accent-primary" aria-label="Agree to Terms, Privacy Policy and Risk disclosure" /><div><label htmlFor="signup-legal">By creating an account, you agree to our </label><LegalLinks />.</div></div>}
+          <Button type="submit" className="w-full" disabled={busy || mode === 'up' && !accepted}>
             {busy ? 'Please wait…' : mode === "in" ? "Sign in" : "Create account"}
           </Button>
         </form>
+        {mode === 'up' && <p className="mt-3 text-xs leading-5 text-muted-foreground">Apple and Google account creation also requires acknowledgment in the member area before access.</p>}
         {message && <p role="status" className="mt-4 text-sm text-gain">{message}</p>}
         <Button variant="ghost" asChild className="mt-2 w-full"><Link to="/reset-password">Forgot password or need one?</Link></Button>
         <Button variant="ghost" disabled={busy}
@@ -116,6 +110,7 @@ function AuthPage() {
         >
           {mode === "in" ? "No account? Create one" : "Have an account? Sign in"}
         </Button>
+        <Button variant="link" asChild className="mt-2 w-full"><Link to="/welcome">Back to Pulse Signals</Link></Button>
       </div>
     </div>
   );

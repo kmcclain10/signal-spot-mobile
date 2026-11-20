@@ -3,7 +3,8 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {} }));
 import { passwordUpdate } from '@/lib/auth-actions';
 
 describe('customer access rules', () => {
-  it('accepts a 6-character password',()=>expect(passwordUpdate('abcdef','abcdef')).toEqual({password:'abcdef'}));
+  it('rejects new passwords shorter than 8 characters',()=>expect(() => passwordUpdate('abcdefg','abcdefg')).toThrow('at least 8'));
+  it('accepts an 8-character new password',()=>expect(passwordUpdate('abcdefgh','abcdefgh')).toEqual({password:'abcdefgh'}));
   it('recovery never requires a password the customer does not have', () => {
     expect(passwordUpdate('long-password', 'long-password')).toEqual({ password: 'long-password' });
   });

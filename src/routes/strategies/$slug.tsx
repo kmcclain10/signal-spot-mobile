@@ -3,6 +3,7 @@ import { Check } from "lucide-react";
 import { PLAYBOOK } from "@/lib/strategy-platform";
 import { SITE, findStrategy, strategyDescription, strategySlug, strategyTitle, tfLabel } from "@/lib/strategy-seo";
 import { PublicHeader } from "./index";
+import { publicStrategy, SCAN_UNIVERSE_DESCRIPTION } from '@/lib/public-strategies';
 
 export const Route = createFileRoute("/strategies/$slug")({
   staticData: { sitemap: false },
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/strategies/$slug")({
         { property: "og:title", content: title }, { property: "og:description", content: desc },
         { property: "og:type", content: "article" }, { property: "og:url", content: url },
         { name: "twitter:card", content: "summary" },
+        { name: 'twitter:url', content: url },
       ],
       links: [{ rel: "canonical", href: url }],
       scripts: [{
@@ -46,7 +48,8 @@ export const Route = createFileRoute("/strategies/$slug")({
 
 function StrategyPage() {
   const { id } = Route.useLoaderData();
-  const s = PLAYBOOK.find((p) => p.id === id)!;
+  const s = publicStrategy(id);
+  if (!s) return <p>Strategy unavailable.</p>;
   const others = PLAYBOOK.filter((p) => p.id !== id).slice(0, 4);
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -56,15 +59,18 @@ function StrategyPage() {
         <div className="mt-4 text-xs uppercase tracking-wide text-primary">{s.category} · {tfLabel(s.timeframe)} chart</div>
         <h1 className="mt-1 text-3xl font-bold md:text-4xl">{s.name} trading strategy</h1>
         <p className="mt-3 text-lg text-muted-foreground">{s.summary}</p>
-        <section className="mt-8 rounded-lg border border-border bg-card p-5">
+        <section className="mt-8 border-y border-border py-5">
           <h2 className="text-xl font-semibold">Strategy rules</h2>
+          <p className="mt-2 text-sm text-muted-foreground">These are the scanner’s published default parameters. Bot settings can be adjusted in the member area; they do not change the read-only alert defaults.</p>
           <ul className="mt-4 space-y-3">
             {s.rules.map((r) => <li key={r} className="flex gap-3 text-sm"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{r}</li>)}
           </ul>
         </section>
         <section className="mt-8">
           <h2 className="text-xl font-semibold">How the alerts work</h2>
-          <p className="mt-2 text-muted-foreground">Pulse Signals scans SPY, QQQ, IWM and the largest US companies on the {tfLabel(s.timeframe)} chart. When the {s.name.replace(/^The /, "")} setup triggers, you get the ticker, CALL or PUT direction, price and the reason, instantly.</p>
+          <p className="mt-2 text-muted-foreground">{SCAN_UNIVERSE_DESCRIPTION}</p>
+          {id === 'iwm' && <p className="mt-3 text-muted-foreground">The automated IWM bot trades IWM options only. The read-only 9/20 momentum scanner also evaluates the other selected symbols; those alerts do not mean the IWM bot trades them.</p>}
+          <p className="mt-3 text-muted-foreground">When the {s.name.replace(/^The /, '')} setup triggers on the {tfLabel(s.timeframe)} chart, the member feed shows the ticker, direction, underlying price, trigger time and reason. Alerts may be delayed or missed; an alert does not choose or verify an option contract.</p>
           <Link to="/welcome" className="mt-5 inline-block rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground hover:opacity-90">Start 7-day free trial</Link>
         </section>
         <section className="mt-12">

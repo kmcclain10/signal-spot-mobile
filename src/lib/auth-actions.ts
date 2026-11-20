@@ -1,7 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
+import { validateNewPassword } from '@/lib/signup-rules';
 
 export function passwordUpdate(password: string, confirmation: string, current?: string) {
-  if (password.length < 6) throw new Error('Use at least 6 characters.');
+  validateNewPassword(password);
   if (password !== confirmation) throw new Error('Passwords do not match.');
   return current === undefined ? { password } : { password, current_password: current };
 }

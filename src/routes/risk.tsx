@@ -1,0 +1,11 @@
+import { createFileRoute } from '@tanstack/react-router';
+import { PublicDocument } from '@/components/PublicDocument';
+import { publicHead } from '@/lib/public-content';
+export const Route = createFileRoute('/risk')({ staticData: { sitemap: true }, head: () => publicHead('Risk disclosure', 'Important risks of options alerts, market data, paper trading and optional automation on Pulse Signals.', '/risk'), component: Risk });
+function Risk() { return <PublicDocument title="Risk disclosure">
+  <p>Pulse Signals provides educational market information, not investment advice. Past signals do not guarantee future results. You are responsible for every decision to trade or enable automation.</p>
+  <section><h2 className="text-lg font-semibold text-foreground">Options and loss of capital</h2><p>Options can expire worthless. Losses can be sudden and large, including all money used to trade. Some strategies may have no stop loss. A stop, profit target or scheduled exit does not guarantee a price or limit your loss. Only use money you can afford to lose.</p></section>
+  <section><h2 className="text-lg font-semibold text-foreground">Alerts and automation</h2><p>Alerts can be delayed, missed or wrong because of market-data limitations, outages or strategy behavior. If automation is enabled, orders may fill at unexpected prices, partially fill or fail to fill. Check your broker for authoritative positions and orders. You remain responsible for monitoring exposure, including when the site is unavailable.</p></section>
+  <section><h2 className="text-lg font-semibold text-foreground">Paper results and alternative instruments</h2><p>Paper-trading results, if shown, are not the same as live results. Liquidity, spreads, fees and actual execution can materially change outcomes. SPY, SPX and futures are different instruments; a SPY setup is not a verified SPX strike or futures entry. Alpaca does not provide SPX index-option or ES/MES futures execution through this app.</p></section>
+  <p>[COUNSEL: LEGAL ENTITY NAME AND ADDRESS]</p>
+</PublicDocument>; }

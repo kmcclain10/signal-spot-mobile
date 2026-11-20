@@ -1,0 +1,2 @@
+import { createFileRoute, redirect } from '@tanstack/react-router';
+export const Route = createFileRoute('/pricing')({ staticData: { sitemap: false }, beforeLoad: () => { throw redirect({ to: '/welcome', hash: 'pricing', statusCode: 301 }); } });

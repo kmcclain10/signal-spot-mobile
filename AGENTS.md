@@ -32,3 +32,6 @@
 
 - Customer signals and performance read owner-scoped strategy alerts and actual IWM/Pulse fills; never use legacy picks or bundled backtests. Read-only alert evaluation reuses executable strategy math and must never submit broker orders.
 - Alert universes use a persisted, daily refreshed US market-cap ranking filtered to Alpaca-tradable companies; batch bars by timeframe and keep owner alert preferences separate from execution settings so personal alerts never enable bots.
+- Public audit copy uses a presentation-only strategy adapter resolved from scanner defaults; never change executable calculations to correct marketing parameters.
+- The root owns the shared company/legal footer; leaf routes own canonical/social URLs and page-specific editorial dates feed sitemap lastmod.
+- Signup and password changes share pure validation; signup consent gates creation, while existing password sign-in stays unchanged.

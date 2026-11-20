@@ -1,0 +1,2 @@
+import { createFileRoute, redirect } from '@tanstack/react-router';
+export const Route = createFileRoute('/signup')({ staticData: { sitemap: false }, beforeLoad: () => { throw redirect({ to: '/auth', statusCode: 301 }); } });
