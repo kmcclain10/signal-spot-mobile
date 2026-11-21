@@ -16,6 +16,7 @@ import { PUBLIC_DESCRIPTION, PUBLIC_SITE } from '@/lib/public-content';
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { initAnalytics, trackPageView } from "@/lib/analytics";
 
 function NotFoundComponent() {
   return (
@@ -137,6 +138,16 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+
+  // Google Analytics: load once, then report each client-side navigation.
+  useEffect(() => {
+    initAnalytics();
+    const unsubscribe = router.subscribe("onResolved", ({ toLocation }) => {
+      trackPageView(toLocation.pathname);
+    });
+    return unsubscribe;
+  }, [router]);
+
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
