@@ -1,5 +1,7 @@
 export const PUBLIC_SITE = 'https://thesignalspot.com';
 export const SUPPORT_EMAIL = 'support@thesignalspot.com';
+export const X_HANDLE = '@SignalSpotAlert';
+export const X_URL = 'https://x.com/SignalSpotAlert';
 export const PUBLIC_DESCRIPTION = 'Rule-based options alerts on liquid US markets, with optional published-rule automation in an account you connect. Educational information, not personalized investment advice.';
 // Authoritative editorial dates: update only when each page's substantive content changes.
 export const PUBLIC_UPDATED: Record<string, string> = {
