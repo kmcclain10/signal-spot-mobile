@@ -67,7 +67,7 @@ export function Landing() {
                   {p.features.map((x) => <li key={x} className="flex gap-2"><Check className="h-4 w-4 shrink-0 text-primary" />{x}</li>)}
                 </ul>
                 {hot && <Link to="/automation" className="mt-4 inline-block text-sm text-primary underline underline-offset-4">How optional automation works</Link>}
-                {hot && <p className="mt-4 text-xs leading-5 text-muted-foreground">Pulse bots: {PLAYBOOK.filter(s => s.id !== 'iwm').map(s => s.name).join(', ')}. These additional bots are paper-only and follow published rules with your configured settings.</p>}
+                {hot && <p className="mt-4 text-xs leading-5 text-muted-foreground">Pulse bots: {PLAYBOOK.filter(s => s.id !== 'iwm').map(s => s.name).join(', ')}. These additional bots follow published rules with your configured settings.</p>}
                 <Button asChild variant={hot ? 'default' : 'outline'} className="mt-6 w-full"><Link to="/auth">Get {p.name}</Link></Button>
               </div>
             );

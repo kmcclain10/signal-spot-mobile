@@ -12,7 +12,7 @@ export const PLANS: Record<PlanTier, { name: string; monthly: number; yearly: nu
     name: "Full AI Bot Assistance",
     monthly: 99,
     yearly: 990,
-    features: ["Everything in Alerts", "IWM strategy bot in your selected paper or live account", "All 10 additional Pulse bots (paper-only)", "Optional automated entries and exits following published rules, plus trailing exits where provided"],
+    features: ["Everything in Alerts", "IWM strategy bot in your selected Alpaca account", "All 10 additional Pulse bots", "Optional automated entries and exits following published rules, plus trailing exits where provided"],
   },
 };
 
