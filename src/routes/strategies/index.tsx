@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 
 const TITLE = "Options & Stock Trading Strategies — 9/20 EMA, ORB, VWAP | The Signal Spot";
-const DESC = "Explore 11 rule-based trading strategies: 9/20 EMA cross, opening range breakout, VWAP reclaim, SuperTrend, MACD, TTM Squeeze and more, with real-time alerts.";
+const DESC = "Explore 11 rule-based trading strategies: 9/20 EMA cross, opening range breakout, VWAP reclaim, SuperTrend, MACD, TTM Squeeze and more, with alerts in the member feed.";
 
 export const Route = createFileRoute("/strategies/")({
   staticData: { sitemap: true },

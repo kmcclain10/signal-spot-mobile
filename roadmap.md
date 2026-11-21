@@ -1,3 +1,8 @@
+# Apple sharing and remaining Lovable checks
+- [x] Add and verify 4-second, 1200×630, silent H.264 homepage animation (227 KB) for Apple Messages; still-image previews remain elsewhere. Raw tags, asset HTTP 200 and browser playback passed; next publish required.
+- [x] Confirm published Lovable badge is hidden and no pending Project monitoring findings exist; quick security scan has no new actionable findings.
+- [ ] Deeper security review — running; results arrive separately and must be reviewed before claiming the review complete.
+
 # Public URL and sharing cleanup
 - [x] Normalize raw Twitter titles and custom-domain share images; strategy, pricing and legal content preserved.
 - [x] Keep / as the sole homepage; verified 301 redirects from /welcome, /pricing and /about, updated home links and sitemap inclusion.
