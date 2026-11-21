@@ -1,8 +1,8 @@
-# Pulse Signals on iPhone
+# The Signal Spot on iPhone
 
 ## Available now: home-screen web app
 
-After publishing this update, open the published Pulse Signals address in Safari, tap Share, then Add to Home Screen. The app has its own icon and opens without the browser toolbar. Internet is required. Account security uses password confirmation; Face ID and background push are not connected.
+After publishing this update, open the published The Signal Spot address in Safari, tap Share, then Add to Home Screen. The app has its own icon and opens without the browser toolbar. Internet is required. Account security uses password confirmation; Face ID and background push are not connected.
 
 ## Separate native iOS delivery
 
