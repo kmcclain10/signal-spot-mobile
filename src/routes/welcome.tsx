@@ -1,58 +1,44 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Activity, Bell, Bot, Check, Shield, Zap, LineChart } from "lucide-react";
+import { Bell, Bot, Check, Zap, LineChart } from "lucide-react";
 import { PLANS } from "@/lib/plans";
 
-const URL = "https://signal-spot-mobile.lovable.app";
-const IMG = `${URL}/icons/og-image.png`;
+import { PUBLIC_DESCRIPTION, publicHead } from '@/lib/public-content';
+import { SCAN_UNIVERSE_DESCRIPTION } from '@/lib/public-strategies';
+import { PLAYBOOK } from '@/lib/strategy-platform';
+import { PublicHeader } from '@/routes/strategies/index';
+import { Button } from '@/components/ui/button';
 
 export const Route = createFileRoute("/welcome")({
   staticData: { sitemap: true },
-  head: () => ({
-    meta: [
-      { title: "Pulse Signals — Real-time options alerts & AI trading bots" },
-      { name: "description", content: "Get real-time call and put alerts on SPY, QQQ, IWM and top US stocks from 11 proven strategies. Alerts from $49/mo, full AI bots from $99/mo." },
-      { property: "og:title", content: "Pulse Signals — Real-time options alerts & AI trading bots" },
-      { property: "og:description", content: "11 live strategies. Exact contracts. Instant alerts. Optional AI bots that trade for you." },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: `${URL}/welcome` },
-      { property: "og:image", content: IMG },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: IMG },
-    ],
-    links: [{ rel: "canonical", href: `${URL}/welcome` }],
-  }),
+  head: () => publicHead('Rule-based options alerts', PUBLIC_DESCRIPTION, '/welcome'),
   component: Landing,
 });
 
 const features = [
-  { icon: Bell, t: "Instant setup alerts", d: "The moment a strategy triggers, you see the ticker, CALL or PUT, price and reason." },
-  { icon: Zap, t: "11 real strategies", d: "9/20 EMA momentum, The Scalpers, ORB, VWAP reclaim, SuperTrend and more — no fake backtests." },
-  { icon: LineChart, t: "Market-wide scanning", d: "SPY, QQQ, IWM and the 10 largest US companies scanned every minute, plus your own picks." },
-  { icon: Bot, t: "AI bots (optional)", d: "Let bots enter, take profit and exit for you on your own Alpaca account." },
+  { icon: Bell, t: "Rule-triggered alerts", d: "See the ticker, CALL or PUT direction, underlying price, trigger time and reason in the member feed. Alerts can be delayed or missed." },
+  { icon: Zap, t: "11 rule-based strategies", d: "9/20 EMA momentum, The Scalpers, ORB, VWAP reclaim, Supertrend and more. We do not publish a performance record on this page; past signals do not guarantee future results." },
+  { icon: LineChart, t: "Market scanning", d: "SPY, QQQ, IWM and a daily refreshed top-ten US company list. Custom tickers use the same published rules, not personalized recommendations." },
+  { icon: Bot, t: "Bots (optional)", d: "Connect your own Alpaca account and let a bot follow published entry and exit rules. This is not personalized advice and does not guarantee a profit." },
 ];
 
 function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
-        <div className="flex items-center gap-2 font-bold"><Activity className="h-6 w-6 text-primary" /> Pulse Signals</div>
-        <div className="flex items-center gap-3"><Link to="/strategies" className="text-sm text-muted-foreground hover:text-foreground">Strategies</Link>
-        <Link to="/auth" className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted">Sign in</Link></div>
-      </header>
+      <PublicHeader />
 
       <section className="mx-auto max-w-4xl px-5 pb-16 pt-12 text-center">
-        <p className="mb-4 inline-block rounded-full border border-primary/40 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary">Live market alerts</p>
-        <h1 className="text-4xl font-black leading-tight md:text-6xl">Know the trade <span className="text-primary">the moment it sets up.</span></h1>
-        <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">Real-time CALL and PUT alerts from 11 rule-based strategies — with the exact setup, price and reason. Trade them yourself or let AI bots do it.</p>
+        <p className="mb-4 text-sm font-semibold text-primary">Pulse Signals · Rule-based options alerts</p>
+        <h1 className="text-4xl font-black leading-tight md:text-6xl">See the setup <span className="text-primary">the moment the rules trigger.</span></h1>
+        <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">Read the alert and decide for yourself. An optional bot add-on can follow the same published rules in an account you connect, if you turn it on.</p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-          <Link to="/auth" className="rounded-md bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90">Start 7-day free trial</Link>
-          <a href="#pricing" className="rounded-md border border-border px-6 py-3 font-semibold hover:bg-muted">See pricing</a>
+          <Button asChild size="lg"><Link to="/auth">Start 7-day free trial</Link></Button>
+          <Button asChild variant="outline" size="lg"><a href="#pricing">See pricing</a></Button>
         </div>
       </section>
 
       <section className="mx-auto grid max-w-6xl gap-4 px-5 pb-20 sm:grid-cols-2 lg:grid-cols-4">
         {features.map((f) => (
-          <div key={f.t} className="rounded-xl border border-border bg-card p-5">
+          <div key={f.t} className="border-t border-border py-5">
             <f.icon className="mb-3 h-6 w-6 text-primary" />
             <h3 className="font-semibold">{f.t}</h3>
             <p className="mt-1 text-sm text-muted-foreground">{f.d}</p>
@@ -60,6 +46,16 @@ function Landing() {
         ))}
       </section>
 
+      <section className="mx-auto grid max-w-5xl gap-8 border-y border-border px-5 py-10 md:grid-cols-2">
+        <div><h2 className="text-2xl font-semibold">How you get alerts</h2><p className="mt-3 text-sm leading-6 text-muted-foreground">Alerts appear in your member feed. Optional browser notifications work while the app is open and permission is granted. Discord, Telegram and background push delivery are not currently offered.</p><p className="mt-3 text-sm leading-6 text-muted-foreground">{SCAN_UNIVERSE_DESCRIPTION}</p></div>
+        <article className="rounded-lg border border-border bg-card p-5" aria-label="Sample alert format">
+          <p className="text-xs font-semibold text-potential">SAMPLE FORMAT ONLY · NOT A RECOMMENDATION</p>
+          <div className="mt-4 flex items-baseline justify-between gap-4"><h3 className="text-2xl font-bold">SPY</h3><span className="font-semibold text-primary">CALL direction</span></div>
+          <dl className="mt-4 space-y-2 text-sm"><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Underlying price</dt><dd className="num">$600.00 (illustrative)</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Strategy</dt><dd>Opening Bell · 5 min</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Trigger time</dt><dd>9:50 AM ET (illustrative)</dd></div></dl>
+          <p className="mt-4 text-sm">Reason: closed above the 15-minute opening range high.</p><p className="mt-3 text-xs leading-5 text-muted-foreground">Illustrative values show the format only. This is not a current alert, a historical winning trade or a verified option contract.</p>
+        </article>
+      </section>
+      <section className="mx-auto max-w-5xl px-5 py-12"><h2 className="text-2xl font-semibold">A plan before a trade</h2><p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">Focus on a small set of strategies you understand, such as the 5-minute 9/20 cross or opening range breakout. Decide your trade limit, risk budget and exit plan before entering. Liquid at-the-money options may be easier to evaluate, but spreads and liquidity still matter. Fewer trades or a profit target do not guarantee consistent success.</p></section>
       <section id="pricing" className="mx-auto max-w-5xl px-5 pb-20">
         <h2 className="text-center text-3xl font-black">Simple pricing</h2>
         <p className="mt-2 text-center text-muted-foreground">Start with a 7-day free trial. Card required, cancel anytime. Save two months with yearly.</p>
@@ -68,25 +64,23 @@ function Landing() {
             const p = PLANS[k];
             const hot = k === "bots";
             return (
-              <div key={k} className={`rounded-2xl border p-6 ${hot ? "border-primary bg-card" : "border-border bg-card"}`}>
-                {hot && <span className="mb-2 inline-block rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">MOST POWERFUL</span>}
+              <div key={k} className={`rounded-lg border p-6 ${hot ? "border-primary bg-card" : "border-border bg-card"}`}>
+                {hot && <p className="mb-2 text-xs font-semibold text-primary">OPTIONAL AUTOMATION</p>}
                 <h3 className="text-xl font-bold">{p.name}</h3>
                 <p className="mt-2"><span className="text-4xl font-black">${p.monthly}</span><span className="text-muted-foreground">/mo</span></p>
                 <p className="text-sm text-muted-foreground">or ${p.yearly}/year</p>
                 <ul className="mt-5 space-y-2 text-sm">
                   {p.features.map((x) => <li key={x} className="flex gap-2"><Check className="h-4 w-4 shrink-0 text-primary" />{x}</li>)}
                 </ul>
-                <Link to="/auth" className={`mt-6 block rounded-md px-4 py-3 text-center font-semibold ${hot ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border border-border hover:bg-muted"}`}>Get {p.name}</Link>
+                {hot && <p className="mt-4 text-xs leading-5 text-muted-foreground">Pulse bots: {PLAYBOOK.filter(s => s.id !== 'iwm').map(s => s.name).join(', ')}. These additional bots are paper-only and follow published rules with your configured settings.</p>}
+                <Button asChild variant={hot ? 'default' : 'outline'} className="mt-6 w-full"><Link to="/auth">Get {p.name}</Link></Button>
               </div>
             );
           })}
         </div>
       </section>
 
-      <footer className="border-t border-border px-5 py-8 text-center text-xs text-muted-foreground">
-        <p className="flex items-center justify-center gap-1"><Shield className="h-3 w-3" /> Educational alerts, not financial advice. Options trading involves substantial risk of loss.</p>
-        <p className="mt-2">© {new Date().getFullYear()} Pulse Signals</p>
-      </footer>
+
     </div>
   );
 }

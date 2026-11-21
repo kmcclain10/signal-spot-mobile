@@ -62,6 +62,7 @@ function AuthPage() {
   }
 
   async function social(provider: 'apple' | 'google') {
+    if (mode === 'up' && !accepted) { toast.error('Agree to the Terms, Privacy Policy and Risk disclosure before creating an account.'); return; }
     setBusy(true);
     try {
       const r = await lovable.auth.signInWithOAuth(provider, { redirect_uri: window.location.origin });
@@ -101,7 +102,7 @@ function AuthPage() {
             {busy ? 'Please wait…' : mode === "in" ? "Sign in" : "Create account"}
           </Button>
         </form>
-        {mode === 'up' && <p className="mt-3 text-xs leading-5 text-muted-foreground">Apple and Google account creation also requires acknowledgment in the member area before access.</p>}
+        {mode === 'in' && <p className="mt-3 text-xs leading-5 text-muted-foreground">Creating an account? Choose “No account? Create one” to review and accept our terms first.</p>}
         {message && <p role="status" className="mt-4 text-sm text-gain">{message}</p>}
         <Button variant="ghost" asChild className="mt-2 w-full"><Link to="/reset-password">Forgot password or need one?</Link></Button>
         <Button variant="ghost" disabled={busy}
