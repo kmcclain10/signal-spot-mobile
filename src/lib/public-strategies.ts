@@ -34,7 +34,11 @@ export function publicStrategy(id: string) {
     donchian: () => [`Daily close above the highest high of the previous ${p.entryLen} days for longs; below the lowest low for shorts.`, `Strategy exit: close below the lowest low of the previous ${p.exitLen} days for longs; above the highest high for shorts.`],
     scalpers: () => [`Confirmed ${settings.timeframe}-minute candles; entry bars from ${settings.entryStart} to before ${settings.entryEnd} ET.`, 'CALL direction when 9 EMA crosses above VWAP and the candle closes above VWAP; PUT direction mirrors this.', `Underlying stop beyond the signal candle by $0.02; minimum distance ${p.minStopPct}% and setups wider than ${p.maxStopPct}% are skipped.`, `Underlying target ${p.rMultiple} times the risk distance. Strategy exit: 9 EMA crosses back through VWAP.`, `The paper bot allows at most ${settings.maxTradesPerDay} daily entries and requests flattening at ${settings.flatAt} ET; these bot limits do not cap read-only alert counts.`],
   };
-  return { ...base, summary: id === 'donchian' ? `Daily ${p.entryLen}-day channel breakout with a ${p.exitLen}-day channel exit.` : base.summary, rules: rules[id]?.() ?? base.rules };
+  const summaries: Record<string, () => string> = {
+    orb: () => 'Marks the high and low of the 9:30–9:45 AM ET opening range and trades the first close beyond them.',
+    donchian: () => `Daily ${p.entryLen}-day channel breakout with a ${p.exitLen}-day channel exit.`,
+  };
+  return { ...base, summary: summaries[id]?.() ?? base.summary, rules: rules[id]?.() ?? base.rules };
 }
 function etTime(minutes: number) { return `${Math.floor(minutes / 60).toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}`; }
 export const SCAN_UNIVERSE_DESCRIPTION = 'Automatic alerts evaluate SPY, IWM and QQQ plus the current ten largest US companies by market capitalization that are Alpaca-tradable. The company ranking refreshes daily; if refresh fails, the last verified list is retained. You can add custom tickers in the member area. Subscribers selecting the same ticker and rules receive the same rule-based setup, not a personal recommendation.';
