@@ -2,7 +2,7 @@
 - [x] Remove public/member allocation copy and savings display; retain clearly labeled journal-cash accounting only.
 - [x] Remove winning-trade and scheduled security purchases, including resubmission of legacy allocation intents; preserve settled history and holdings. Checkpoint allocation writer retired; no legacy working allocation intents found.
 - [x] Verify unchanged IWM rules, 234 regression tests and public/member screens on desktop/phone. Winning trades and legacy queues tested with injected broker, not real orders.
-- [ ] Request publication separately from any future automation page.
+- [x] Publication requested for https://thesignalspot.com, separately from any future automation page; deployment completion and published-page readback are not yet verified.
 
 # Apple sharing and remaining Lovable checks
 - [x] Add and verify 4-second, 1200×630, silent H.264 homepage animation (227 KB) for Apple Messages; still-image previews remain elsewhere. Raw tags, asset HTTP 200 and browser playback passed; next publish required.
