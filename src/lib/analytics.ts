@@ -12,11 +12,11 @@ declare global {
 
 let initialized = false;
 
-function gtag(...args: unknown[]) {
+function gtag(..._args: unknown[]) {
   window.dataLayer = window.dataLayer || [];
-  // gtag.js expects the raw arguments object
+  // gtag.js requires the raw Arguments object — a rest-args array is ignored.
   // eslint-disable-next-line prefer-rest-params
-  window.dataLayer.push(args.length ? args : arguments);
+  window.dataLayer.push(arguments);
 }
 
 /** Load gtag.js and configure the property. Safe to call more than once. */
