@@ -10,7 +10,7 @@ export function SiteFooter() {
     <div className="mx-auto max-w-5xl space-y-3">
       <p className="font-semibold text-foreground">The Signal Spot · © 2026</p>
       <p>The Signal Spot publishes rule-based options alerts on liquid US markets.</p>
-      <nav aria-label="Company and legal" className="flex flex-wrap gap-x-5 gap-y-3"><Link to="/strategies">Strategies</Link><Link to="/contact">Contact</Link><Link to="/terms">Terms</Link><Link to="/privacy">Privacy</Link><Link to="/risk">Risk</Link></nav>
+      <nav aria-label="Company and legal" className="flex flex-wrap gap-x-5 gap-y-3"><Link to="/strategies">Strategies</Link>{!memberPage && <Link to="/automation">Automation</Link>}<Link to="/contact">Contact</Link><Link to="/terms">Terms</Link><Link to="/privacy">Privacy</Link><Link to="/risk">Risk</Link></nav>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         <a href={`mailto:${SUPPORT_EMAIL}`} className="underline">{SUPPORT_EMAIL}</a>
         <a href={X_URL} target="_blank" rel="noopener noreferrer" aria-label={`The Signal Spot on X, ${X_HANDLE}`} className="inline-flex items-center gap-2 hover:text-foreground">

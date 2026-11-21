@@ -32,7 +32,7 @@
 
 - Customer signals and performance read owner-scoped strategy alerts and actual IWM/Pulse fills; never use legacy picks or bundled backtests. Read-only alert evaluation reuses executable strategy math and must never submit broker orders.
 - Alert universes use a persisted, daily refreshed US market-cap ranking filtered to Alpaca-tradable companies; batch bars by timeframe and keep owner alert preferences separate from execution settings so personal alerts never enable bots.
-- Public audit copy uses a presentation-only strategy adapter resolved from scanner defaults; never change executable calculations to correct marketing parameters.
+- Public audit copy uses a presentation-only strategy adapter resolved from scanner defaults; /automation is a public guide using PublicDocument, not member bot controls. Never change executable calculations to correct marketing parameters.
 - The root owns the shared legal footer and URL fallbacks; router-normalized leaf heads emit raw Twitter text and custom-domain share images to avoid hosting double escapes. Only the homepage adds the asset-backed Apple preview video; editorial dates feed sitemap lastmod.
 - Signup and password changes share pure validation; signup consent gates creation, while existing password sign-in stays unchanged.
 - Reuse the shared Brand wordmark in public headers, sign-in and the app shell so sizing and identity stay consistent across screen sizes.

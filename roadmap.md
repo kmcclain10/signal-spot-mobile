@@ -1,3 +1,9 @@
+# Public automation guide
+- [x] Add /automation with options, account control, API-key setup, paper/live limits, risk, permissions and current Alpaca sources.
+- [x] Link public footer, automation pricing card and IWM rules; correct kill-switch explanation only. Existing /welcome redirect and member footer preserved.
+- [x] Verified HTTP 200, links, sitemap date, metadata, phone/desktop layout and signed-in safety explanation; 234 tests passed, no trading controls activated. Publish required for the new page.
+- [ ] Counsel review before marketing — requires qualified counsel approval.
+
 # Remove IWM security allocation
 - [x] Remove public/member allocation copy and savings display; retain clearly labeled journal-cash accounting only.
 - [x] Remove winning-trade and scheduled security purchases, including resubmission of legacy allocation intents; preserve settled history and holdings. Checkpoint allocation writer retired; no legacy working allocation intents found.

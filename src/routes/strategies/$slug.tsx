@@ -65,6 +65,7 @@ function StrategyPage() {
           <ul className="mt-4 space-y-3">
             {s.rules.map((r) => <li key={r} className="flex gap-3 text-sm"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{r}</li>)}
           </ul>
+          {id === 'iwm' && <p className="mt-4 text-sm text-muted-foreground">For setup, paper versus live use, and how to connect or disconnect an Alpaca account, see <Link to="/automation" className="text-primary underline">How optional automation works</Link>.</p>}
         </section>
         <section className="mt-8">
           <h2 className="text-xl font-semibold">How the alerts work</h2>
