@@ -5,8 +5,8 @@ export const X_URL = 'https://x.com/SignalSpotAlert';
 export const PUBLIC_DESCRIPTION = 'Rule-based options alerts on liquid US markets, with optional published-rule automation in an account you connect. Educational information, not personalized investment advice.';
 // Authoritative editorial dates: update only when each page's substantive content changes.
 export const PUBLIC_UPDATED: Record<string, string> = {
-  '/welcome': '2026-11-20', '/strategies': '2026-11-20', '/terms': '2026-11-20',
-  '/privacy': '2026-11-20', '/risk': '2026-11-20', '/contact': '2026-11-20',
+  '/welcome': '2026-11-20', '/strategies': '2026-11-20', '/terms': '2026-11-21',
+  '/privacy': '2026-11-21', '/risk': '2026-11-21', '/contact': '2026-11-20',
 };
 export function publicHead(title: string, description: string, path: string) {
   const url = `${PUBLIC_SITE}${path}`;
