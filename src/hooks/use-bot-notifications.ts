@@ -46,7 +46,7 @@ export function useBotNotifications(userId: string | undefined, listen = false) 
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "iwm_bank_events", filter: `user_id=eq.${userId}` }, (row) => {
         const b = row.new as Record<string, any>;
-        new Notification("IWM bot banked profits", { body: `$${Number(b.amount_banked).toLocaleString()} banked • cycle ${b.new_cycle}`, tag: `bank-${b.id}` });
+        new Notification("IWM journal cash recorded", { body: `$${Number(b.amount_banked).toLocaleString()} in cash-only accounting • cycle ${b.new_cycle}`, tag: `bank-${b.id}` });
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };

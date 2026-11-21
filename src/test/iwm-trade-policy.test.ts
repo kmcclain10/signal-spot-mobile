@@ -20,8 +20,8 @@ describe('latest IWM trade policy',()=> {
   it('exits profitable PUT on its first green candle',()=>expect(profitableReversal({...trade,side:'PUT'},{...row,t:'2026-10-16T14:04:00Z'},1.01)).toBe(true));
   it('only selects the closest ATM strike rather than substituting farther strikes',()=>expect(nearestAtmContracts([{strike_price:279},{strike_price:280},{strike_price:281}],280.2)).toEqual([{strike_price:280}]));
 });
-import { emaCloseBreak, emaCrossBack, IWM_SAVINGS_MIN } from '@/lib/iwm-trade-policy';
-describe('8 EMA close break and WMT savings', () => {
+import { emaCloseBreak, emaCrossBack } from '@/lib/iwm-trade-policy';
+describe('legacy EMA helper and cash journal', () => {
   const trade = { side: 'CALL', entryCloseTime: '2026-10-29T15:12:00Z' };
   const row = (c: number, t = '2026-10-29T15:13:00Z') => ({ t, c, emaFast: 280 } as any);
   it('exits a CALL when a closed bar closes below the 8 EMA', () => { expect(emaCloseBreak(trade, row(279.99))).toBe(true); });
@@ -29,7 +29,7 @@ describe('8 EMA close break and WMT savings', () => {
   it('exits a PUT closing above the 8 EMA', () => { expect(emaCloseBreak({ ...trade, side: 'PUT' }, row(280.01))).toBe(true); });
   it('ignores bars before the entry bar closed', () => { expect(emaCloseBreak(trade, row(279, '2026-10-29T15:10:00Z'))).toBe(false); });
   it('exits a CALL when the 8 EMA crosses back under the 20', () => { const r={t:'2026-10-29T15:15:00Z',emaFast:279.9,emaSlow:280} as any; expect(emaCrossBack(trade,r)).toBe(true); expect(emaCrossBack(trade,{...r,emaFast:280.1})).toBe(false); expect(emaCrossBack({...trade,side:'PUT'},{...r,emaFast:280.1})).toBe(true); });
-  it('buys WMT with the banked half of each winning trade, never with losses', () => { expect(tradeBankAmount(84)).toBe(42); expect(tradeBankAmount(84)).toBeGreaterThanOrEqual(IWM_SAVINGS_MIN); expect(tradeBankAmount(-30)).toBe(0); });
+  it('keeps half-profit accounting cash-only and records nothing on losses', () => { expect(tradeBankAmount(84)).toBe(42); expect(tradeBankAmount(-30)).toBe(0); });
 });
 import { takeTheBid } from '@/lib/iwm-trade-policy';
 describe('take the bid',()=>{

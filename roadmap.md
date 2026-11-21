@@ -1,8 +1,14 @@
+# Remove IWM security allocation
+- [x] Remove public/member allocation copy and savings display; retain clearly labeled journal-cash accounting only.
+- [x] Remove winning-trade and scheduled security purchases, including resubmission of legacy allocation intents; preserve settled history and holdings. Checkpoint allocation writer retired; no legacy working allocation intents found.
+- [x] Verify unchanged IWM rules, 234 regression tests and public/member screens on desktop/phone. Winning trades and legacy queues tested with injected broker, not real orders.
+- [ ] Request publication separately from any future automation page.
+
 # Apple sharing and remaining Lovable checks
 - [x] Add and verify 4-second, 1200×630, silent H.264 homepage animation (227 KB) for Apple Messages; still-image previews remain elsewhere. Raw tags, asset HTTP 200 and browser playback passed; next publish required.
 - [x] Confirm published Lovable badge is hidden and no pending Project monitoring findings exist; quick security scan has no new actionable findings.
 - [x] Expanded source sweep covers public/member screens, auth, installation, notifications, billing and database functions; no additional promotional branding violations. Native Apple rendering, hosted email/Stripe branding and actual Firebase delivery remain unverified.
-- [ ] Deeper security review — running; results arrive separately and must be reviewed before claiming the review complete.
+- [x] Deeper security review completed: five warnings reviewed and summarized (billing redirect, custom connection outbound requests, plan-status privacy, IWM/Pulse access revocation). Not changed during the narrowly scoped allocation removal.
 
 # Public URL and sharing cleanup
 - [x] Normalize raw Twitter titles and custom-domain share images; strategy, pricing and legal content preserved.

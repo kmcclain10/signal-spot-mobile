@@ -46,7 +46,7 @@ export function profitAction(trade: Record<string,any>, bid: number, nowMs?: num
 }
 /** Size against half the available balance only. */
 export const riskBalance = (balance: number) => Math.max(0, Number(balance)*IWM_RISK_SHARE);
-/** Half of every winning trade's profit is banked out of the trading balance. */
+/** Cash-only journal accounting; this amount never funds a security purchase or transfer. */
 export function tradeBankAmount(pnl: number): number {
   return pnl>0 ? Math.floor(pnl*IWM_BANK_PROFIT_SHARE*100)/100 : 0;
 }
@@ -69,9 +69,6 @@ export function emaCloseBreak(trade: Record<string,any>, row: IndRow): boolean {
   if (!(Date.parse(row.t)>=Date.parse(trade.entryCloseTime)) || !Number.isFinite(row.emaFast)) return false;
   return trade.side==='CALL' ? row.c<row.emaFast : row.c>row.emaFast;
 }
-export const IWM_SAVINGS_SYMBOL = 'WMT';
-/** The banked half of every winning trade buys fractional WMT right after the trade closes; Alpaca fractional orders need at least $1. */
-export const IWM_SAVINGS_MIN = 1;
 /** Real-money habit: in profit with a 1–2 cent spread, take the bid now (market) instead of waiting for a tick. */
 export const IWM_TIGHT_SPREAD = 0.02;
 export function takeTheBid(entryPremium: number, bid?: number, ask?: number): boolean {

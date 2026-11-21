@@ -90,22 +90,35 @@ describe("paper IWM order lifecycle",()=> {
     expect(h.state().open_trade).toBeNull();expect(h.state().pending_order).toBeNull();
     expect(h.writes.trades.at(-1)).toMatchObject({status:"closed",pnl:-62,contracts:2,exit_premium:0.69});
   });
-  it("buys WMT with half the profit right after a winning trade, not at end of day",async()=> {
+  it.each(['paper','live'])("records winning-trade cash without buying any security in %s",async(trading_env)=> {
     const trade={side:'CALL',optionSymbol:intent.contract.symbol,strike:273,contracts:2,entryPremium:1,peakPremium:1.5,entryCloseTime:'2026-10-16T14:05:00Z',connectionId:'paper-connection',tradeRow:{id:'trade-a',entry_time:'2026-10-16T14:08:00Z',window:1},exitFilledQty:0,exitValue:0};
-    const h=harness({open_trade:trade,pending_order:{id:'sell-order',side:'sell',client_id:'sell-client',submitted_at:'2026-10-16T14:20:00Z',reason:'+100% profit target',body:{side:'sell',qty:'2'}}});
+    const h=harness({open_trade:trade,pending_order:{id:'sell-order',side:'sell',client_id:'sell-client',submitted_at:'2026-10-16T14:20:00Z',reason:'Trailing lock',body:{side:'sell',qty:'2'}}});
     h.api.order.mockResolvedValue({id:'sell-order',status:'filled',filled_qty:'2',filled_avg_price:'1.5',filled_at:'2026-10-16T14:21:00Z'});
-    await runIwmUser(h.db,settings,h.api);
-    expect(h.state().open_trade).toBeNull();expect(h.state().banked_total).toBeGreaterThan(0);
-    expect(h.api.submit).toHaveBeenCalledWith(expect.objectContaining({symbol:'WMT',side:'buy',type:'market',notional:(h.state().banked_total).toFixed(2)}));
-    expect(h.writes.savings.at(-1)).toMatchObject({amount:h.state().banked_total});
+    await runIwmUser(h.db,{...settings,trading_env},h.api);
+    expect(h.state().open_trade).toBeNull();
+    expect(h.state().pnl_today).toBe(100);expect(h.state().banked_total).toBe(50);expect(h.state().balance).toBe(250);
+    expect(h.api.submit).not.toHaveBeenCalled();
+    expect(h.state().savings_intent).toBeUndefined();expect(h.state().savings_queue).toBeUndefined();
+    expect(h.writes.savings).toBeUndefined();
+    await runIwmUser(h.db,{...settings,trading_env},h.api);
+    expect(h.state().banked_total).toBe(50);expect(h.api.submit).not.toHaveBeenCalled();
   });
-  it("queues a WMT buy under $1 and buys once the queue reaches $1",async()=> {
+  it("does not queue a purchase after a winning trade below the old $1 minimum",async()=> {
     const trade={side:'CALL',optionSymbol:intent.contract.symbol,strike:273,contracts:2,entryPremium:1,peakPremium:1.005,entryCloseTime:'2026-10-16T14:05:00Z',connectionId:'paper-connection',tradeRow:{id:'trade-a',entry_time:'2026-10-16T14:08:00Z',window:1},exitFilledQty:0,exitValue:0};
-    const h=harness({open_trade:trade,pending_order:{id:'sell-order',side:'sell',client_id:'sell-client',submitted_at:'2026-10-16T14:20:00Z',reason:'+100% profit target',body:{side:'sell',qty:'2'}}});
+    const h=harness({open_trade:trade,pending_order:{id:'sell-order',side:'sell',client_id:'sell-client',submitted_at:'2026-10-16T14:20:00Z',reason:'Trailing lock',body:{side:'sell',qty:'2'}}});
     h.api.order.mockResolvedValue({id:'sell-order',status:'filled',filled_qty:'2',filled_avg_price:'1.005',filled_at:'2026-10-16T14:21:00Z'});
     await runIwmUser(h.db,settings,h.api);
-    expect(h.api.submit).not.toHaveBeenCalledWith(expect.objectContaining({symbol:'WMT'}));
-    expect(Number(h.state().savings_queue)).toBeGreaterThan(0);
+    expect(h.state().pnl_today).toBe(1);expect(h.state().banked_total).toBe(0.5);
+    expect(h.state().savings_queue).toBeUndefined();expect(h.api.submit).not.toHaveBeenCalled();
+  });
+  it.each([true,false])("never resumes a legacy WMT allocation queue or intent when market open is %s",async(is_open)=> {
+    const legacy={client_id:'iwm-save-existing',day:'2026-10-16',amount:50,body:{symbol:'WMT',side:'buy',notional:'50.00',type:'market'}};
+    const h=harness({savings_intent:legacy,savings_queue:75,savings_total:200});
+    h.api.clock.mockResolvedValue({timestamp:'2026-10-16T19:45:00Z',is_open,next_close:'2026-10-16T20:00:00Z'});
+    await runIwmUser(h.db,settings,h.api);await runIwmUser(h.db,settings,h.api);
+    expect(h.api.submit).not.toHaveBeenCalled();expect(h.api.findOrder).not.toHaveBeenCalled();expect(h.api.cancel).not.toHaveBeenCalled();
+    expect(h.state().savings_intent).toEqual(legacy);expect(h.state().savings_queue).toBe(75);expect(h.state().savings_total).toBe(200);
+    expect(h.writes.savings).toBeUndefined();
   });
   it("does not resend when cancellation has not become terminal",async()=> {
     const h=harness({pending_order:intent});h.api.order.mockResolvedValue({id:"buy-order",status:"partially_filled",filled_qty:"1"});

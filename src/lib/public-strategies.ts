@@ -16,7 +16,6 @@ export function publicStrategy(id: string) {
     `A trailing exit activates after a peak gain of ${IWM_TRAIL_START_PCT}% and requests a full exit if the gain falls ${IWM_TRAIL_PTS} percentage points below that peak. Execution is not guaranteed.`,
     `The +${IWM_MAX_TARGET_PCT}% exit ceiling is a maximum-gain exit rule, not a target or an expected return.`,
     'An opposite cross requests closing the IWM position and switching direction.',
-    'The bot allocates half of each winning trade’s realized profit toward fractional Walmart shares (WMT). Purchases are queued until at least $1 is available and orders can be submitted. This is a bot allocation rule, not advice to buy Walmart.',
   ] };
   const strategy = STRATEGIES.find(s => s.id === id);
   if (!strategy) return undefined;

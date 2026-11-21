@@ -7,7 +7,7 @@ import { IWM_TRAIL_START_PCT, IWM_TRAIL_PTS, IWM_MAX_TARGET_PCT } from '@/lib/iw
 export const PLAYBOOK = [
   { id: 'iwm', name: 'IWM 9/20 Momentum', category: 'Momentum', timeframe: IWM_TIMEFRAME_MIN,
     summary: 'At-the-money options on a confirmed 9/20 EMA cross.',
-    rules: ['CALL on the bullish cross; PUT on the bearish cross.', '5-minute closed candles from 9:30 AM ET. Entry cutoff 3:00 PM ET.', 'Size at half the current strategy balance. No stop loss or time limit.', `Trailer arms at +${IWM_TRAIL_START_PCT}%; sells all ${IWM_TRAIL_PTS} percentage points below the best gain. +${IWM_MAX_TARGET_PCT}% cap.`, 'Opposite cross: close and flip. Force liquidation at 3:40 PM ET, earlier on shortened sessions.', 'Half of each winning trade’s profit goes toward WMT.'],
+    rules: ['CALL on the bullish cross; PUT on the bearish cross.', '5-minute closed candles from 9:30 AM ET. Entry cutoff 3:00 PM ET.', 'Size at half the current strategy balance. No stop loss or time limit.', `Trailer arms at +${IWM_TRAIL_START_PCT}%; sells all ${IWM_TRAIL_PTS} percentage points below the best gain. +${IWM_MAX_TARGET_PCT}% cap.`, 'Opposite cross: close and flip. Force liquidation at 3:40 PM ET, earlier on shortened sessions.'],
     symbol: 'IWM', environment: 'selected',
   },
   ...STRATEGIES.filter(s => separateStrategyIds.some(id => id === s.id)).map(s => ({

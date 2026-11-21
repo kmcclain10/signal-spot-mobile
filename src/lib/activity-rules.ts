@@ -49,8 +49,8 @@ export function buildActivity(input: {
   for (const b of input.botBanks) {
     items.push({
       id: `bot-bank-${b.id}`, at: b.created_at, kind: "bot-bank",
-      title: "Bot banked profits",
-      detail: `Cycle ${b.new_cycle} · restart ${money(Number(b.restart_balance))}`,
+      title: "IWM journal cash recorded",
+      detail: `Cash-only accounting · cycle ${b.new_cycle} · restart ${money(Number(b.restart_balance))}`,
       amount: Number(b.amount_banked ?? 0),
     });
   }

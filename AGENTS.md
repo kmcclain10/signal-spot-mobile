@@ -13,7 +13,7 @@
 - IWM runtime configuration overrides supplied defaults through a shared caller-side module so requested candle intervals never require changes to protected strategy math.
 - Latest IWM entry/exit overrides live in a separate pure policy module; staged sell intents persist cumulative target quantities and actual fill proceeds so restarts and partial orders cannot duplicate profit-taking or distort final P&L.
 - IWM callers persist entry-window liquidation deadlines, stop late entry intents, and request market liquidation in the final minute independently of quote/bar availability; broker reconciliation remains authoritative because fills cannot be guaranteed.
-- IWM automation uses managed TanStack callbacks and service-only atomic lease/checkpoint RPCs; persist order intents with broker client IDs before submissions to avoid duplicate exposure after interruption.
+- IWM automation uses managed callbacks and service-only leases/checkpoints; persist option intents before submission to avoid duplicate exposure. Retired allocation intents are never submitted; banking remains cash-only journal accounting.
 - IWM screen reads use authenticated query-backed server functions; subscribe to owner-filtered realtime changes and retain polling to detect stopped runners.
 - IWM journal export is browser-only, paginates owner-visible rows and uses SheetJS table conversion plus ExcelJS formatting to retain frozen styled headers.
 - Manual stock and option tickets share one selected underlying; pass it through quote and contract selection, while automated IWM callers keep the default underlying to preserve strategy behavior.
