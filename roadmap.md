@@ -1,6 +1,7 @@
 # Apple sharing and remaining Lovable checks
 - [x] Add and verify 4-second, 1200×630, silent H.264 homepage animation (227 KB) for Apple Messages; still-image previews remain elsewhere. Raw tags, asset HTTP 200 and browser playback passed; next publish required.
 - [x] Confirm published Lovable badge is hidden and no pending Project monitoring findings exist; quick security scan has no new actionable findings.
+- [x] Expanded source sweep covers public/member screens, auth, installation, notifications, billing and database functions; no additional promotional branding violations. Native Apple rendering, hosted email/Stripe branding and actual Firebase delivery remain unverified.
 - [ ] Deeper security review — running; results arrive separately and must be reviewed before claiming the review complete.
 
 # Public URL and sharing cleanup
