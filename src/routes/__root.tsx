@@ -97,7 +97,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: PUBLIC_DESCRIPTION },
       { property: 'og:url', content: `${PUBLIC_SITE}${matches.at(-1)?.pathname?.replace(/\/$/, '') || '/'}` },
       { name: 'twitter:url', content: `${PUBLIC_SITE}${matches.at(-1)?.pathname?.replace(/\/$/, '') || '/'}` },
-      { name: "twitter:card", content: "summary" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       {

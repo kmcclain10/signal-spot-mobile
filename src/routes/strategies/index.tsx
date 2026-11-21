@@ -20,7 +20,7 @@ export const Route = createFileRoute("/strategies/")({
       { property: "og:description", content: DESC },
       { property: "og:type", content: "website" },
       { property: "og:url", content: `${SITE}/strategies` },
-      { name: "twitter:card", content: "summary" },
+      { name: "twitter:card", content: "summary_large_image" },
       { name: 'twitter:url', content: `${SITE}/strategies` },
     ],
     links: [{ rel: "canonical", href: `${SITE}/strategies` }],

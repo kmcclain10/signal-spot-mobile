@@ -1,5 +1,5 @@
 import type { AnyRoute } from '@tanstack/react-router';
-import { PUBLIC_SITE } from './public-content';
+import { PUBLIC_SITE, X_HANDLE } from './public-content';
 
 export const SHARE_IMAGE = `${PUBLIC_SITE}/icons/og-image.png`;
 const normalizedRoutes = new WeakSet<AnyRoute>();
@@ -18,11 +18,13 @@ export function normalizeSocialHeads(routes: AnyRoute[]) {
       const description = meta.find(tag => tag && 'property' in tag && tag.property === 'og:description');
       return { ...head, meta: [
         ...meta.filter(tag => !tag || !(
-          ('name' in tag && ['twitter:title', 'twitter:description', 'twitter:image'].includes(tag.name ?? '')) ||
+          ('name' in tag && ['twitter:title', 'twitter:description', 'twitter:image', 'twitter:card', 'twitter:site'].includes(tag.name ?? '')) ||
           ('property' in tag && tag.property === 'og:image')
         )),
         ...(title && 'content' in title ? [{ name: 'twitter:title', content: title.content }] : []),
         ...(description && 'content' in description ? [{ name: 'twitter:description', content: description.content }] : []),
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:site', content: X_HANDLE },
         { property: 'og:image', content: SHARE_IMAGE },
         { name: 'twitter:image', content: SHARE_IMAGE },
       ] };
