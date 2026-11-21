@@ -1,9 +1,9 @@
 # Traffic, background notifications and customer admin
-- [ ] Make the public root offer crawlable while preserving signed-in Home and existing public URLs.
-- [ ] Add background strategy-alert push with owner-scoped devices and durable delivery; requires Firebase web-push connection and device permission.
-- [ ] Add protected customer-support and billing admin, with verified server-side roles and no broker-secret access.
+- [x] Public root returns complete offer HTML; signed-in Home moved to /dashboard and existing public URLs retained. Preview verified, publication pending.
+- [ ] Background strategy-alert push implemented with owner-scoped devices, trigger queue and service-only leases; actual delivery waits on Firebase web-push connection, device permission and publication.
+- [x] Protected customer-support and billing admin at /admin; owner role granted, customer list and saved/reloaded staff note verified; ordinary customer cannot read notes or grant roles. Stripe handles billing changes; broker secrets are never returned.
 - [ ] Guide owner through creating Firebase project and entering credentials securely; no existing Firebase project, connection pending.
-- [ ] Verify public, customer and admin flows; publish required for live changes.
+- [x] Public offer raw HTML, owner staff note save/reload, ordinary customer denial and pending push state verified; 224 tests passed. Publication and actual background delivery remain pending.
 
 # The Signal Spot branding
 - [x] Unify wordmark, public pages, account screens, page titles and device labels; preserve product names, pricing and trading behavior.

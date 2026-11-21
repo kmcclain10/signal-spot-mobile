@@ -1,4 +1,5 @@
 import {strategyLabel} from '@/lib/strategy-platform';
+import {canSendPush} from '@/lib/push-rules';
 export async function dispatchPush(db:any){
  const key=process.env['FIREBASE_MESSAGING_API_KEY'],auth=process.env['LOVABLE_API_KEY'];
  if(!key||!auth)return {configured:false,sent:0};
@@ -7,7 +8,7 @@ export async function dispatchPush(db:any){
   const [device,alert]=await Promise.all([db.from('push_devices').select('token,user_id').eq('id',job.device_id).maybeSingle(),db.from('strategy_alerts').select('user_id,symbol,strategy_id,side,reason,created_at').eq('id',job.alert_id).maybeSingle()]);
   const a=alert.data,d=device.data;
   if(!a||!d||a.user_id!==d.user_id||Date.now()-Date.parse(a.created_at)>15*60000){await db.from('push_deliveries').update({status:'failed',error_code:'expired'}).eq('id',job.id).eq('lease_token',lease);continue;}
-  const tier=await db.rpc('plan_tier',{_user_id:a.user_id});if(tier.error||!['alerts','bots'].includes(tier.data)){await db.from('push_deliveries').update({status:'failed',error_code:'no_access'}).eq('id',job.id).eq('lease_token',lease);continue;}
+  const tier=await db.rpc('plan_tier',{_user_id:a.user_id});if(tier.error||!canSendPush(a.user_id,d.user_id,tier.data)){await db.from('push_deliveries').update({status:'failed',error_code:'no_access'}).eq('id',job.id).eq('lease_token',lease);continue;}
   try{
    const r=await fetch('https://connector-gateway.lovable.dev/firebase_messaging/v1/projects/_/messages:send',{method:'POST',headers:{Authorization:`Bearer ${auth}`,'X-Connection-Api-Key':key,'Content-Type':'application/json'},body:JSON.stringify({message:{token:d.token,notification:{title:`${strategyLabel(a.strategy_id)} · ${a.symbol}`,body:`${a.side==='long'?'CALL':'PUT'} direction · ${a.reason}`},data:{path:'/signals'},webpush:{headers:{TTL:'300'},notification:{tag:`strategy-${job.alert_id}`,icon:'/icons/icon-192.png'},fcm_options:{link:'https://thesignalspot.com/signals'}}}})});
    if(r.ok){const done=await db.from('push_deliveries').update({status:'sent',sent_at:new Date().toISOString(),error_code:null}).eq('id',job.id).eq('lease_token',lease);if(done.error)throw new Error('Checkpoint failed');sent++;continue;}

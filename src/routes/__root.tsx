@@ -98,7 +98,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary" },
     ],
     links: [
-      { rel: 'canonical', href: `${PUBLIC_SITE}${matches.at(-1)?.pathname === '/' ? '/welcome' : matches.at(-1)?.pathname?.replace(/\/$/, '') ?? '/welcome'}` },
       {
         rel: "stylesheet",
         href: appCss,
