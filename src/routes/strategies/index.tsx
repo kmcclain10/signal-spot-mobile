@@ -40,7 +40,7 @@ export function PublicHeader() {
   useEffect(()=>{void supabase.auth.getUser().then(r=>setSignedIn(!!r.data.user));},[]);
   return (
     <header className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-3 px-5 py-5">
-      <Link to="/welcome" aria-label="The Signal Spot home"><Brand /></Link>
+      <Link to="/" aria-label="The Signal Spot home"><Brand /></Link>
       <nav className="flex items-center gap-3 text-sm">
         <Link to="/strategies" className="text-muted-foreground hover:text-foreground">Strategies</Link>
         <Button asChild variant="outline" size="sm"><Link to={signedIn?'/dashboard':'/auth'}>{signedIn?'Open app':'Sign in'}</Link></Button>

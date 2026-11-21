@@ -6,7 +6,7 @@ export const PUBLIC_DESCRIPTION = 'Rule-based options alerts on liquid US market
 // Authoritative editorial dates: update only when each page's substantive content changes.
 export const PUBLIC_UPDATED: Record<string, string> = {
   '/': '2026-11-21',
-  '/welcome': '2026-11-20', '/strategies': '2026-11-20', '/terms': '2026-11-21',
+  '/strategies': '2026-11-20', '/terms': '2026-11-21',
   '/privacy': '2026-11-21', '/risk': '2026-11-21', '/contact': '2026-11-20',
 };
 export function publicHead(title: string, description: string, path: string) {

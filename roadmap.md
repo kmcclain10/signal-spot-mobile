@@ -1,3 +1,8 @@
+# Public URL and sharing cleanup
+- [x] Normalize raw Twitter titles and custom-domain share images; strategy, pricing and legal content preserved.
+- [x] Keep / as the sole homepage; verified 301 redirects from /welcome, /pricing and /about, updated home links and sitemap inclusion.
+- [x] Verified raw sharing tags, sitemap, mobile/desktop home links and 231 regression tests; publication requested at completion.
+
 # Traffic, background notifications and customer admin
 - [x] Public root returns complete offer HTML; signed-in Home moved to /dashboard and existing public URLs retained. Preview verified, publication pending.
 - [ ] Background strategy-alert push implemented with owner-scoped devices, trigger queue and service-only leases; actual delivery waits on Firebase web-push connection, device permission and publication.

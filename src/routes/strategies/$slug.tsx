@@ -71,7 +71,7 @@ function StrategyPage() {
           <p className="mt-2 text-muted-foreground">{SCAN_UNIVERSE_DESCRIPTION}</p>
           {id === 'iwm' && <p className="mt-3 text-muted-foreground">The automated IWM bot trades IWM options only. The read-only 9/20 momentum scanner also evaluates the other selected symbols; those alerts do not mean the IWM bot trades them.</p>}
           <p className="mt-3 text-muted-foreground">When the {s.name.replace(/^The /, '')} setup triggers on the {tfLabel(s.timeframe)} chart, the member feed shows the ticker, direction, underlying price, trigger time and reason. Alerts may be delayed or missed; an alert does not choose or verify an option contract.</p>
-          <Link to="/welcome" className="mt-5 inline-block rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground hover:opacity-90">Start 7-day free trial</Link>
+          <Link to="/" className="mt-5 inline-block rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground hover:opacity-90">Start 7-day free trial</Link>
         </section>
         <section className="mt-12">
           <h2 className="text-lg font-semibold">More strategies</h2>

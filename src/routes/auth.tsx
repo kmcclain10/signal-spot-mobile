@@ -77,7 +77,7 @@ function AuthPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm rounded-lg border bg-card p-6">
-        <Link to="/welcome" className="mb-6 inline-flex" aria-label="The Signal Spot home"><Brand /></Link>
+        <Link to="/" className="mb-6 inline-flex" aria-label="The Signal Spot home"><Brand /></Link>
         <h1 className="mb-4 text-xl font-semibold">{mode === 'up' ? 'Create your account' : 'Welcome back'}</h1>
         <div className="mb-4 space-y-2">
           <Button type="button" className="w-full" disabled={busy} onClick={() => social('apple')}><svg viewBox="0 0 24 24" className="size-4" fill="currentColor" aria-hidden><path d="M16.37 12.6c-.02-2.3 1.88-3.4 1.97-3.46-1.07-1.57-2.74-1.78-3.33-1.8-1.42-.15-2.77.83-3.49.83-.72 0-1.83-.81-3-.79-1.55.02-2.97.9-3.77 2.28-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74s1.78.74 2.99.72c1.24-.02 2.02-1.12 2.78-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.66zM14.08 5.84c.63-.77 1.06-1.83.94-2.9-.91.04-2.02.61-2.67 1.37-.58.67-1.1 1.76-.96 2.8 1.02.08 2.06-.52 2.69-1.27z"/></svg>Continue with Apple</Button>
@@ -108,7 +108,7 @@ function AuthPage() {
         >
           {mode === "in" ? "No account? Create one" : "Have an account? Sign in"}
         </Button>
-        <Button variant="link" asChild className="mt-2 w-full"><Link to="/welcome">Back to The Signal Spot</Link></Button>
+        <Button variant="link" asChild className="mt-2 w-full"><Link to="/">Back to The Signal Spot</Link></Button>
       </div>
     </div>
   );

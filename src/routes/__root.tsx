@@ -92,9 +92,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:site_name", content: "The Signal Spot" },
       { property: "og:type", content: "website" },
       { property: "og:title", content: "The Signal Spot — Real-time options & stock trading alerts" },
+      { name: "twitter:title", content: "The Signal Spot — Real-time options & stock trading alerts" },
       { property: "og:description", content: PUBLIC_DESCRIPTION },
-      { property: 'og:url', content: `${PUBLIC_SITE}${matches.at(-1)?.pathname === '/' ? '/welcome' : matches.at(-1)?.pathname?.replace(/\/$/, '') ?? '/welcome'}` },
-      { name: 'twitter:url', content: `${PUBLIC_SITE}${matches.at(-1)?.pathname === '/' ? '/welcome' : matches.at(-1)?.pathname?.replace(/\/$/, '') ?? '/welcome'}` },
+      { property: 'og:url', content: `${PUBLIC_SITE}${matches.at(-1)?.pathname?.replace(/\/$/, '') || '/'}` },
+      { name: 'twitter:url', content: `${PUBLIC_SITE}${matches.at(-1)?.pathname?.replace(/\/$/, '') || '/'}` },
       { name: "twitter:card", content: "summary" },
     ],
     links: [
