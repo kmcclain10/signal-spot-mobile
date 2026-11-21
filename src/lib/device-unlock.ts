@@ -25,8 +25,8 @@ export async function enrollDeviceUnlock(userId: string, email: string) {
   const cred = (await navigator.credentials.create({
     publicKey: {
       challenge: crypto.getRandomValues(new Uint8Array(32)),
-      rp: { name: "Pulse Signals", id: window.location.hostname },
-      user: { id: new TextEncoder().encode(userId), name: email || "Pulse Signals", displayName: email || "Pulse Signals" },
+      rp: { name: "The Signal Spot", id: window.location.hostname },
+      user: { id: new TextEncoder().encode(userId), name: email || "The Signal Spot", displayName: email || "The Signal Spot" },
       pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
       authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "preferred" },
       timeout: 60000,

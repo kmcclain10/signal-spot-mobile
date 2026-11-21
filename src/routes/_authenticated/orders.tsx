@@ -25,9 +25,9 @@ export const Route = createFileRoute("/_authenticated/orders")({
   staticData: { sitemap: false },
   head: () => ({
     meta: [
-      { title: "Activity — Pulse Signals" },
+      { title: "Activity | The Signal Spot" },
       { name: "description", content: "One feed of your fills, orders and bot trades, with positions, exports and notifications." },
-      { property: "og:title", content: "Activity — Pulse Signals" },
+      { property: "og:title", content: "Activity | The Signal Spot" },
       { property: "og:description", content: "Unified trading activity feed with CSV export." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

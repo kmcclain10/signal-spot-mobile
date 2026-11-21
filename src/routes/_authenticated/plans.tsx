@@ -21,9 +21,9 @@ export const Route = createFileRoute("/_authenticated/plans")({
   }),
   head: () => ({
     meta: [
-      { title: "Plans — Pulse Signals" },
-      { name: "description", content: "Choose Alerts Only or Full AI Bot Assistance for Pulse Signals." },
-      { property: "og:title", content: "Plans — Pulse Signals" },
+      { title: "Plans | The Signal Spot" },
+      { name: "description", content: "Choose Alerts Only or Full AI Bot Assistance for The Signal Spot." },
+      { property: "og:title", content: "Plans | The Signal Spot" },
       { property: "og:description", content: "Alerts from $49/mo or full AI bots from $99/mo." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

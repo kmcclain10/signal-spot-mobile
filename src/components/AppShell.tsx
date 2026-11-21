@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { Brand } from "@/components/Brand";
 import { AccountSecurity } from "@/components/AccountSecurity";
 import { useBotNotifications } from '@/hooks/use-bot-notifications';
 
@@ -128,8 +129,7 @@ export function AppShell() {
     <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r bg-sidebar p-4 lg:flex">
         <div className="mb-10 flex items-center gap-2 px-3 pt-4">
-          <Activity className="size-5 text-primary" />
-          <span className="font-semibold">Pulse Signals</span>
+          <Link to="/" aria-label="The Signal Spot home"><Brand compact /></Link>
         </div>
         <nav className="flex flex-1 flex-col gap-2" aria-label="Main navigation">
           {NAV.map((n) => (
@@ -147,13 +147,10 @@ export function AppShell() {
       </aside>
 
       <div className="lg:pl-60">
-        <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-2 border-b bg-background/95 px-4 backdrop-blur sm:px-6">
-          <div className="flex items-center gap-2 lg:hidden">
-            <Activity className="size-4 text-primary" />
-            <span className="text-xs font-semibold">Pulse Signals</span>
-          </div>
-          <MarketStatus />
-          <div className="flex items-center gap-1"><ModeBadge /><Button asChild size="icon" variant="ghost" aria-label="Trade" title="Trade"><Link to="/trade"><CandlestickChart /></Link></Button><Button size="icon" variant="ghost" aria-label="Refresh account" title="Refresh account" disabled={refreshing} onClick={refresh}><RefreshCw className={refreshing ? "animate-spin" : ""} /></Button><Button size="icon" variant="ghost" className="lg:hidden" aria-label="More pages" onClick={() => setMore(true)}><Menu /></Button></div>
+        <header className="sticky top-0 z-20 grid min-h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 border-b bg-background/95 px-4 py-3 backdrop-blur sm:px-6 lg:py-0">
+          <Link to="/" className="col-start-1 row-start-1 lg:hidden" aria-label="The Signal Spot home"><Brand compact /></Link>
+          <div className="col-span-2 row-start-2 lg:col-span-1 lg:row-start-1"><MarketStatus /></div>
+          <div className="col-start-2 row-start-1 flex items-center gap-1"><ModeBadge /><Button asChild size="icon" variant="ghost" className="hidden min-[360px]:inline-flex" aria-label="Trade" title="Trade"><Link to="/trade"><CandlestickChart /></Link></Button><Button size="icon" variant="ghost" aria-label="Refresh account" title="Refresh account" disabled={refreshing} onClick={refresh}><RefreshCw className={refreshing ? "animate-spin" : ""} /></Button><Button size="icon" variant="ghost" className="lg:hidden" aria-label="More pages" onClick={() => setMore(true)}><Menu /></Button></div>
         </header>
         <main className="mx-auto max-w-6xl px-4 pb-28 pt-7 sm:px-6 lg:pb-12"
           onTouchStart={e => setTouchStart(window.scrollY <= 0 ? e.touches[0]?.clientY ?? null : null)}

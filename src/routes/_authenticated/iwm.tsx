@@ -26,7 +26,7 @@ import { sensitiveIwmChange } from "@/lib/account-rules";
 const options = queryOptions({queryKey:["iwm-screen"],queryFn:()=>getIwmScreen(),refetchInterval:30000});
 export const Route = createFileRoute("/_authenticated/iwm")({
   staticData: { sitemap: false },
-  head:()=>({meta:[{title:"IWM 20-Min Window — Pulse Signals"},{name:"description",content:"Monitor IWM paper options, protection levels, bankroll and trading journal."},{property:"og:title",content:"IWM Paper Trader — Pulse Signals"},{property:"og:description",content:"IWM 20-minute strategy status, paper trades and journal."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary"}]}),
+  head:()=>({meta:[{title:"IWM 20-Min Window | The Signal Spot"},{name:"description",content:"Monitor IWM paper options, protection levels, bankroll and trading journal."},{property:"og:title",content:"IWM Paper Trader | The Signal Spot"},{property:"og:description",content:"IWM 20-minute strategy status, paper trades and journal."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary"}]}),
   loader:({context})=>context.queryClient.ensureQueryData(options),
   component:IwmPage,
 });

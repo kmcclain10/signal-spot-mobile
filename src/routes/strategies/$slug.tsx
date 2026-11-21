@@ -14,7 +14,7 @@ export const Route = createFileRoute("/strategies/$slug")({
   },
   head: ({ params, loaderData }) => {
     const s = loaderData ? PLAYBOOK.find((p) => p.id === loaderData.id) : undefined;
-    if (!s) return { meta: [{ title: "Strategy not found | Pulse Signals" }, { name: "robots", content: "noindex" }] };
+    if (!s) return { meta: [{ title: "Strategy not found | The Signal Spot" }, { name: "robots", content: "noindex" }] };
     const url = `${SITE}/strategies/${params.slug}`;
     const title = strategyTitle(s), desc = strategyDescription(s);
     return {
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/strategies/$slug")({
       scripts: [{
         type: "application/ld+json",
         children: JSON.stringify([
-          { "@context": "https://schema.org", "@type": "Article", headline: `${s.name} trading strategy`, description: desc, url, publisher: { "@type": "Organization", name: "Pulse Signals" } },
+          { "@context": "https://schema.org", "@type": "Article", headline: `${s.name} trading strategy`, description: desc, url, publisher: { "@type": "Organization", name: "The Signal Spot" } },
           { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
             { "@type": "ListItem", position: 1, name: "Strategies", item: `${SITE}/strategies` },
             { "@type": "ListItem", position: 2, name: s.name, item: url },

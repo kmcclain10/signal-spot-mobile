@@ -23,9 +23,9 @@ export const Route = createFileRoute("/_authenticated/bots")({
   staticData: { sitemap: false },
   head: () => ({
     meta: [
-      { title: "Bots — Pulse Signals" },
+      { title: "Bots | The Signal Spot" },
       { name: "description", content: "Control your paper trading bots: allocation, health, run history and safety switches." },
-      { property: "og:title", content: "Bots — Pulse Signals" },
+      { property: "og:title", content: "Bots | The Signal Spot" },
       { property: "og:description", content: "Paper bot allocation, controls and run health." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

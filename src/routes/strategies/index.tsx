@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Activity } from "lucide-react";
+import { Brand } from "@/components/Brand";
 import { PLAYBOOK } from "@/lib/strategy-platform";
 import { SITE, strategySlug, tfLabel } from "@/lib/strategy-seo";
 import { publicStrategy } from '@/lib/public-strategies';
 import { Button } from '@/components/ui/button';
 
-const TITLE = "Options & Stock Trading Strategies — 9/20 EMA, ORB, VWAP | Pulse Signals";
+const TITLE = "Options & Stock Trading Strategies — 9/20 EMA, ORB, VWAP | The Signal Spot";
 const DESC = "Explore 11 rule-based trading strategies: 9/20 EMA cross, opening range breakout, VWAP reclaim, SuperTrend, MACD, TTM Squeeze and more, with real-time alerts.";
 
 export const Route = createFileRoute("/strategies/")({
@@ -35,8 +35,8 @@ export const Route = createFileRoute("/strategies/")({
 
 export function PublicHeader() {
   return (
-    <header className="mx-auto flex max-w-5xl items-center justify-between px-5 py-5">
-      <Link to="/welcome" className="flex items-center gap-2 font-bold"><Activity className="h-6 w-6 text-primary" /> Pulse Signals</Link>
+    <header className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-3 px-5 py-5">
+      <Link to="/welcome" aria-label="The Signal Spot home"><Brand /></Link>
       <nav className="flex items-center gap-3 text-sm">
         <Link to="/strategies" className="text-muted-foreground hover:text-foreground">Strategies</Link>
         <Button asChild variant="outline" size="sm"><Link to="/auth">Sign in</Link></Button>
@@ -51,7 +51,7 @@ function StrategiesIndex() {
       <PublicHeader />
       <main className="mx-auto max-w-5xl px-5 pb-16">
         <h1 className="text-3xl font-bold md:text-4xl">Trading strategies behind every alert</h1>
-        <p className="mt-3 max-w-2xl text-muted-foreground">Every Pulse Signals alert comes from one of these rule-based strategies. Each page explains the chart, the entry trigger and the exit rules.</p>
+        <p className="mt-3 max-w-2xl text-muted-foreground">Every The Signal Spot alert comes from one of these rule-based strategies. Each page explains the chart, the entry trigger and the exit rules.</p>
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           {PLAYBOOK.map((s) => (
             <Link key={s.id} to="/strategies/$slug" params={{ slug: strategySlug(s.id) }} className="rounded-lg border border-border bg-card p-5 hover:border-primary">

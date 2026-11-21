@@ -16,7 +16,7 @@ import type { z } from "zod";
 const quoteOptions = (symbol: string) => queryOptions({ queryKey: ["stock-detail", symbol], queryFn: () => getStockQuote({ data: symbol }), staleTime: 5000 });
 export const Route = createFileRoute("/_authenticated/quote/$symbol")({
   staticData: { sitemap: false },
-  head: ({ params }) => ({ meta: [{ title: `${params.symbol} Quote — Pulse Signals` }, { name: "description", content: `${params.symbol} stock price, chart, market statistics, news and paper trading.` }, { property: "og:title", content: `${params.symbol} Quote — Pulse Signals` }, { property: "og:description", content: `Explore ${params.symbol} prices, history and news before paper trading.` }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
+  head: ({ params }) => ({ meta: [{ title: `${params.symbol} Quote | The Signal Spot` }, { name: "description", content: `${params.symbol} stock price, chart, market statistics, news and paper trading.` }, { property: "og:title", content: `${params.symbol} Quote | The Signal Spot` }, { property: "og:description", content: `Explore ${params.symbol} prices, history and news before paper trading.` }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   loader: async ({ params, context }) => { const symbol = quoteSymbol.parse(params.symbol); await Promise.all([context.queryClient.ensureQueryData(quoteOptions(symbol)), context.queryClient.ensureQueryData(homePortfolioOptions)]); }, component: QuotePage,
   errorComponent: () => <div className="space-y-4"><p>Could not load this stock. Check the symbol and your paper connection.</p><Button asChild variant="outline"><Link to="/explore">Back to Explore</Link></Button></div>,
 });

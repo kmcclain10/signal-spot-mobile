@@ -25,9 +25,9 @@ export const Route = createFileRoute("/_authenticated/connections")({
   staticData: { sitemap: false },
   head: () => ({
     meta: [
-      { title: "Connections — Pulse Signals" },
+      { title: "Connections | The Signal Spot" },
       { name: "description", content: "Connect market data, news, broker or any REST API." },
-      { property: "og:title", content: "Connections — Pulse Signals" },
+      { property: "og:title", content: "Connections | The Signal Spot" },
       { property: "og:description", content: "Connect market data, news, broker or any REST API." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

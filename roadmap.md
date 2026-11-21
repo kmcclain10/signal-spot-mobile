@@ -1,3 +1,7 @@
+# The Signal Spot branding
+- [x] Unify wordmark, public pages, account screens, page titles and device labels; preserve product names, pricing and trading behavior.
+- [x] Verify public and owner-signed-in phone/desktop pages, navigation, filter reload, 320px layouts, metadata and home-screen name; 221 regression tests passed, no browser errors or orders placed. Publish needed for live branding.
+
 # Launch audit adjustments
 - [x] Add public legal/contact pages and a shared footer; require signup acknowledgment.
 - [x] Correct marketing, brand, strategy parameters and custom-domain metadata without changing trading rules.

@@ -13,7 +13,7 @@ import { AlertSelections, alertPreferencesOptions } from '@/components/AlertSele
 export const Route=createFileRoute('/_authenticated/signals')({
   staticData: { sitemap: false },
   validateSearch:(s:Record<string,unknown>):{strategy?:string;date?:string;symbol?:string}=>({strategy:typeof s.strategy==='string'?s.strategy:'all',date:typeof s.date==='string'?s.date:'',symbol:typeof s.symbol==='string'?s.symbol:''}),
-  head:()=>({meta:[{title:'Alerts — Pulse Signals'},{name:'description',content:'Actual IWM and Pulse strategy triggers, bot fills and alert history.'},{property:'og:title',content:'Alerts — Pulse Signals'},{property:'og:description',content:'Authentic market triggers from your executable trading strategies.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'}]}),
+  head:()=>({meta:[{title:'Alerts | The Signal Spot'},{name:'description',content:'Actual IWM and Pulse strategy triggers, bot fills and alert history.'},{property:'og:title',content:'Alerts | The Signal Spot'},{property:'og:description',content:'Authentic market triggers from your executable trading strategies.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'}]}),
   loader:({context})=>Promise.all([context.queryClient.ensureQueryData(strategyPlatformOptions),context.queryClient.ensureQueryData(alertPreferencesOptions)]),errorComponent:({error})=><ErrorState error={error}/>,notFoundComponent:()=> <p>Signals unavailable.</p>,component:Signals,
 });
 function Signals(){

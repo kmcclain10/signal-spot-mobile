@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/common';
 export const Route=createFileRoute('/_authenticated/strategies')({
   staticData: { sitemap: false },
-  head:()=>({meta:[{title:'Strategy Playbook — Pulse Signals'},{name:'description',content:'The eleven executable IWM and Pulse strategies, their entry rules and trading controls.'},{property:'og:title',content:'Strategy Playbook — Pulse Signals'},{property:'og:description',content:'Real strategies. Current rules. Your active fleet.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'}]}),
+  head:()=>({meta:[{title:'Strategy Playbook | The Signal Spot'},{name:'description',content:'The eleven executable IWM and Pulse strategies, their entry rules and trading controls.'},{property:'og:title',content:'Strategy Playbook | The Signal Spot'},{property:'og:description',content:'Real strategies. Current rules. Your active fleet.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'}]}),
   loader:({context})=>context.queryClient.ensureQueryData(strategyPlatformOptions),errorComponent:({error})=><ErrorState error={error}/>,notFoundComponent:()=> <p>Playbook unavailable.</p>,component:Playbook,
 });
 function Playbook(){
   const {data}=useSuspenseQuery(strategyPlatformOptions);useStrategyRealtime(Route.useRouteContext().user.id);
-  return <div className="space-y-7"><header className="flex flex-wrap items-end justify-between gap-3"><div><p className="mb-2 text-xs font-medium text-primary">PULSE SIGNALS / 11 STRATEGIES</p><h1 className="text-3xl font-semibold">Strategy playbook</h1></div><Button asChild variant="outline"><Link to="/bots">Manage fleet<ArrowRight/></Link></Button></header>
+  return <div className="space-y-7"><header className="flex flex-wrap items-end justify-between gap-3"><div><p className="mb-2 text-xs font-medium text-primary">THE SIGNAL SPOT / 11 STRATEGIES</p><h1 className="text-3xl font-semibold">Strategy playbook</h1></div><Button asChild variant="outline"><Link to="/bots">Manage fleet<ArrowRight/></Link></Button></header>
     <div className="grid gap-x-8 md:grid-cols-2">{PLAYBOOK.map((s,i)=>{
       const configured=data.bots.filter(b=>(b.config as Record<string,any>).strategyId===s.id);
       const enabled=s.id==='iwm'?!!data.settings?.enabled:configured.some(b=>b.enabled&&!b.kill_switch);

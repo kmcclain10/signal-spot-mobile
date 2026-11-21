@@ -8,8 +8,8 @@ export const PUBLIC_UPDATED: Record<string, string> = {
 };
 export function publicHead(title: string, description: string, path: string) {
   const url = `${PUBLIC_SITE}${path}`;
-  return { meta: [{ title: `${title} — Pulse Signals` }, { name: 'description', content: description },
-    { property: 'og:title', content: `${title} — Pulse Signals` }, { property: 'og:description', content: description },
+  return { meta: [{ title: `${title} | The Signal Spot` }, { name: 'description', content: description },
+    { property: 'og:title', content: `${title} | The Signal Spot` }, { property: 'og:description', content: description },
     { property: 'og:type', content: 'website' }, { property: 'og:url', content: url },
     { name: 'twitter:card', content: 'summary' }, { name: 'twitter:url', content: url }],
     links: [{ rel: 'canonical', href: url }] };

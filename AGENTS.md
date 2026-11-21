@@ -35,3 +35,4 @@
 - Public audit copy uses a presentation-only strategy adapter resolved from scanner defaults; never change executable calculations to correct marketing parameters.
 - The root owns the shared company/legal footer and normalized canonical/social fallbacks; leaf routes supply matching page-specific URLs and editorial dates feed sitemap lastmod.
 - Signup and password changes share pure validation; signup consent gates creation, while existing password sign-in stays unchanged.
+- Reuse the shared Brand wordmark in public headers, sign-in and the app shell so sizing and identity stay consistent across screen sizes.

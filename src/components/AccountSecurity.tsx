@@ -14,7 +14,7 @@ import { LegalLinks } from '@/components/SiteFooter';
 const Confirmation = createContext<() => Promise<boolean>>(async () => false);
 export const useAccountConfirmation = () => useContext(Confirmation);
 export function Disclosures() {
-  return <div className="space-y-3 text-sm text-muted-foreground"><p><strong className="text-foreground">Not investment advice.</strong> Pulse Signals provides general rule-based market information, not personalized investment recommendations. Trading can lose all money used.</p><p><strong className="text-foreground">Account mode.</strong> Additional Pulse bots are paper-only. IWM and the Trade desk use your selected paper or live Alpaca account. Simulated results are not real-money results. IWM may allocate part of winning profits toward Walmart shares (WMT); it is not a guaranteed return or advice to buy Walmart.</p><p>By creating or using your account, you acknowledge our <LegalLinks />.</p><a className="inline-flex min-h-11 items-center text-primary underline" href="https://alpaca.markets/disclosures" target="_blank" rel="noopener noreferrer">Alpaca disclosures</a></div>;
+  return <div className="space-y-3 text-sm text-muted-foreground"><p><strong className="text-foreground">Not investment advice.</strong> The Signal Spot provides general rule-based market information, not personalized investment recommendations. Trading can lose all money used.</p><p><strong className="text-foreground">Account mode.</strong> Additional Pulse bots are paper-only. IWM and the Trade desk use your selected paper or live Alpaca account. Simulated results are not real-money results. IWM may allocate part of winning profits toward Walmart shares (WMT); it is not a guaranteed return or advice to buy Walmart.</p><p>By creating or using your account, you acknowledge our <LegalLinks />.</p><a className="inline-flex min-h-11 items-center text-primary underline" href="https://alpaca.markets/disclosures" target="_blank" rel="noopener noreferrer">Alpaca disclosures</a></div>;
 }
 export function AccountSecurity({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false), [password, setPassword] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState("");
@@ -92,7 +92,7 @@ export function AccountSecurity({ children }: { children: ReactNode }) {
     await navigate({ to: "/auth", replace: true });
   }
   if (locked) return <section className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-6 text-center">
-    <ScanFace className="size-14 text-primary" /><h1 className="text-2xl font-semibold">Pulse Signals is locked</h1>
+    <ScanFace className="size-14 text-primary" /><h1 className="text-2xl font-semibold">The Signal Spot is locked</h1>
     <p className="text-sm text-muted-foreground">Your paper bots keep running while the app is locked.</p>
     <Button className="w-full max-w-xs" disabled={busy} onClick={unlock}>{busy ? "Checking…" : "Unlock with Face ID"}</Button>
     <Button variant="ghost" disabled={busy} onClick={signOutFully}>Sign in another way</Button>

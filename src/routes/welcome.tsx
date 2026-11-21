@@ -27,8 +27,9 @@ function Landing() {
       <PublicHeader />
 
       <section className="mx-auto max-w-4xl px-5 pb-16 pt-12 text-center">
-        <p className="mb-4 text-sm font-semibold text-primary">Pulse Signals · Rule-based options alerts</p>
-        <h1 className="text-4xl font-black leading-tight md:text-6xl">See the setup <span className="text-primary">the moment the rules trigger.</span></h1>
+        <p className="mb-4 text-sm font-semibold text-primary">RULE-BASED OPTIONS &amp; EQUITY ALERTS</p>
+        <h1 className="text-4xl font-black leading-tight sm:text-5xl md:text-6xl">The Signal Spot</h1>
+        <p className="mx-auto mt-4 max-w-2xl text-2xl font-semibold leading-snug md:text-3xl">See the setup <span className="text-primary">when the rules trigger.</span></p>
         <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">Read the alert and decide for yourself. An optional bot add-on can follow the same published rules in an account you connect, if you turn it on.</p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Button asChild size="lg"><Link to="/auth">Start 7-day free trial</Link></Button>

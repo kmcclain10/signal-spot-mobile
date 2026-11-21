@@ -19,9 +19,9 @@ export const Route = createFileRoute("/_authenticated/settings")({
   staticData: { sitemap: false },
   head: () => ({
     meta: [
-      { title: "Account & Security — Pulse Signals" },
+      { title: "Account & Security | The Signal Spot" },
       { name: "description", content: "Your connected paper account, security, disclosures, notifications and risk settings." },
-      { property: "og:title", content: "Account & Security — Pulse Signals" },
+      { property: "og:title", content: "Account & Security | The Signal Spot" },
       { property: "og:description", content: "Manage account security and paper trading safeguards." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

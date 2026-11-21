@@ -23,8 +23,8 @@ const desk = queryOptions({ queryKey: ["trade-desk"], queryFn: () => getTradeDes
 export const Route = createFileRoute("/_authenticated/trade")({
   staticData: { sitemap: false },
   validateSearch: tradeSearch,
-  head: () => ({ meta: [{ title: "Trade — Pulse Signals" }, { name: "description", content: "Place stock, ETF and option trades, close positions and manage orders." },
-    { property: "og:title", content: "Trade Desk — Pulse Signals" }, { property: "og:description", content: "Manual stock and options trading on your Alpaca account." },
+  head: () => ({ meta: [{ title: "Trade | The Signal Spot" }, { name: "description", content: "Place stock, ETF and option trades, close positions and manage orders." },
+    { property: "og:title", content: "Trade Desk | The Signal Spot" }, { property: "og:description", content: "Manual stock and options trading on your Alpaca account." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(desk),
   component: TradePage,

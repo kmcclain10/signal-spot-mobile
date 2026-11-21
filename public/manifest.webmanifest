@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Pulse Signals",
-  "short_name": "Pulse",
-  "description": "Paper trading, portfolio and IWM bot monitoring",
+  "name": "The Signal Spot",
+  "short_name": "Signal Spot",
+  "description": "Rule-based market alerts, strategy playbook and optional trading bots",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
