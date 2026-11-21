@@ -93,12 +93,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { property: "og:title", content: "Pulse Signals — Real-time options & stock trading alerts" },
       { property: "og:description", content: PUBLIC_DESCRIPTION },
-      { property: 'og:url', content: `${PUBLIC_SITE}${matches.at(-1)?.pathname === '/' ? '/welcome' : matches.at(-1)?.pathname ?? '/welcome'}` },
-      { name: 'twitter:url', content: `${PUBLIC_SITE}${matches.at(-1)?.pathname === '/' ? '/welcome' : matches.at(-1)?.pathname ?? '/welcome'}` },
+      { property: 'og:url', content: `${PUBLIC_SITE}${matches.at(-1)?.pathname === '/' ? '/welcome' : matches.at(-1)?.pathname?.replace(/\/$/, '') ?? '/welcome'}` },
+      { name: 'twitter:url', content: `${PUBLIC_SITE}${matches.at(-1)?.pathname === '/' ? '/welcome' : matches.at(-1)?.pathname?.replace(/\/$/, '') ?? '/welcome'}` },
       { name: "twitter:card", content: "summary" },
     ],
     links: [
-      { rel: 'canonical', href: `${PUBLIC_SITE}${matches.at(-1)?.pathname === '/' ? '/welcome' : matches.at(-1)?.pathname ?? '/welcome'}` },
+      { rel: 'canonical', href: `${PUBLIC_SITE}${matches.at(-1)?.pathname === '/' ? '/welcome' : matches.at(-1)?.pathname?.replace(/\/$/, '') ?? '/welcome'}` },
       {
         rel: "stylesheet",
         href: appCss,

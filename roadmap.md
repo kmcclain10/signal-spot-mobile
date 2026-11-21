@@ -1,8 +1,10 @@
 # Launch audit adjustments
-- [ ] Add public legal/contact pages and a shared footer; require signup acknowledgment.
-- [ ] Correct marketing, brand, strategy parameters and custom-domain metadata without changing trading rules.
-- [ ] Harden new-password validation, extend sitemap and add legacy URL redirects.
-- [ ] Verify public desktop/mobile pages and signup safeguards; document counsel and hosted-setting blockers.
+- [x] Add public legal/contact pages and a shared footer; require signup acknowledgment.
+- [x] Correct marketing, brand, strategy parameters and custom-domain metadata without changing trading rules.
+- [x] Harden new-password validation, extend sitemap and add legacy URL redirects.
+- [x] Verify public desktop/mobile pages, signup safeguards and signed-in Alerts footer; 210 regression tests pass. Published legacy host redirects to the custom domain.
+- [ ] Legal and automation-language approval — requires qualified counsel; draft disclosures are not a legal opinion.
+- [ ] Hosted password-minimum and signup/email completion — hosted settings and a real confirmation/recovery round trip remain unverified; app validation enforces eight characters.
 
 # Real strategy platform
 - [x] Automatic SPY/IWM/QQQ plus daily verified top-ten Alpaca-tradable US market-cap scanning; owner-selected strategies and custom direction/symbol alerts. Saved AMD/NFLX selections read back after reload and restored; 14 targeted tests pass, desktop/mobile verified without orders. Published market-hours evaluation remains pending the next session.
