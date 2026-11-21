@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -21,9 +22,10 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as WelcomeRouteImport } from './routes/welcome'
-import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedBotsRouteImport } from './routes/_authenticated/bots'
 import { Route as AuthenticatedConnectionsRouteImport } from './routes/_authenticated/connections'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedExploreRouteImport } from './routes/_authenticated/explore'
 import { Route as AuthenticatedIwmRouteImport } from './routes/_authenticated/iwm'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
@@ -41,6 +43,11 @@ import { Route as ApiPublicJobsPulseBotsRouteImport } from './routes/api/public/
 import { Route as ApiPublicJobsScanRouteImport } from './routes/api/public/jobs/scan'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
@@ -100,9 +107,9 @@ const WelcomeRoute = WelcomeRouteImport.update({
   path: '/welcome',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedBotsRoute = AuthenticatedBotsRouteImport.update({
@@ -116,6 +123,11 @@ const AuthenticatedConnectionsRoute =
     path: '/connections',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedExploreRoute = AuthenticatedExploreRouteImport.update({
   id: '/explore',
   path: '/explore',
@@ -202,7 +214,7 @@ const ApiPublicPaymentsWebhookRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthenticatedIndexRoute
+  '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/login': typeof LoginRoute
@@ -214,8 +226,10 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/bots': typeof AuthenticatedBotsRoute
   '/connections': typeof AuthenticatedConnectionsRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/explore': typeof AuthenticatedExploreRoute
   '/iwm': typeof AuthenticatedIwmRoute
   '/orders': typeof AuthenticatedOrdersRoute
@@ -234,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/login': typeof LoginRoute
@@ -245,8 +260,10 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/bots': typeof AuthenticatedBotsRoute
   '/connections': typeof AuthenticatedConnectionsRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/explore': typeof AuthenticatedExploreRoute
   '/iwm': typeof AuthenticatedIwmRoute
   '/orders': typeof AuthenticatedOrdersRoute
@@ -257,7 +274,6 @@ export interface FileRoutesByTo {
   '/strategies': typeof StrategiesIndexRoute
   '/trade': typeof AuthenticatedTradeRoute
   '/strategies/$slug': typeof StrategiesSlugRoute
-  '/': typeof AuthenticatedIndexRoute
   '/quote/$symbol': typeof AuthenticatedQuoteSymbolRoute
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
   '/api/public/jobs/pulse-bots': typeof ApiPublicJobsPulseBotsRoute
@@ -266,6 +282,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
@@ -278,8 +295,10 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/bots': typeof AuthenticatedBotsRoute
   '/_authenticated/connections': typeof AuthenticatedConnectionsRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/explore': typeof AuthenticatedExploreRoute
   '/_authenticated/iwm': typeof AuthenticatedIwmRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
@@ -290,7 +309,6 @@ export interface FileRoutesById {
   '/_authenticated/strategies': typeof AuthenticatedStrategiesRoute
   '/_authenticated/trade': typeof AuthenticatedTradeRoute
   '/strategies/$slug': typeof StrategiesSlugRoute
-  '/_authenticated/': typeof AuthenticatedIndexRoute
   '/strategies/': typeof StrategiesIndexRoute
   '/_authenticated/quote/$symbol': typeof AuthenticatedQuoteSymbolRoute
   '/api/public/jobs/iwm-window-strategy': typeof ApiPublicJobsIwmWindowStrategyRoute
@@ -313,8 +331,10 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/welcome'
+    | '/admin'
     | '/bots'
     | '/connections'
+    | '/dashboard'
     | '/explore'
     | '/iwm'
     | '/orders'
@@ -333,6 +353,7 @@ export interface FileRouteTypes {
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/auth'
     | '/contact'
     | '/login'
@@ -344,8 +365,10 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/welcome'
+    | '/admin'
     | '/bots'
     | '/connections'
+    | '/dashboard'
     | '/explore'
     | '/iwm'
     | '/orders'
@@ -356,7 +379,6 @@ export interface FileRouteTypes {
     | '/strategies'
     | '/trade'
     | '/strategies/$slug'
-    | '/'
     | '/quote/$symbol'
     | '/api/public/jobs/iwm-window-strategy'
     | '/api/public/jobs/pulse-bots'
@@ -364,6 +386,7 @@ export interface FileRouteTypes {
     | '/api/public/payments/webhook'
   id:
     | '__root__'
+    | '/'
     | '/_authenticated'
     | '/auth'
     | '/contact'
@@ -376,8 +399,10 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/welcome'
+    | '/_authenticated/admin'
     | '/_authenticated/bots'
     | '/_authenticated/connections'
+    | '/_authenticated/dashboard'
     | '/_authenticated/explore'
     | '/_authenticated/iwm'
     | '/_authenticated/orders'
@@ -388,7 +413,6 @@ export interface FileRouteTypes {
     | '/_authenticated/strategies'
     | '/_authenticated/trade'
     | '/strategies/$slug'
-    | '/_authenticated/'
     | '/strategies/'
     | '/_authenticated/quote/$symbol'
     | '/api/public/jobs/iwm-window-strategy'
@@ -398,6 +422,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
@@ -420,6 +445,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
@@ -504,11 +536,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WelcomeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/': {
-      id: '/_authenticated/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/bots': {
@@ -523,6 +555,13 @@ declare module '@tanstack/react-router' {
       path: '/connections'
       fullPath: '/connections'
       preLoaderRoute: typeof AuthenticatedConnectionsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/explore': {
@@ -641,8 +680,10 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedBotsRoute: typeof AuthenticatedBotsRoute
   AuthenticatedConnectionsRoute: typeof AuthenticatedConnectionsRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedExploreRoute: typeof AuthenticatedExploreRoute
   AuthenticatedIwmRoute: typeof AuthenticatedIwmRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
@@ -652,13 +693,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSignalsRoute: typeof AuthenticatedSignalsRoute
   AuthenticatedStrategiesRoute: typeof AuthenticatedStrategiesRoute
   AuthenticatedTradeRoute: typeof AuthenticatedTradeRoute
-  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedQuoteSymbolRoute: typeof AuthenticatedQuoteSymbolRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedBotsRoute: AuthenticatedBotsRoute,
   AuthenticatedConnectionsRoute: AuthenticatedConnectionsRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedExploreRoute: AuthenticatedExploreRoute,
   AuthenticatedIwmRoute: AuthenticatedIwmRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
@@ -668,7 +710,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSignalsRoute: AuthenticatedSignalsRoute,
   AuthenticatedStrategiesRoute: AuthenticatedStrategiesRoute,
   AuthenticatedTradeRoute: AuthenticatedTradeRoute,
-  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedQuoteSymbolRoute: AuthenticatedQuoteSymbolRoute,
 }
 
@@ -676,6 +717,7 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,

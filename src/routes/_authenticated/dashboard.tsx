@@ -10,7 +10,7 @@ import { strategyLabel } from '@/lib/strategy-platform';
 import { botHealth } from '@/lib/bots-rules';
 import { nyDate } from '@/lib/market-hours';
 import { cn } from '@/lib/utils';
-export const Route = createFileRoute('/_authenticated/')({
+export const Route = createFileRoute('/_authenticated/dashboard')({
   staticData: { sitemap: false },
   head:()=>({meta:[{title:'Home | The Signal Spot'},{name:'description',content:'Your Alpaca portfolio, real strategy triggers and active trading fleet.'},{property:'og:title',content:'Home | The Signal Spot'},{property:'og:description',content:'Your account and real IWM and Pulse strategy activity.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'}]}),
   loader:async({context})=>{await Promise.all([context.queryClient.ensureQueryData(homePortfolioOptions),context.queryClient.ensureQueryData(strategyPlatformOptions)]);},

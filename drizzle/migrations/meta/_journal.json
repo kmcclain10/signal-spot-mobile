@@ -106,6 +106,13 @@
       "when": 1794543417114,
       "tag": "0014_personal_strategy_alerts",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1795240396765,
+      "tag": "0015_customer_admin_and_alert_push",
+      "breakpoints": true
     }
   ]
 }

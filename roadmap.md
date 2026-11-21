@@ -1,3 +1,10 @@
+# Traffic, background notifications and customer admin
+- [ ] Make the public root offer crawlable while preserving signed-in Home and existing public URLs.
+- [ ] Add background strategy-alert push with owner-scoped devices and durable delivery; requires Firebase web-push connection and device permission.
+- [ ] Add protected customer-support and billing admin, with verified server-side roles and no broker-secret access.
+- [ ] Guide owner through creating Firebase project and entering credentials securely; no existing Firebase project, connection pending.
+- [ ] Verify public, customer and admin flows; publish required for live changes.
+
 # The Signal Spot branding
 - [x] Unify wordmark, public pages, account screens, page titles and device labels; preserve product names, pricing and trading behavior.
 - [x] Verify public and owner-signed-in phone/desktop pages, navigation, filter reload, 320px layouts, metadata and home-screen name; 221 regression tests passed, no browser errors or orders placed. Publish needed for live branding.

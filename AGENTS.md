@@ -36,3 +36,6 @@
 - The root owns the shared company/legal footer and normalized canonical/social fallbacks; leaf routes supply matching page-specific URLs and editorial dates feed sitemap lastmod.
 - Signup and password changes share pure validation; signup consent gates creation, while existing password sign-in stays unchanged.
 - Reuse the shared Brand wordmark in public headers, sign-in and the app shell so sizing and identity stay consistent across screen sizes.
+- Keep the public offer at / with SSR and member Home at /dashboard; protected loaders must remain under the managed auth gate.
+- Customer admin handlers verify database roles before privileged reads; support notes are staff-only and billing changes stay in Stripe.
+- Background alerts use owner-scoped FCM devices and a trigger-created service-only leased queue; messaging workers never cache trading pages.

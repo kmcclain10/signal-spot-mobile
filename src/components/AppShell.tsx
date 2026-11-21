@@ -24,10 +24,12 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { Brand } from "@/components/Brand";
 import { AccountSecurity } from "@/components/AccountSecurity";
+import { getAdminAccess } from '@/lib/admin.functions';
+import { ShieldCheck } from 'lucide-react';
 import { useBotNotifications } from '@/hooks/use-bot-notifications';
 
 const NAV = [
-  { to: "/", label: "Home", icon: Home },
+  { to: "/dashboard", label: "Home", icon: Home },
   { to: "/signals", label: "Alerts", icon: Bell },
   { to: "/bots", label: "Bots", icon: Bot },
   { to: "/orders", label: "Activity", icon: Wallet },
@@ -101,7 +103,7 @@ function NavLink({ to, label, icon: Icon, onClick }: ((typeof NAV)[number] | (ty
     <Link
       to={to}
       onClick={onClick}
-      activeOptions={{ exact: to === "/" }}
+      activeOptions={{ exact: to === "/dashboard" }}
       className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
       activeProps={{ className: "bg-accent text-primary" }}
     >
@@ -112,6 +114,7 @@ function NavLink({ to, label, icon: Icon, onClick }: ((typeof NAV)[number] | (ty
 }
 
 export function AppShell() {
+  const admin = useQuery({queryKey:['admin-access'],queryFn:()=>getAdminAccess()});
   const identity=useQuery({queryKey:['notification-owner'],queryFn:async()=>{const r=await supabase.auth.getUser();return r.data.user?.id;}});
   useBotNotifications(identity.data,true);
   const signOut = useSignOut();
@@ -129,7 +132,7 @@ export function AppShell() {
     <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r bg-sidebar p-4 lg:flex">
         <div className="mb-10 flex items-center gap-2 px-3 pt-4">
-          <Link to="/" aria-label="The Signal Spot home"><Brand compact /></Link>
+          <Link to="/dashboard" aria-label="The Signal Spot home"><Brand compact /></Link>
         </div>
         <nav className="flex flex-1 flex-col gap-2" aria-label="Main navigation">
           {NAV.map((n) => (
@@ -137,6 +140,7 @@ export function AppShell() {
           ))}
           <div className="my-4 border-t" />
           {SECONDARY.map((n) => <NavLink key={n.to} {...n} />)}
+          {admin.data && <Button asChild variant="ghost" className="justify-start"><Link to="/admin"><ShieldCheck/>Customer admin</Link></Button>}
         </nav>
         <Button variant="ghost"
           onClick={signOut}
@@ -148,7 +152,7 @@ export function AppShell() {
 
       <div className="lg:pl-60">
         <header className="sticky top-0 z-20 grid min-h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 border-b bg-background/95 px-4 py-3 backdrop-blur sm:px-6 lg:py-0">
-          <Link to="/" className="col-start-1 row-start-1 lg:hidden" aria-label="The Signal Spot home"><Brand compact /></Link>
+          <Link to="/dashboard" className="col-start-1 row-start-1 lg:hidden" aria-label="The Signal Spot home"><Brand compact /></Link>
           <div className="col-span-2 row-start-2 lg:col-span-1 lg:row-start-1"><MarketStatus /></div>
           <div className="col-start-2 row-start-1 flex items-center gap-1"><ModeBadge /><Button asChild size="icon" variant="ghost" className="hidden min-[360px]:inline-flex" aria-label="Trade" title="Trade"><Link to="/trade"><CandlestickChart /></Link></Button><Button size="icon" variant="ghost" aria-label="Refresh account" title="Refresh account" disabled={refreshing} onClick={refresh}><RefreshCw className={refreshing ? "animate-spin" : ""} /></Button><Button size="icon" variant="ghost" className="lg:hidden" aria-label="More pages" onClick={() => setMore(true)}><Menu /></Button></div>
         </header>
@@ -167,7 +171,7 @@ export function AppShell() {
           <Link
             key={to}
             to={to}
-            activeOptions={{ exact: to === "/" }}
+            activeOptions={{ exact: to === "/dashboard" }}
             className="flex min-h-16 flex-col items-center justify-center gap-1 py-3 text-[11px] text-muted-foreground"
             activeProps={{ className: "text-primary" }}
           >
@@ -186,6 +190,7 @@ export function AppShell() {
             {SECONDARY.map((n) => (
               <NavLink key={n.to} {...n} onClick={() => setMore(false)} />
             ))}
+            {admin.data && <Button asChild variant="ghost" className="justify-start"><Link to="/admin" onClick={()=>setMore(false)}><ShieldCheck/>Customer admin</Link></Button>}
             <Button variant="ghost"
               onClick={signOut}
               className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent"

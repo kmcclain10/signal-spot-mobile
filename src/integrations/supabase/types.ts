@@ -146,6 +146,38 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_support_notes: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          customer_id: string
+          id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          customer_id: string
+          id?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_support_notes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       engine_runs: {
         Row: {
           by_year: Json | null
@@ -881,6 +913,98 @@ export type Database = {
           },
         ]
       }
+      push_deliveries: {
+        Row: {
+          alert_id: string
+          attempts: number
+          available_at: string
+          created_at: string
+          device_id: string
+          error_code: string | null
+          id: string
+          lease_token: string | null
+          lease_until: string | null
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          alert_id: string
+          attempts?: number
+          available_at?: string
+          created_at?: string
+          device_id: string
+          error_code?: string | null
+          id?: string
+          lease_token?: string | null
+          lease_until?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          alert_id?: string
+          attempts?: number
+          available_at?: string
+          created_at?: string
+          device_id?: string
+          error_code?: string | null
+          id?: string
+          lease_token?: string | null
+          lease_until?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_deliveries_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "strategy_alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_deliveries_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "push_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_devices: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_devices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       settings: {
         Row: {
           lookback_days: number
@@ -1144,12 +1268,59 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      claim_push_deliveries: {
+        Args: { p_token: string }
+        Returns: {
+          alert_id: string
+          attempts: number
+          available_at: string
+          created_at: string
+          device_id: string
+          error_code: string | null
+          id: string
+          lease_token: string | null
+          lease_until: string | null
+          sent_at: string | null
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "push_deliveries"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_recent_password_auth: { Args: never; Returns: boolean }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       iwm_acquire_lock: {
         Args: { p_token: string; p_user_id: string }
         Returns: {
@@ -1211,7 +1382,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1338,6 +1509,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin"],
+    },
   },
 } as const

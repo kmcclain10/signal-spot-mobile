@@ -10,7 +10,11 @@ export const Route = createFileRoute("/api/public/jobs/scan")({
         if (authFailure) return authFailure;
         const { runStrategyAlerts } = await import('@/lib/server/strategy-alerts.server');
         const result = await runStrategyAlerts();
-        return Response.json({ success: result.errors === 0, ...result });
+        const { dispatchPush } = await import('@/lib/server/push.server');
+        const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+        let push;
+        try { push = await dispatchPush(supabaseAdmin); } catch { push = { configured: false, error: 'Notification delivery unavailable' }; }
+        return Response.json({ success: result.errors === 0, ...result, push });
       },
     },
   },

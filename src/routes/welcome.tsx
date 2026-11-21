@@ -21,7 +21,7 @@ const features = [
   { icon: Bot, t: "Bots (optional)", d: "Connect your own Alpaca account and let a bot follow published entry and exit rules. This is not personalized advice and does not guarantee a profit." },
 ];
 
-function Landing() {
+export function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <PublicHeader />

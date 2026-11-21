@@ -30,7 +30,7 @@ function AuthPage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (sessionStorage.getItem('pulse-password-recovery') === '1' || new URLSearchParams(window.location.hash.slice(1)).get('type') === 'recovery') navigate({ to: '/reset-password', replace: true });
-      else if (data.user) navigate({ to: "/", replace: true });
+      else if (data.user) navigate({ to: "/dashboard", replace: true });
     });
   }, [navigate]);
 
@@ -42,7 +42,7 @@ function AuthPage() {
       if (mode === "in") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: "/", replace: true });
+        navigate({ to: "/dashboard", replace: true });
       } else {
         validateSignup(password, accepted);
         const { data, error } = await supabase.auth.signUp({
@@ -51,7 +51,7 @@ function AuthPage() {
           options: { emailRedirectTo: window.location.origin, data: { full_name: name.trim(), signup_legal_version: '2026-11-20', signup_legal_accepted_at: new Date().toISOString() } },
         });
         if (error) throw error;
-        if (data.session) navigate({ to: "/", replace: true });
+        if (data.session) navigate({ to: "/dashboard", replace: true });
         else setMessage("Check your email to confirm your account before signing in.");
       }
     } catch (err) {
@@ -68,7 +68,7 @@ function AuthPage() {
       const r = await lovable.auth.signInWithOAuth(provider, { redirect_uri: window.location.origin });
       if (r.error) throw r.error;
       if (r.redirected) return;
-      navigate({ to: '/', replace: true });
+      navigate({ to: '/dashboard', replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Sign in failed');
     } finally { setBusy(false); }
